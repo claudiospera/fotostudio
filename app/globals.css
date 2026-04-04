@@ -1,26 +1,126 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600&display=swap');
 @import "tailwindcss";
 
+/* ─── FOTOSTUDIO DESIGN SYSTEM ─── */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg:    #f2f4f7;
+  --s1:    #ffffff;
+  --s2:    #f7f8fa;
+  --s3:    #edf0f4;
+  --s4:    #e2e5ea;
+
+  --b1:    rgba(0,0,0,0.07);
+  --b2:    rgba(0,0,0,0.13);
+  --b3:    rgba(0,0,0,0.20);
+
+  --tx:    #0f1117;
+  --t2:    #6b7280;
+  --t3:    #a0a8b4;
+
+  --ac:    #2da882;
+  --ac2:   #1a9070;
+  --acd:   rgba(45,168,130,0.10);
+  --acd2:  rgba(45,168,130,0.05);
+
+  --red:   #dc3545;
+  --amber: #f59e0b;
+
+  --sw:    230px;
+  --hh:    54px;
+  --r:     12px;
+  --r2:    7px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+html, body { height: 100%; overflow-x: hidden; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--tx);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--s4); border-radius: 2px; }
+
+/* ─── ANIMATIONS ─── */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+.photo-actions-overlay { opacity: 0; transition: opacity .2s; }
+.photo-actions-overlay:hover { opacity: 1; }
+@media (hover: none) { .photo-actions-overlay { opacity: 1; } }
+
+.animate-slide-up { animation: slideUp 0.3s ease both; }
+.animate-fade-in  { animation: fadeIn 0.2s ease both; }
+
+/* ─── RESPONSIVE DASHBOARD ─── */
+.dashboard-main {
+  margin-left: var(--sw);
+}
+.dashboard-sidebar {
+  transition: transform .28s cubic-bezier(.4,0,.2,1);
+}
+.sidebar-backdrop {
+  display: none;
+}
+.hamburger-btn {
+  display: none;
+}
+@media (max-width: 768px) {
+  .dashboard-main {
+    margin-left: 0 !important;
+  }
+  .dashboard-sidebar {
+    transform: translateX(-100%);
+    box-shadow: none;
+    width: 280px !important;
+  }
+  .dashboard-sidebar.is-open {
+    transform: translateX(0);
+    box-shadow: 8px 0 32px rgba(0,0,0,.12);
+  }
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 49;
+    background: rgba(0,0,0,.35);
+    backdrop-filter: blur(2px);
+    animation: fadeIn .2s ease;
+  }
+  .hamburger-btn {
+    display: grid;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ─── LANDING PAGE ─── */
+.nav-link:hover { color: var(--tx) !important; background: var(--s2); }
+
+/* ─── PORTAL RESPONSIVE ─── */
+.portal-btn-label { }
+.portal-btn-mobile-count { display: none; }
+@media (max-width: 500px) {
+  .portal-btn-label { display: none; }
+  .portal-btn-mobile-count { display: inline; }
 }
+
