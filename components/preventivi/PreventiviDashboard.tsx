@@ -58,14 +58,7 @@ export const PreventiviDashboard = () => {
   return (
     <>
       {/* Tab navigation */}
-      <div
-        style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          padding: '0 24px',
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
-          overflowX: 'auto',
-        }}
-      >
+      <div className="preventivi-tabs">
         {TABS.map(tab => (
           <button
             key={tab.id}
@@ -94,9 +87,9 @@ export const PreventiviDashboard = () => {
       </div>
 
       {/* Tab content */}
-      <div style={{ flex: 1, overflow: 'auto', padding: '20px 24px' }}>
+      <div style={{ flex: 1, overflow: 'auto', padding: 'clamp(12px, 3vw, 20px) clamp(12px, 3vw, 24px)' }}>
         {activeTab === 'proposte' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 20, alignItems: 'start' }}>
+          <div className="preventivi-layout">
             {/* Left: calendar */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {/* Action bar */}
@@ -178,7 +171,9 @@ export const PreventiviDashboard = () => {
             </div>
 
             {/* Right: stats */}
-            <PreventiviStats preventivi={preventivi} year={currentYear} />
+            <div className="preventivi-stats-col">
+              <PreventiviStats preventivi={preventivi} year={currentYear} />
+            </div>
           </div>
         )}
 

@@ -156,7 +156,7 @@ export const NuovaPropostaModal = ({ isOpen, onClose, template, onSave }: NuovaP
           <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 18 }}>
 
             {/* Cliente + Email */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="form-grid-2">
               <Field label="Cliente *">
                 <input
                   required
@@ -178,7 +178,7 @@ export const NuovaPropostaModal = ({ isOpen, onClose, template, onSave }: NuovaP
             </div>
 
             {/* Servizio + Data + Stato */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+            <div className="form-grid-3">
               <Field label="Servizio">
                 <select
                   value={form.servizio}

@@ -124,3 +124,55 @@ body {
   .portal-btn-mobile-count { display: inline; }
 }
 
+/* ─── PREVENTIVI RESPONSIVE ─── */
+.preventivi-layout {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 20px;
+  align-items: start;
+}
+.preventivi-stats-col {
+  display: contents;
+}
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.form-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+.preventivi-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 24px;
+  border-bottom: 1px solid rgba(0,0,0,0.07);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.preventivi-tabs::-webkit-scrollbar { display: none; }
+
+@media (max-width: 900px) {
+  .preventivi-layout {
+    grid-template-columns: 1fr;
+  }
+  .preventivi-stats-col {
+    display: block;
+  }
+}
+@media (max-width: 640px) {
+  .form-grid-2 {
+    grid-template-columns: 1fr;
+  }
+  .form-grid-3 {
+    grid-template-columns: 1fr;
+  }
+  .preventivi-tabs {
+    padding: 0 12px;
+  }
+}
+

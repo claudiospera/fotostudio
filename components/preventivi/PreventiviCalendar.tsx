@@ -62,12 +62,12 @@ export const PreventiviCalendar = ({ preventivi, onDayClick }: PreventiviCalenda
       {/* Header */}
       <div
         style={{
-          padding: '16px 20px',
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          padding: '12px 16px',
+          borderBottom: '1px solid rgba(0,0,0,0.06)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: 12,
+          gap: 8,
           flexWrap: 'wrap',
         }}
       >
