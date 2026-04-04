@@ -77,7 +77,7 @@ export default async function HomePage() {
             fontSize: '10px', fontWeight: 600, letterSpacing: '.22em',
             textTransform: 'uppercase', color: 'var(--ac)', marginBottom: 22, opacity: .8,
           }}>
-            Claudio Spera &nbsp;·&nbsp; Napoli
+            Claudio Spera &nbsp;·&nbsp; Mirabella Eclano (AV)
           </p>
 
           <h1 style={{
@@ -271,7 +271,7 @@ export default async function HomePage() {
             Storie da Raccontare
           </p>
           <p style={{ fontSize: '12px', color: 'var(--t3)', lineHeight: 1.5 }}>
-            Claudio Spera · Fotografia · Napoli
+            Claudio Spera · Fotografia · Mirabella Eclano (AV)
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
