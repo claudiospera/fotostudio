@@ -22,6 +22,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     .select('*, photos(*), clients:gallery_clients(*)')
     .eq('id', id)
     .eq('user_id', user.id)
+    .order('filename', { referencedTable: 'photos', ascending: true })
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 404 })

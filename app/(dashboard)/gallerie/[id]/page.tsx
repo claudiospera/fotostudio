@@ -141,6 +141,12 @@ export default function GalleryDetailPage() {
   const [settingCover, setSettingCover] = useState<string | null>(null)
   const [coverSaved, setCoverSaved]     = useState(false)
 
+  // clear all photos
+  const [confirmClearPhotos, setConfirmClearPhotos] = useState(false)
+  const [clearingPhotos, setClearingPhotos]         = useState(false)
+  const [clearPhotosSuccess, setClearPhotosSuccess] = useState(false)
+  const [clearPhotosError, setClearPhotosError]     = useState<string | null>(null)
+
   // ── fetch gallery ──────────────────────────────────────────────────────
   useEffect(() => {
     fetch(`/api/galleries/${id}`)
@@ -148,7 +154,7 @@ export default function GalleryDetailPage() {
       .then(data => {
         if (data.error) { router.push('/gallerie'); return }
         setGallery(data)
-        setPhotos((data.photos ?? []).sort((a: Photo, b: Photo) => a.order_index - b.order_index))
+        setPhotos((data.photos ?? []).sort((a: Photo, b: Photo) => (a.filename ?? '').localeCompare(b.filename ?? '', 'it', { numeric: true, sensitivity: 'base' })))
       })
       .finally(() => setLoading(false))
   }, [id, router])
@@ -284,6 +290,23 @@ export default function GalleryDetailPage() {
     if (res.ok) setPhotos(prev => prev.filter(p => p.id !== photoId))
     setDeletingPhoto(null)
   }, [])
+
+  // ── clear all photos ──────────────────────────────────────────────────
+  const clearAllPhotos = useCallback(async () => {
+    setClearingPhotos(true)
+    setConfirmClearPhotos(false)
+    const res = await fetch(`/api/galleries/${id}/photos`, { method: 'DELETE' })
+    if (res.ok) {
+      setPhotos([])
+      setClearPhotosSuccess(true)
+      setTimeout(() => setClearPhotosSuccess(false), 3000)
+    } else {
+      const e = await res.json().catch(() => ({}))
+      setClearPhotosError(e.error ?? 'Errore durante l\'eliminazione')
+      setTimeout(() => setClearPhotosError(null), 4000)
+    }
+    setClearingPhotos(false)
+  }, [id])
 
   // ── set cover photo ────────────────────────────────────────────────────
   const setCoverPhoto = useCallback(async (photoUrl: string | null, photoId: string) => {
@@ -739,7 +762,54 @@ export default function GalleryDetailPage() {
               {uploadQuality === 'bassa' && (
                 <span style={{ fontSize: '11px', color: 'var(--t3)' }}>max 1920px · qualità 70%</span>
               )}
+
             </div>
+
+            {/* ── Svuota cartella ── */}
+            {photos.length > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                {clearPhotosSuccess && (
+                  <span style={{ fontSize: '12px', color: '#2e7d5c', display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <svg viewBox="0 0 24 24" width={13} height={13} fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    Foto eliminate con successo
+                  </span>
+                )}
+                {clearPhotosError && (
+                  <span style={{ fontSize: '12px', color: '#c0392b' }}>{clearPhotosError}</span>
+                )}
+                {confirmClearPhotos ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: '#fff0f0', border: '1px solid #e57373', borderRadius: 8 }}>
+                    <span style={{ fontSize: '13px', color: '#333' }}>
+                      Eliminare tutte le <strong>{photos.length}</strong> foto?
+                    </span>
+                    <button
+                      onClick={clearAllPhotos}
+                      disabled={clearingPhotos}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '13px', fontWeight: 600, color: '#fff', background: '#e53935', border: 'none', borderRadius: 6, padding: '6px 14px', cursor: clearingPhotos ? 'not-allowed' : 'pointer', opacity: clearingPhotos ? .6 : 1 }}
+                    >
+                      {clearingPhotos && <div style={{ width: 11, height: 11, border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .7s linear infinite' }} />}
+                      Sì, elimina tutto
+                    </button>
+                    <button
+                      onClick={() => setConfirmClearPhotos(false)}
+                      style={{ fontSize: '13px', color: '#555', background: '#f5f5f5', border: '1px solid #ddd', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}
+                    >
+                      Annulla
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setConfirmClearPhotos(true)}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '13px', fontWeight: 500, color: '#c62828', background: '#ffebee', border: '2px solid #e57373', borderRadius: 8, padding: '7px 16px', cursor: 'pointer' }}
+                  >
+                    <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                      <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+                    </svg>
+                    Svuota cartella ({photos.length} foto)
+                  </button>
+                )}
+              </div>
+            )}
 
             {/* Drop zone */}
             <div
