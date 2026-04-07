@@ -831,6 +831,7 @@ export default function GalleryDetailPage() {
                 multiple
                 accept="image/*,image/heic,image/heif"
                 style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }}
+                onClick={e => e.stopPropagation()}
                 onChange={handleFileInput}
               />
               <svg viewBox="0 0 24 24" width={24} height={24} fill="none" stroke="var(--t3)" strokeWidth={1.5} strokeLinecap="round" style={{ margin: '0 auto 8px', display: 'block' }}>
