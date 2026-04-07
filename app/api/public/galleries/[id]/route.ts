@@ -11,7 +11,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     .from('galleries')
     .select(`
       id, name, subtitle, type, date, status, cover_color, cover_url, settings,
-      photos ( id, url, filename, size_bytes, order_index ),
+      photos ( id, url, filename, size_bytes, order_index, created_at ),
       profiles ( name, studio_name )
     `)
     .eq('id', id)
@@ -22,9 +22,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: 'Galleria non trovata o non disponibile' }, { status: 404 })
   }
 
-  // Ordina le foto
+  // Ordina le foto per nome file (alfabetico/numerico)
   if (data.photos) {
-    (data.photos as { order_index: number }[]).sort((a, b) => a.order_index - b.order_index)
+    (data.photos as { filename: string }[]).sort((a, b) =>
+      (a.filename ?? '').localeCompare(b.filename ?? '', 'it', { numeric: true, sensitivity: 'base' })
+    )
   }
 
   return NextResponse.json(data)
