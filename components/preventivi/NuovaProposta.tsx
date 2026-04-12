@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { SERVICE_TYPES } from '@/lib/constants'
@@ -49,7 +49,7 @@ export const NuovaPropostaModal = ({ isOpen, onClose, template, onSave }: NuovaP
   )
 
   // Reset when template changes
-  useState(() => {
+  useEffect(() => {
     if (template) {
       setForm({
         cliente: '',
@@ -61,7 +61,7 @@ export const NuovaPropostaModal = ({ isOpen, onClose, template, onSave }: NuovaP
         voci: template.voci.map(v => ({ ...v })),
       })
     }
-  })
+  }, [template])
 
   const totale = form.voci.reduce((sum, v) => sum + (v.prezzo || 0), 0)
 

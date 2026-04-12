@@ -107,6 +107,7 @@ export const TemplatesView = ({ onUseTemplate }: TemplatesViewProps) => {
           formatEuro={formatEuro}
           onClose={() => setPreview(null)}
           onUse={() => { onUseTemplate(preview); setPreview(null) }}
+          onEdit={() => { setEditing({ ...preview, voci: preview.voci.map(v => ({ ...v })) }); setPreview(null) }}
         />
       )}
 
@@ -513,12 +514,13 @@ const TemplateEditModal = ({
 
 /* ─── Template Preview Modal ─── */
 const TemplatePreviewModal = ({
-  template: t, formatEuro, onClose, onUse,
+  template: t, formatEuro, onClose, onUse, onEdit,
 }: {
   template: PreventivoTemplate
   formatEuro: (n: number) => string
   onClose: () => void
   onUse: () => void
+  onEdit: () => void
 }) => (
   <div
     style={{
@@ -613,6 +615,10 @@ const TemplatePreviewModal = ({
         }}
       >
         <Button variant="secondary" onClick={onClose}>Chiudi</Button>
+        <Button variant="ghost" onClick={onEdit}>
+          <Pencil size={13} />
+          Modifica
+        </Button>
         <Button variant="primary" onClick={onUse}>
           <Copy size={13} />
           Usa questo template
