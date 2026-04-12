@@ -197,7 +197,7 @@ export default function GalleryDetailPage() {
           throw new Error(`Salvataggio DB fallito: ${e.error ?? saveRes.status}`)
         }
         const photo: Photo = await saveRes.json()
-        setPhotos(prev => [...prev, photo])
+        setPhotos(prev => [...prev, photo].sort((a, b) => (a.filename ?? '').localeCompare(b.filename ?? '', 'it', { numeric: true, sensitivity: 'base' })))
       } catch (err) {
         setUploadError(`Errore "${file.name}": ${err instanceof Error ? err.message : String(err)}`)
       } finally {
