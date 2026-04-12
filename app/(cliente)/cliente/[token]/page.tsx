@@ -1070,8 +1070,7 @@ export default function ClientePortalPage() {
         {/* ── BOTTOM ACTIONS ─────────────────────────────────────────────── */}
         {photos.length > 0 && (
           <div style={{ padding: '0 clamp(16px, 4vw, 40px) 48px', display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-            {gallery.settings?.download_zip !== false && (
-              <button
+            <button
                 onClick={downloadAll}
                 disabled={downloading}
                 style={{
@@ -1095,7 +1094,6 @@ export default function ClientePortalPage() {
                   </>
                 )}
               </button>
-            )}
             <button
               onClick={() => setShowIstruzioni(true)}
               style={{
