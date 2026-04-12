@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   FileText, FileSignature, LayoutTemplate, Users2, Wallet, BookOpen, Plus, Search,
 } from 'lucide-react'
@@ -9,7 +9,7 @@ import { PreventiviCalendar } from './PreventiviCalendar'
 import { PreventiviStats } from './PreventiviStats'
 import { TemplatesView } from './TemplatesView'
 import { NuovaPropostaModal } from './NuovaProposta'
-import type { Preventivo, PreventivoTemplate } from '@/lib/types'
+import type { Preventivo, PreventivoTemplate, Cliente } from '@/lib/types'
 
 /* ─── Mock data (da sostituire con Supabase) ─── */
 const MOCK_PREVENTIVI: Preventivo[] = []
@@ -28,9 +28,17 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
 export const PreventiviDashboard = () => {
   const [activeTab, setActiveTab] = useState<Tab>('proposte')
   const [preventivi, setPreventivi] = useState<Preventivo[]>(MOCK_PREVENTIVI)
+  const [clienti, setClienti] = useState<Cliente[]>([])
   const [showNuova, setShowNuova] = useState(false)
   const [activeTemplate, setActiveTemplate] = useState<PreventivoTemplate | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+
+  useEffect(() => {
+    fetch('/api/clienti')
+      .then(r => r.ok ? r.json() : [])
+      .then(setClienti)
+      .catch(() => {})
+  }, [])
 
   const handleSavePreventivo = (data: Omit<Preventivo, 'id' | 'user_id' | 'created_at'>) => {
     const nuovo: Preventivo = {
@@ -121,7 +129,7 @@ export const PreventiviDashboard = () => {
                 </div>
               </div>
 
-              <PreventiviCalendar preventivi={preventivi} onDayClick={handleDayClick} />
+              <PreventiviCalendar preventivi={preventivi} clienti={clienti} onDayClick={handleDayClick} />
 
               {/* Lista preventivi */}
               {preventivi.length > 0 && (
