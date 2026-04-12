@@ -198,8 +198,9 @@ export const PreventiviDashboard = () => {
         )}
       </div>
 
-      {/* Modal nuova proposta */}
+      {/* Modal nuova proposta — key forza remount quando cambia template */}
       <NuovaPropostaModal
+        key={activeTemplate?.id ?? 'empty'}
         isOpen={showNuova}
         onClose={() => { setShowNuova(false); setActiveTemplate(null) }}
         template={activeTemplate}
