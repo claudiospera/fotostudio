@@ -746,6 +746,9 @@ export default function ClientePortalPage() {
   const [downloading, setDownloading] = useState(false)
   const [downloadProgress, setDownloadProgress] = useState(0)
 
+  // istruzioni modal
+  const [showIstruzioni, setShowIstruzioni] = useState(false)
+
   const sessionId  = useRef<string>('')
   const galleryRef = useRef<PublicGallery | null>(null)
 
@@ -1064,6 +1067,52 @@ export default function ClientePortalPage() {
           </div>
         )}
 
+        {/* ── BOTTOM ACTIONS ─────────────────────────────────────────────── */}
+        {photos.length > 0 && (
+          <div style={{ padding: '0 clamp(16px, 4vw, 40px) 48px', display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            {gallery.settings?.download_zip !== false && (
+              <button
+                onClick={downloadAll}
+                disabled={downloading}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  background: downloading ? '#e8f5f0' : '#111', color: downloading ? '#2d8c6e' : '#fff',
+                  border: 'none', borderRadius: 10, padding: '14px 28px',
+                  fontSize: '14px', fontWeight: 600, cursor: downloading ? 'not-allowed' : 'pointer',
+                  letterSpacing: '.03em', transition: 'all .15s', minWidth: 220, justifyContent: 'center',
+                  boxShadow: '0 2px 12px rgba(0,0,0,.15)',
+                }}
+              >
+                {downloading ? (
+                  <>
+                    <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" style={{ animation: 'spin .8s linear infinite' }}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                    Download in corso… {downloadProgress}%
+                  </>
+                ) : (
+                  <>
+                    <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Scarica tutte le foto
+                  </>
+                )}
+              </button>
+            )}
+            <button
+              onClick={() => setShowIstruzioni(true)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                background: '#fff', color: '#444',
+                border: '1px solid rgba(0,0,0,.15)', borderRadius: 10, padding: '14px 28px',
+                fontSize: '14px', fontWeight: 600, cursor: 'pointer',
+                letterSpacing: '.03em', transition: 'all .15s', minWidth: 160, justifyContent: 'center',
+                boxShadow: '0 2px 8px rgba(0,0,0,.06)',
+              }}
+            >
+              <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Istruzioni
+            </button>
+          </div>
+        )}
+
         {/* ── FOOTER ─────────────────────────────────────────────────────── */}
         <div style={{ borderTop: '1px solid rgba(0,0,0,.07)', background: '#fff', padding: 'clamp(16px, 2vw, 22px) clamp(16px, 4vw, 40px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
           <div style={{ background: '#fff', borderRadius: 8, padding: '4px 8px' }}>
@@ -1073,6 +1122,43 @@ export default function ClientePortalPage() {
           <span style={{ fontSize: '11px', color: '#bbb', letterSpacing: '.03em' }}>Galleria privata · {photographer}</span>
         </div>
       </div>
+
+      {/* Istruzioni modal */}
+      {showIstruzioni && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
+          onClick={() => setShowIstruzioni(false)}
+        >
+          <div
+            style={{ background: '#fff', borderRadius: 16, maxWidth: 560, width: '100%', boxShadow: '0 24px 80px rgba(0,0,0,.25)', overflow: 'hidden' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid rgba(0,0,0,.07)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h2 style={{ margin: 0, fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: 20, color: '#111' }}>Istruzioni</h2>
+              <button
+                onClick={() => setShowIstruzioni(false)}
+                style={{ width: 30, height: 30, borderRadius: 8, border: '1px solid rgba(0,0,0,.1)', background: '#f5f5f5', cursor: 'pointer', fontSize: 16, color: '#666', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >×</button>
+            </div>
+            {/* Body */}
+            <div style={{ padding: '20px 24px 28px', fontSize: 14, color: '#333', lineHeight: 1.7 }}>
+              <p style={{ margin: '0 0 12px' }}>Ciao</p>
+              <p style={{ margin: '0 0 12px' }}>in questo link trovi tutte le foto, a volte divise in varie cartelle.<br />Il link resterà attivo per <strong>30 giorni</strong>.</p>
+              <p style={{ margin: '0 0 12px' }}>Puoi scaricarle singolarmente cliccando sulla freccia in basso sotto la foto, oppure tutte insieme cliccando sul relativo pulsante alla fine della galleria.</p>
+              <p style={{ margin: '0 0 12px' }}>Puoi condividere il link con chi desideri: ognuno potrà scaricare solo le foto che preferisce.</p>
+              <p style={{ margin: '0 0 12px' }}>Se deciderete di fare l&apos;album, vi basterà scegliere la quantità di foto concordata con il fotografo (c&apos;è anche un contatore all&apos;inizio della galleria), mettendo il &quot;like&quot; a quelle che vi emozionano di più (clic sul cuore).</p>
+              <p style={{ margin: '0 0 12px' }}>In questo modo l&apos;album racconterà la vostra giornata attraverso gli scatti che sentite più vicini al cuore.</p>
+              <p style={{ margin: '0 0 16px' }}>In ogni caso, vi chiedo di avvisarmi.</p>
+              <p style={{ margin: '0 0 16px', fontStyle: 'italic', color: '#555' }}>PS: Se pubblichi qualcosa sui social, mi farebbe super piacere se mi taggassi!</p>
+              <div style={{ background: '#f5f5f5', borderRadius: 8, padding: '10px 14px', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="#8ec9b0" strokeWidth={2} strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>@Claudiosperafotografo</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Lightbox */}
       {lbIndex !== null && (
