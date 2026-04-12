@@ -135,6 +135,70 @@ export interface UploadLink {
   gallery?: Pick<Gallery, 'id' | 'name'>
 }
 
+export type CategoriaCliente =
+  | 'Matrimonio'
+  | 'Battesimo'
+  | 'Comunione'
+  | '1 Anno'
+  | '18 Anni'
+  | 'Anniversario'
+  | 'Shooting Fotografico'
+  | 'Altra Cerimonia'
+
+export interface PacchettoCliente {
+  nome: string
+  prezzo: number
+}
+
+export interface Cliente {
+  id: string
+  user_id: string
+  categoria: CategoriaCliente
+  data_evento?: string
+  luogo_evento?: string
+  // Persona 1
+  nome1: string
+  tel1?: string
+  email1?: string
+  whatsapp1?: string
+  indirizzo1?: string
+  citta1?: string
+  // Persona 2
+  nome2?: string
+  tel2?: string
+  email2?: string
+  whatsapp2?: string
+  indirizzo2?: string
+  citta2?: string
+  // Genitori
+  genitore1_nome?: string
+  genitore1_tel?: string
+  genitore2_nome?: string
+  genitore2_tel?: string
+  // Album
+  album_tipo?: string
+  album_formato?: string
+  album_pagine?: number
+  album_copertina?: string
+  // Video
+  video?: boolean
+  video_tipo?: string
+  // Pacchetti
+  pacchetti: PacchettoCliente[]
+  // Pagamenti
+  importo_totale: number
+  acconto: number
+  data_acconto?: string
+  saldo: number
+  data_saldo?: string
+  // Extra
+  gallery_id?: string
+  note?: string
+  colore: string
+  created_at: string
+  updated_at: string
+}
+
 export interface Profile {
   id: string
   name?: string

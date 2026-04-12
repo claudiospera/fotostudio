@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/store/ui'
 import {
-  LayoutGrid, Images, FileText, Upload, ShoppingCart, LogOut, Plus,
+  LayoutGrid, Images, FileText, Upload, ShoppingCart, LogOut, Plus, Users,
 } from 'lucide-react'
 
 const navItems = [
@@ -16,6 +16,7 @@ const navItems = [
     items: [
       { href: '/dashboard', label: 'Dashboard',     icon: LayoutGrid  },
       { href: '/gallerie',  label: 'Gallerie',       icon: Images      },
+      { href: '/clienti',   label: 'Clienti',         icon: Users       },
     ],
   },
   {
