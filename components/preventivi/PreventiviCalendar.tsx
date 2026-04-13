@@ -1,14 +1,17 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import { ClienteCardModal } from '@/components/clienti/ClienteCardModal'
 import type { Preventivo, Cliente } from '@/lib/types'
 
 interface PreventiviCalendarProps {
   preventivi: Preventivo[]
   clienti?: Cliente[]
   onDayClick: (date: Date) => void
+  onClienteClick?: (id: string) => void
 }
 
 const MESI = [
@@ -18,14 +21,15 @@ const MESI = [
 const GIORNI = ['LUN', 'MAR', 'MER', 'GIO', 'VEN', 'SAB', 'DOM']
 
 const CAT_COLORS: Record<string, string> = {
-  'Matrimonio':           '#7a4a6e',
-  'Battesimo':            '#4a7a9b',
-  'Comunione':            '#5e8a5e',
-  '1 Anno':               '#c9a84c',
-  '18 Anni':              '#b85c38',
-  'Anniversario':         '#6b5b8a',
-  'Shooting Fotografico': '#3d6b6b',
-  'Altra Cerimonia':      '#7a6b55',
+  'Matrimonio':             '#7a4a6e',
+  'Promessa di Matrimonio': '#9e5a8a',
+  'Battesimo':              '#4a7a9b',
+  'Comunione':              '#5e8a5e',
+  '1 Anno':                 '#c9a84c',
+  '18 Anni':                '#b85c38',
+  'Anniversario':           '#6b5b8a',
+  'Shooting Fotografico':   '#3d6b6b',
+  'Altra Cerimonia':        '#7a6b55',
 }
 
 type ViewMode = 'mese' | 'settimana' | 'giorno'
@@ -37,11 +41,13 @@ interface DayEvent {
   type: 'preventivo' | 'cliente'
 }
 
-export const PreventiviCalendar = ({ preventivi, clienti = [], onDayClick }: PreventiviCalendarProps) => {
+export const PreventiviCalendar = ({ preventivi, clienti = [], onDayClick, onClienteClick }: PreventiviCalendarProps) => {
+  const router = useRouter()
   const today = new Date()
   const [current, setCurrent] = useState(new Date(today.getFullYear(), today.getMonth(), 1))
   const [view, setView] = useState<ViewMode>('mese')
   const [popup, setPopup] = useState<{ date: string; events: DayEvent[] } | null>(null)
+  const [cardModal, setCardModal] = useState<{ clienti: Cliente[]; dateLabel: string } | null>(null)
 
   const prevMonth = () => setCurrent(new Date(current.getFullYear(), current.getMonth() - 1, 1))
   const nextMonth = () => setCurrent(new Date(current.getFullYear(), current.getMonth() + 1, 1))
@@ -81,6 +87,16 @@ export const PreventiviCalendar = ({ preventivi, clienti = [], onDayClick }: Pre
 
   const handleDayClick = (day: number) => {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    const dayClienti = clienti.filter(c => c.data_evento === dateStr)
+
+    if (dayClienti.length > 0) {
+      const dateLabel = new Date(dateStr + 'T00:00:00').toLocaleDateString('it-IT', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+      })
+      setCardModal({ clienti: dayClienti, dateLabel })
+      return
+    }
+
     const events = getEventsForDay(day)
     if (events.length > 0) {
       setPopup({ date: dateStr, events })
@@ -196,6 +212,21 @@ export const PreventiviCalendar = ({ preventivi, clienti = [], onDayClick }: Pre
         })}
       </div>
 
+      {/* Card modal per clienti del giorno */}
+      {cardModal && (
+        <ClienteCardModal
+          clienti={cardModal.clienti}
+          dateLabel={cardModal.dateLabel}
+          onClose={() => setCardModal(null)}
+          onModifica={(c) => { setCardModal(null); router.push(`/clienti?apri=${c.id}`) }}
+          onElimina={(c) => {
+            if (!confirm(`Eliminare ${c.nome1}?`)) return
+            fetch(`/api/clienti/${c.id}`, { method: 'DELETE' })
+              .then(r => { if (r.ok) setCardModal(prev => prev ? { ...prev, clienti: prev.clienti.filter(x => x.id !== c.id) } : null) })
+          }}
+        />
+      )}
+
       {/* Popup eventi del giorno */}
       {popup && (
         <div
@@ -214,11 +245,29 @@ export const PreventiviCalendar = ({ preventivi, clienti = [], onDayClick }: Pre
             </div>
             <div style={{ padding: '12px 20px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
               {popup.events.map(ev => (
-                <div key={ev.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--s2)', borderRadius: 'var(--r2)', border: `1px solid ${ev.color}33` }}>
+                <div
+                  key={ev.id}
+                  onClick={() => {
+                    if (ev.type === 'cliente' && onClienteClick) {
+                      setPopup(null)
+                      onClienteClick(ev.id)
+                    }
+                  }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
+                    background: 'var(--s2)', borderRadius: 'var(--r2)', border: `1px solid ${ev.color}33`,
+                    cursor: ev.type === 'cliente' && onClienteClick ? 'pointer' : 'default',
+                    transition: 'border-color 0.12s',
+                  }}
+                  onMouseEnter={e => { if (ev.type === 'cliente' && onClienteClick) (e.currentTarget as HTMLDivElement).style.borderColor = `${ev.color}77` }}
+                  onMouseLeave={e => { if (ev.type === 'cliente' && onClienteClick) (e.currentTarget as HTMLDivElement).style.borderColor = `${ev.color}33` }}
+                >
                   <div style={{ width: 8, height: 8, borderRadius: '50%', background: ev.color, flexShrink: 0 }} />
                   <div style={{ flex: 1 }}>
                     <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--tx)' }}>{ev.label}</p>
-                    <p style={{ margin: 0, fontSize: 11, color: 'var(--t3)' }}>{ev.type === 'cliente' ? 'Cliente' : 'Preventivo'}</p>
+                    <p style={{ margin: 0, fontSize: 11, color: 'var(--t3)' }}>
+                      {ev.type === 'cliente' ? 'Cliente · apri scheda →' : 'Preventivo'}
+                    </p>
                   </div>
                 </div>
               ))}

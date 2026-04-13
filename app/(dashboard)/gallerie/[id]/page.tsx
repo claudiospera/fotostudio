@@ -4,6 +4,8 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import type { Gallery, Photo, GalleryStatus } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
+import { useUIStore } from '@/store/ui'
+import { Menu } from 'lucide-react'
 
 // ─── helpers ───────────────────────────────────────────────────────────────
 
@@ -81,6 +83,7 @@ const ORDER_STATUS: Record<string, { label: string; style: React.CSSProperties }
 export default function GalleryDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
+  const openSidebar = useUIStore(s => s.openSidebar)
 
   const [gallery, setGallery] = useState<Gallery | null>(null)
   const [photos, setPhotos]   = useState<Photo[]>([])
@@ -374,6 +377,15 @@ export default function GalleryDetailPage() {
 
         {/* ── HEADER ───────────────────────────────────────────────────── */}
         <div className="flex flex-wrap items-start gap-[14px] pb-5 mb-0 border-b border-[var(--b1)]">
+          {/* Hamburger — mobile only */}
+          <button
+            onClick={openSidebar}
+            className="hamburger-btn w-10 h-10 rounded-[var(--r2)] bg-[var(--s2)] border border-[var(--b1)] place-items-center text-[var(--t2)] hover:text-[var(--tx)] transition-colors shrink-0"
+            style={{ marginTop: 3 }}
+            aria-label="Apri menu"
+          >
+            <Menu size={16} />
+          </button>
           {/* Back button */}
           <button
             onClick={() => router.push('/gallerie')}

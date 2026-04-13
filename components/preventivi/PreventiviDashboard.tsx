@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import {
-  FileText, FileSignature, LayoutTemplate, Users2, Wallet, BookOpen, Plus, Search,
+  FileText, FileSignature, LayoutTemplate, Users2, Wallet, BookOpen, Plus, Search, UserPlus,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { PreventiviCalendar } from './PreventiviCalendar'
@@ -11,8 +12,6 @@ import { TemplatesView } from './TemplatesView'
 import { NuovaPropostaModal } from './NuovaProposta'
 import type { Preventivo, PreventivoTemplate, Cliente } from '@/lib/types'
 
-/* ─── Mock data (da sostituire con Supabase) ─── */
-const MOCK_PREVENTIVI: Preventivo[] = []
 
 type Tab = 'proposte' | 'contratti' | 'templates' | 'referrals' | 'acconti' | 'risorse'
 
@@ -26,28 +25,39 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
 ]
 
 export const PreventiviDashboard = () => {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState<Tab>('proposte')
-  const [preventivi, setPreventivi] = useState<Preventivo[]>(MOCK_PREVENTIVI)
+  const [preventivi, setPreventivi] = useState<Preventivo[]>([])
   const [clienti, setClienti] = useState<Cliente[]>([])
   const [showNuova, setShowNuova] = useState(false)
   const [activeTemplate, setActiveTemplate] = useState<PreventivoTemplate | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [loadingPreventivi, setLoadingPreventivi] = useState(true)
 
   useEffect(() => {
-    fetch('/api/clienti')
-      .then(r => r.ok ? r.json() : [])
-      .then(setClienti)
-      .catch(() => {})
+    Promise.all([
+      fetch('/api/preventivi').then(r => r.ok ? r.json() : []),
+      fetch('/api/clienti').then(r => r.ok ? r.json() : []),
+    ]).then(([preventivi, clienti]) => {
+      setPreventivi(preventivi)
+      setClienti(clienti)
+    }).catch(() => {}).finally(() => setLoadingPreventivi(false))
   }, [])
 
-  const handleSavePreventivo = (data: Omit<Preventivo, 'id' | 'user_id' | 'created_at'>) => {
-    const nuovo: Preventivo = {
-      ...data,
-      id: crypto.randomUUID(),
-      user_id: 'mock',
-      created_at: new Date().toISOString(),
+  const handleSavePreventivo = async (data: Omit<Preventivo, 'id' | 'user_id' | 'created_at'>) => {
+    try {
+      const res = await fetch('/api/preventivi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      if (res.ok) {
+        const nuovo: Preventivo = await res.json()
+        setPreventivi(prev => [nuovo, ...prev])
+      }
+    } catch {
+      // silenzioso — l'utente vede che il preventivo non è apparso
     }
-    setPreventivi(prev => [nuovo, ...prev])
   }
 
   const handleUseTemplate = (template: PreventivoTemplate) => {
@@ -59,6 +69,10 @@ export const PreventiviDashboard = () => {
   const handleDayClick = (date: Date) => {
     setShowNuova(true)
     setActiveTemplate(null)
+  }
+
+  const handleClienteClick = (id: string) => {
+    router.push(`/clienti?apri=${id}`)
   }
 
   const currentYear = new Date().getFullYear()
@@ -106,6 +120,10 @@ export const PreventiviDashboard = () => {
                   <Plus size={13} />
                   Nuova proposta
                 </Button>
+                <Button variant="ghost" size="sm" onClick={() => router.push('/clienti?nuovo=1')}>
+                  <UserPlus size={13} />
+                  Nuovo cliente
+                </Button>
                 <div
                   style={{
                     display: 'flex', alignItems: 'center', gap: 8,
@@ -129,7 +147,7 @@ export const PreventiviDashboard = () => {
                 </div>
               </div>
 
-              <PreventiviCalendar preventivi={preventivi} clienti={clienti} onDayClick={handleDayClick} />
+              <PreventiviCalendar preventivi={preventivi} clienti={clienti} onDayClick={handleDayClick} onClienteClick={handleClienteClick} />
 
               {/* Lista preventivi */}
               {preventivi.length > 0 && (

@@ -137,6 +137,7 @@ export interface UploadLink {
 
 export type CategoriaCliente =
   | 'Matrimonio'
+  | 'Promessa di Matrimonio'
   | 'Battesimo'
   | 'Comunione'
   | '1 Anno'
@@ -191,7 +192,25 @@ export interface Cliente {
   data_acconto?: string
   saldo: number
   data_saldo?: string
-  // Extra
+  // Extra (campi specifici per tipo, jsonb)
+  extra?: {
+    // Indirizzi (matrimonio/promessa/anniversario)
+    addr_casa_nome?: string; addr_casa?: string; ora_casa?: string
+    addr_casa2_nome?: string; addr_casa2?: string; ora_casa2?: string
+    addr_chiesa?: string; ora_chiesa?: string
+    addr_ristorante?: string; ora_ristorante?: string
+    // Social persona 1 e 2
+    social1?: string; facebook1?: string
+    social2?: string; facebook2?: string
+    // Genitori (campi aggiuntivi oltre nome/tel già in schema)
+    gen1_email?: string; gen1_whatsapp?: string; gen1_social?: string
+    gen2_email?: string; gen2_whatsapp?: string; gen2_social?: string
+    // Album
+    album_note?: string
+    // Video
+    video_durata?: string; video_formato_consegna?: string
+    video_musica?: string; video_note?: string
+  }
   gallery_id?: string
   note?: string
   colore: string
@@ -199,10 +218,54 @@ export interface Cliente {
   updated_at: string
 }
 
+// ── Preventivi pubblici ──────────────────────────────────────────────────────
+
+export interface ProdottoPreventivo {
+  id: string
+  nome: string
+  sottotitolo?: string
+  descrizione?: string
+  immagine?: string
+  prezzo: number
+  layout: 'card' | 'horizontal' | 'text'
+}
+
+export interface SezionePreventivo {
+  id: string
+  titolo: string
+  sottotitolo?: string
+  citazione?: string
+  prodotti: ProdottoPreventivo[]
+}
+
+export interface PreventivoTemplate {
+  id: string
+  user_id: string
+  categoria: string
+  sezioni: SezionePreventivo[]
+  created_at: string
+  updated_at: string
+}
+
+export interface PreventivoPubblico {
+  id: string
+  user_id: string
+  cliente_nome: string
+  cliente_id?: string
+  token: string
+  categoria?: string
+  sezioni: SezionePreventivo[]
+  note?: string
+  created_at: string
+}
+
 export interface Profile {
   id: string
   name?: string
   studio_name?: string
+  telefono?: string
+  email?: string
+  iban?: string
   plan: 'free' | 'pro' | 'professional'
   created_at: string
 }
