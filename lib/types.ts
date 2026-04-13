@@ -238,7 +238,7 @@ export interface SezionePreventivo {
   prodotti: ProdottoPreventivo[]
 }
 
-export interface PreventivoTemplate {
+export interface TemplateProposta {
   id: string
   user_id: string
   categoria: string
