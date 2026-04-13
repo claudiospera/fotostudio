@@ -259,6 +259,42 @@ export interface PreventivoPubblico {
   created_at: string
 }
 
+// ── Appuntamenti ────────────────────────────────────────────────────────────
+
+export interface CalendarioAppuntamenti {
+  id: string
+  user_id: string
+  nome: string
+  data_inizio: string   // ISO date
+  data_fine: string     // ISO date
+  colore: string        // hex
+  attivo: boolean
+  descrizione?: string
+  mostra_descrizione: boolean
+  inizia_settimana: 'lunedi' | 'domenica'
+  created_at: string
+  // join
+  prenotazioni_count?: number
+}
+
+export type StatoPrenotazione = 'confermata' | 'in_attesa' | 'annullata'
+
+export interface Prenotazione {
+  id: string
+  calendario_id: string
+  cliente_nome: string
+  cliente_email?: string
+  cliente_tel?: string
+  data: string          // ISO date YYYY-MM-DD
+  ora_inizio: string    // HH:MM
+  ora_fine: string      // HH:MM
+  note?: string
+  stato: StatoPrenotazione
+  created_at: string
+  // join
+  calendario?: Pick<CalendarioAppuntamenti, 'id' | 'nome' | 'colore'>
+}
+
 export interface Profile {
   id: string
   name?: string

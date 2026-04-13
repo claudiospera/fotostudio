@@ -8,24 +8,25 @@ import { cn } from '@/lib/utils'
 import { useUIStore } from '@/store/ui'
 import {
   LayoutGrid, Images, FileText, Upload, ShoppingCart, LogOut, Plus, Users, BarChart2,
+  CalendarCheck, ChevronDown, CalendarDays, ClipboardList,
 } from 'lucide-react'
 
 const navItems = [
   {
     group: 'Principale',
     items: [
-      { href: '/dashboard', label: 'Dashboard',     icon: LayoutGrid  },
-      { href: '/gallerie',  label: 'Gallerie',       icon: Images      },
-      { href: '/clienti',      label: 'Clienti',         icon: Users       },
-      { href: '/statistiche',  label: 'Statistiche',     icon: BarChart2   },
+      { href: '/dashboard',   label: 'Dashboard',     icon: LayoutGrid  },
+      { href: '/gallerie',    label: 'Gallerie',       icon: Images      },
+      { href: '/clienti',     label: 'Clienti',        icon: Users       },
+      { href: '/statistiche', label: 'Statistiche',    icon: BarChart2   },
     ],
   },
   {
     group: 'Lavoro',
     items: [
-      { href: '/preventivi', label: 'Eventi',           icon: FileText    },
-      { href: '/upload',     label: 'Upload clienti', icon: Upload      },
-      { href: '/ordini',     label: 'Ordini stampe',  icon: ShoppingCart },
+      { href: '/preventivi', label: 'Calendario eventi', icon: FileText    },
+      { href: '/upload',     label: 'Upload clienti',    icon: Upload      },
+      { href: '/ordini',     label: 'Ordini stampe',     icon: ShoppingCart },
     ],
   },
 ]
@@ -33,10 +34,18 @@ const navItems = [
 export const Sidebar = () => {
   const pathname = usePathname()
   const [newOrders, setNewOrders] = useState(0)
+  const [appuntamentiOpen, setAppuntamentiOpen] = useState(
+    () => pathname.startsWith('/appuntamenti')
+  )
   const { isSidebarOpen, closeSidebar } = useUIStore()
 
   // Close sidebar on route change (mobile nav)
   useEffect(() => { closeSidebar() }, [pathname, closeSidebar])
+
+  // Auto-expand appuntamenti when on those routes
+  useEffect(() => {
+    if (pathname.startsWith('/appuntamenti')) setAppuntamentiOpen(true)
+  }, [pathname])
 
   // Lock body scroll when sidebar open on mobile
   useEffect(() => {
@@ -66,6 +75,40 @@ export const Sidebar = () => {
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(href + '/')
+
+  const NavLink = ({ href, label, icon: Icon, badge = 0 }: {
+    href: string; label: string; icon: React.ElementType; badge?: number
+  }) => {
+    const active = isActive(href)
+    return (
+      <Link
+        href={href}
+        className={cn(
+          'flex items-center gap-3 px-3 rounded-[var(--r2)] mb-1 text-[14px] transition-all duration-150 select-none relative',
+          active
+            ? 'text-[var(--ac)] font-medium'
+            : 'text-[var(--t2)] hover:text-[var(--tx)] hover:bg-[var(--s2)]'
+        )}
+        style={{ minHeight: 44, ...(active ? { background: 'var(--acd)' } : {}) }}
+      >
+        {active && (
+          <span
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full"
+            style={{ height: '60%', background: 'var(--ac)' }}
+          />
+        )}
+        <Icon size={17} className={cn('shrink-0', active ? 'opacity-100' : 'opacity-50')} />
+        <span className="flex-1 leading-none">{label}</span>
+        {badge > 0 && (
+          <span className="text-white text-[10px] font-bold rounded-full px-2 py-0.5 leading-none shrink-0" style={{ background: 'var(--red)' }}>
+            {badge}
+          </span>
+        )}
+      </Link>
+    )
+  }
+
+  const isAppuntamentiActive = pathname.startsWith('/appuntamenti')
 
   return (
     <>
@@ -118,48 +161,51 @@ export const Sidebar = () => {
               <p className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[var(--t3)] px-3 mb-2">
                 {group}
               </p>
-              {items.map(({ href, label, icon: Icon }) => {
-                const active = isActive(href)
-                const badge  = href === '/ordini' ? newOrders : 0
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    className={cn(
-                      'flex items-center gap-3 px-3 rounded-[var(--r2)] mb-1 text-[13px] transition-all duration-150 select-none relative',
-                      active
-                        ? 'text-[var(--ac)] font-medium'
-                        : 'text-[var(--t2)] hover:text-[var(--tx)] hover:bg-[var(--s2)]'
-                    )}
-                    style={{
-                      minHeight: 44,
-                      ...(active ? { background: 'var(--acd)' } : {}),
-                    }}
-                  >
-                    {active && (
-                      <span
-                        className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full"
-                        style={{ height: '60%', background: 'var(--ac)' }}
-                      />
-                    )}
-                    <Icon
-                      size={17}
-                      className={cn('shrink-0', active ? 'opacity-100' : 'opacity-50')}
-                    />
-                    <span className="flex-1 leading-none">{label}</span>
-                    {badge > 0 && (
-                      <span
-                        className="text-white text-[10px] font-bold rounded-full px-2 py-0.5 leading-none shrink-0"
-                        style={{ background: 'var(--red)' }}
-                      >
-                        {badge}
-                      </span>
-                    )}
-                  </Link>
-                )
-              })}
+              {items.map(({ href, label, icon }) => (
+                <NavLink key={href} href={href} label={label} icon={icon} badge={href === '/ordini' ? newOrders : 0} />
+              ))}
             </div>
           ))}
+
+          {/* Appuntamenti — collapsible */}
+          <div className="px-3 pt-5 pb-1">
+            <p className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[var(--t3)] px-3 mb-2">
+              Agenda
+            </p>
+            {/* Toggle button */}
+            <button
+              onClick={() => setAppuntamentiOpen(o => !o)}
+              className={cn(
+                'w-full flex items-center gap-3 px-3 rounded-[var(--r2)] mb-1 text-[14px] transition-all duration-150 select-none relative',
+                isAppuntamentiActive
+                  ? 'text-[var(--ac)] font-medium'
+                  : 'text-[var(--t2)] hover:text-[var(--tx)] hover:bg-[var(--s2)]'
+              )}
+              style={{ minHeight: 44, ...(isAppuntamentiActive ? { background: 'var(--acd)' } : {}) }}
+            >
+              {isAppuntamentiActive && (
+                <span
+                  className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full"
+                  style={{ height: '60%', background: 'var(--ac)' }}
+                />
+              )}
+              <CalendarCheck size={17} className={cn('shrink-0', isAppuntamentiActive ? 'opacity-100' : 'opacity-50')} />
+              <span className="flex-1 leading-none text-left">Appuntamenti</span>
+              <ChevronDown
+                size={14}
+                className={cn('shrink-0 transition-transform duration-200', appuntamentiOpen ? 'rotate-180' : '')}
+                style={{ opacity: 0.5 }}
+              />
+            </button>
+
+            {/* Sub-items */}
+            {appuntamentiOpen && (
+              <div className="ml-4 pl-3 border-l border-[rgba(255,255,255,0.07)] mb-1">
+                <NavLink href="/appuntamenti/calendari"    label="Calendari"    icon={CalendarDays}   />
+                <NavLink href="/appuntamenti/prenotazioni" label="Prenotazioni" icon={ClipboardList}  />
+              </div>
+            )}
+          </div>
 
           {/* Azioni rapide */}
           <div className="px-3 pt-5 pb-1">
@@ -175,7 +221,7 @@ export const Sidebar = () => {
               <Link
                 key={href}
                 href={href}
-                className="flex items-center gap-3 px-3 rounded-[var(--r2)] mb-1 text-[13px] text-[var(--t2)] hover:text-[var(--ac)] hover:bg-[var(--acd)] transition-all duration-150"
+                className="flex items-center gap-3 px-3 rounded-[var(--r2)] mb-1 text-[14px] text-[var(--t2)] hover:text-[var(--ac)] hover:bg-[var(--acd)] transition-all duration-150"
                 style={{ minHeight: 44 }}
               >
                 <Icon size={17} className="shrink-0 opacity-50" />

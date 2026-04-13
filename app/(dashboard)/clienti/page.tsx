@@ -889,8 +889,10 @@ function ClienteForm({ initial, onSave, onClose }: {
                 </div>
               </Field>
               <Field label="Saldo residuo">
-                <div style={{ ...INP, background: 'var(--s2)', color: residuo > 0 ? 'var(--amber)' : 'var(--t3)', fontWeight: 700 }}>
-                  {residuo !== 0 ? `${residuo.toLocaleString('it-IT')} €` : '—'}
+                <div style={{ ...INP, background: 'var(--s2)', color: residuo > 0 ? 'var(--amber)' : residuo < 0 ? 'var(--red)' : 'var(--ac)', fontWeight: 700 }}>
+                  {(form.importo_totale > 0 || form.acconto > 0)
+                    ? (residuo === 0 ? 'Saldato ✓' : `${residuo.toLocaleString('it-IT')} €`)
+                    : '—'}
                 </div>
               </Field>
             </div>
