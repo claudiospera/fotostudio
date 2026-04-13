@@ -115,7 +115,7 @@ export const PreventiviDashboard = () => {
             {/* Left: calendar */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {/* Action bar */}
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div className="cal-actions">
                 <Button variant="secondary" size="sm" onClick={() => { setActiveTemplate(null); setShowNuova(true) }}>
                   <Plus size={13} />
                   Nuova proposta
@@ -125,13 +125,14 @@ export const PreventiviDashboard = () => {
                   Nuovo cliente
                 </Button>
                 <div
+                  className="cal-search"
                   style={{
                     display: 'flex', alignItems: 'center', gap: 8,
                     padding: '0 12px', height: 28,
                     background: 'var(--s2)',
                     border: '1px solid rgba(255,255,255,0.08)',
                     borderRadius: 'var(--r2)',
-                    flex: 1, maxWidth: 320,
+                    flex: 1,
                   }}
                 >
                   <Search size={13} style={{ color: 'var(--t3)', flexShrink: 0 }} />

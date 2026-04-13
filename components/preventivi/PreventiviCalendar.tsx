@@ -109,22 +109,9 @@ export const PreventiviCalendar = ({ preventivi, clienti = [], onDayClick, onCli
     <div style={{ background: 'var(--s1)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 'var(--r)', overflow: 'hidden' }}>
 
       {/* Header */}
-      <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 16 }}>Calendario</span>
-          {/* Legenda */}
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <LegendDot color="var(--ac)" label="Preventivi" />
-            {Object.entries(CAT_COLORS).slice(0, 3).map(([cat, col]) => (
-              <LegendDot key={cat} color={col} label={cat} />
-            ))}
-            {Object.keys(CAT_COLORS).length > 3 && (
-              <span style={{ fontSize: 10, color: 'var(--t3)' }}>+{Object.keys(CAT_COLORS).length - 3} categorie</span>
-            )}
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {/* Controls row */}
+        <div className="cal-header-controls" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <button onClick={prevMonth} style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, background: 'var(--s2)', color: 'var(--t2)', cursor: 'pointer' }}>
               <ChevronLeft size={14} />
@@ -134,7 +121,7 @@ export const PreventiviCalendar = ({ preventivi, clienti = [], onDayClick, onCli
             </button>
             <Button variant="ghost" size="sm" onClick={goToday}>Oggi</Button>
           </div>
-          <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 14, color: 'var(--tx)', minWidth: 140, textAlign: 'center' }}>
+          <span className="cal-month-label" style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 14, color: 'var(--tx)', minWidth: 140, textAlign: 'center' }}>
             {MESI[month].toUpperCase()} {year}
           </span>
           <div style={{ display: 'flex', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, overflow: 'hidden' }}>
@@ -144,6 +131,16 @@ export const PreventiviCalendar = ({ preventivi, clienti = [], onDayClick, onCli
               </button>
             ))}
           </div>
+        </div>
+        {/* Legenda — nascosta su mobile via CSS */}
+        <div className="cal-legend">
+          <LegendDot color="var(--ac)" label="Preventivi" />
+          {Object.entries(CAT_COLORS).slice(0, 3).map(([cat, col]) => (
+            <LegendDot key={cat} color={col} label={cat} />
+          ))}
+          {Object.keys(CAT_COLORS).length > 3 && (
+            <span style={{ fontSize: 10, color: 'var(--t3)' }}>+{Object.keys(CAT_COLORS).length - 3} categorie</span>
+          )}
         </div>
       </div>
 
@@ -166,8 +163,9 @@ export const PreventiviCalendar = ({ preventivi, clienti = [], onDayClick, onCli
             <div
               key={i}
               onClick={() => day && handleDayClick(day)}
+              className="cal-cell"
               style={{
-                minHeight: 80, padding: '6px 8px',
+                padding: '6px 8px',
                 borderRight: (i + 1) % 7 === 0 ? 'none' : '1px solid rgba(255,255,255,0.04)',
                 borderBottom: i < cells.length - 7 ? '1px solid rgba(255,255,255,0.04)' : 'none',
                 cursor: day ? 'pointer' : 'default',

@@ -176,3 +176,17 @@ body {
   }
 }
 
+/* ─── CALENDARIO EVENTI RESPONSIVE ─── */
+.cal-legend { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.cal-cell   { min-height: 80px; }
+.cal-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.cal-search  { flex: 1; max-width: 320px; }
+
+@media (max-width: 640px) {
+  .cal-legend  { display: none; }
+  .cal-cell    { min-height: 52px; padding: 4px !important; }
+  .cal-search  { max-width: 100%; width: 100%; }
+  .cal-header-controls { flex-wrap: wrap; gap: 6px !important; }
+  .cal-month-label { min-width: unset !important; font-size: 12px !important; }
+}
+
