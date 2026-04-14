@@ -121,10 +121,10 @@ export const PreventiviCalendar = ({ preventivi, clienti = [], onDayClick, onCli
             </button>
             <Button variant="ghost" size="sm" onClick={goToday}>Oggi</Button>
           </div>
-          <span className="cal-month-label" style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 14, color: 'var(--tx)', minWidth: 140, textAlign: 'center' }}>
+          <span className="cal-month-label" style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 14, color: 'var(--tx)', textAlign: 'center' }}>
             {MESI[month].toUpperCase()} {year}
           </span>
-          <div style={{ display: 'flex', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, overflow: 'hidden' }}>
+          <div className="cal-view-switcher" style={{ display: 'flex', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, overflow: 'hidden' }}>
             {(['mese', 'settimana', 'giorno'] as ViewMode[]).map(v => (
               <button key={v} onClick={() => setView(v)} style={{ padding: '4px 10px', fontSize: 12, fontWeight: 500, background: view === v ? 'var(--s3)' : 'var(--s2)', color: view === v ? 'var(--tx)' : 'var(--t3)', border: 'none', cursor: 'pointer', textTransform: 'capitalize' }}>
                 {v.charAt(0).toUpperCase() + v.slice(1)}
@@ -186,20 +186,18 @@ export const PreventiviCalendar = ({ preventivi, clienti = [], onDayClick, onCli
                     {day}
                   </span>
                   {hasEvents && (
-                    <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <div className="cal-event-list">
                       {events.slice(0, 2).map(ev => (
-                        <div key={ev.id} style={{
-                          fontSize: 10, padding: '2px 5px', borderRadius: 4,
+                        <div key={ev.id} className="cal-event-pill" style={{
                           background: `${ev.color}22`,
                           color: ev.color,
                           border: `1px solid ${ev.color}44`,
-                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%',
                         }} title={ev.label}>
                           {ev.label}
                         </div>
                       ))}
                       {events.length > 2 && (
-                        <span style={{ fontSize: 10, color: 'var(--t3)' }}>+{events.length - 2} altri</span>
+                        <span style={{ fontSize: 10, color: 'var(--t3)' }}>+{events.length - 2}</span>
                       )}
                     </div>
                   )}

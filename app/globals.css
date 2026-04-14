@@ -178,15 +178,20 @@ body {
 
 /* ─── CALENDARIO EVENTI RESPONSIVE ─── */
 .cal-legend { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.cal-cell   { min-height: 80px; }
+.cal-cell   { min-height: 80px; min-width: 0; overflow: hidden; }
 .cal-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.cal-search  { flex: 1; max-width: 320px; }
+.cal-search  { flex: 1; max-width: 320px; min-width: 0; }
+.cal-month-label { min-width: 140px; }
+.cal-event-list { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; min-width: 0; overflow: hidden; }
+.cal-event-pill { font-size: 10px; padding: 2px 5px; border-radius: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; min-width: 0; }
 
 @media (max-width: 640px) {
   .cal-legend  { display: none; }
-  .cal-cell    { min-height: 52px; padding: 4px !important; }
+  .cal-cell    { min-height: 44px; padding: 3px !important; }
   .cal-search  { max-width: 100%; width: 100%; }
   .cal-header-controls { flex-wrap: wrap; gap: 6px !important; }
   .cal-month-label { min-width: unset !important; font-size: 12px !important; }
+  .cal-view-switcher { display: none; }
+  .cal-event-pill { font-size: 0; width: 8px; height: 8px; border-radius: 50%; padding: 0; flex-shrink: 0; }
 }
 
