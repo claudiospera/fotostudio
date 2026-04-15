@@ -3,7 +3,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'Storie da Raccontare — Claudio Spera Fotografo',
-  description: 'Fotografia di matrimonio, ritratto e famiglia a Napoli. Ogni momento merita di essere ricordato.',
+  description: 'Fotografia di cerimonia, ritratto e famiglia. Ogni momento merita di essere ricordato.',
 }
 
 export const viewport: Viewport = {
