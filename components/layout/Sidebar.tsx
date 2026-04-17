@@ -24,7 +24,7 @@ const navItems = [
   {
     group: 'Lavoro',
     items: [
-      { href: '/preventivi', label: 'Calendario eventi', icon: FileText    },
+      { href: '/preventivi', label: 'Contratti',           icon: FileText    },
       { href: '/upload',     label: 'Upload clienti',    icon: Upload      },
       { href: '/ordini',     label: 'Ordini stampe',     icon: ShoppingCart },
     ],
@@ -89,7 +89,7 @@ export const Sidebar = () => {
             ? 'text-[var(--ac)] font-medium'
             : 'text-[var(--t2)] hover:text-[var(--tx)] hover:bg-[var(--s2)]'
         )}
-        style={{ minHeight: 44, ...(active ? { background: 'var(--acd)' } : {}) }}
+        style={{ minHeight: 52, ...(active ? { background: 'var(--acd)' } : {}) }}
       >
         {active && (
           <span
@@ -181,7 +181,7 @@ export const Sidebar = () => {
                   ? 'text-[var(--ac)] font-medium'
                   : 'text-[var(--t2)] hover:text-[var(--tx)] hover:bg-[var(--s2)]'
               )}
-              style={{ minHeight: 44, ...(isAppuntamentiActive ? { background: 'var(--acd)' } : {}) }}
+              style={{ minHeight: 52, ...(isAppuntamentiActive ? { background: 'var(--acd)' } : {}) }}
             >
               {isAppuntamentiActive && (
                 <span
@@ -214,7 +214,7 @@ export const Sidebar = () => {
             </p>
             {[
               { href: '/gallerie',   label: 'Nuova galleria',    icon: Images       },
-              { href: '/preventivi', label: 'Nuovo preventivo',  icon: FileText     },
+              { href: '/preventivi', label: 'Nuovo contratto',   icon: FileText     },
               { href: '/upload',     label: 'Nuovo link upload', icon: Upload       },
               { href: '/ordini',     label: 'Vedi ordini stampe',icon: ShoppingCart },
             ].map(({ href, label, icon: Icon }) => (
@@ -222,7 +222,7 @@ export const Sidebar = () => {
                 key={href}
                 href={href}
                 className="flex items-center gap-3 px-3 rounded-[var(--r2)] mb-1 text-[14px] text-[var(--t2)] hover:text-[var(--ac)] hover:bg-[var(--acd)] transition-all duration-150"
-                style={{ minHeight: 44 }}
+                style={{ minHeight: 52 }}
               >
                 <Icon size={17} className="shrink-0 opacity-50" />
                 <span className="flex-1 leading-none">{label}</span>
