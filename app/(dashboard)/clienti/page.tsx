@@ -461,6 +461,48 @@ function ClienteCard({ cliente: c, onEdit, onDelete }: {
           )}
         </div>
 
+        {/* Email */}
+        {c.email1 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, color: 'var(--t2)' }}>
+            <Mail size={12} style={{ color: 'var(--t3)', flexShrink: 0 }} />
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.email1}</span>
+          </div>
+        )}
+
+        {/* Pacchetti selezionati */}
+        {c.pacchetti && c.pacchetti.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+            {c.pacchetti.map(p => (
+              <span key={p.nome} style={{
+                fontSize: 10, padding: '3px 8px', borderRadius: 20,
+                background: 'rgba(142,201,176,0.1)', color: 'var(--ac)',
+                border: '1px solid rgba(142,201,176,0.25)',
+              }}>
+                {p.nome}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Album */}
+        {(c.album_copertina || c.album_formato) && (
+          <div style={{ fontSize: 12, color: 'var(--t2)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span>📒</span>
+            <span>{[c.album_formato, c.album_copertina].filter(Boolean).join(' · ')}</span>
+          </div>
+        )}
+
+        {/* Note */}
+        {c.note && (
+          <div style={{
+            fontSize: 12, color: 'var(--t3)', fontStyle: 'italic',
+            overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+          }}>
+            {c.note}
+          </div>
+        )}
+
         {/* Box ACCONTO + TOTALE */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 4 }}>
           <div style={{ background: 'var(--s2)', borderRadius: 'var(--r2)', padding: '10px 12px', border: '1px solid rgba(255,255,255,0.06)' }}>

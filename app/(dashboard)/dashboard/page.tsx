@@ -10,6 +10,7 @@ import {
   Images, FileText, Upload, Camera,
   HardDrive, TrendingUp, Plus, ArrowRight,
   ShoppingCart, Trash2, AlertCircle, Search,
+  CalendarDays, Users,
 } from 'lucide-react'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -238,6 +239,14 @@ export default function DashboardPage() {
               icon={Camera}
               color="var(--t2)"
             />
+          </div>
+
+          {/* ── Azioni rapide ─────────────────────────────────────── */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <QuickAction icon={CalendarDays} label="Calendario eventi" href="/appuntamenti/calendari" />
+            <QuickAction icon={Users} label="Clienti" href="/clienti" />
+            <QuickAction icon={FileText} label="Preventivi" href="/preventivi" />
+            <QuickAction icon={Upload} label="Link upload" href="/upload" />
           </div>
 
           {/* ── Ultimi eventi ────────────────────────────────────────── */}

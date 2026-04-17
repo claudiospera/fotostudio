@@ -151,33 +151,42 @@ export const PreventiviDashboard = () => {
               <PreventiviCalendar preventivi={preventivi} clienti={clienti} onDayClick={handleDayClick} onClienteClick={handleClienteClick} />
 
               {/* Lista preventivi */}
-              {preventivi.length > 0 && (
-                <div
-                  style={{
-                    background: 'var(--s1)',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    borderRadius: 'var(--r)',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                    <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 14 }}>
-                      Tutti i preventivi ({preventivi.length})
-                    </span>
+              {preventivi.length > 0 && (() => {
+                const filtered = preventivi.filter(p => {
+                  if (!searchQuery) return true
+                  const q = searchQuery.toLowerCase()
+                  return p.cliente.toLowerCase().includes(q) || p.servizio?.toLowerCase().includes(q)
+                })
+                return (
+                  <div
+                    style={{
+                      background: 'var(--s1)',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                      borderRadius: 'var(--r)',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                      <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 14 }}>
+                        {searchQuery
+                          ? `${filtered.length} risultat${filtered.length === 1 ? 'o' : 'i'} su ${preventivi.length}`
+                          : `Tutti i preventivi (${preventivi.length})`}
+                      </span>
+                    </div>
+                    {filtered.length === 0 ? (
+                      <div style={{ padding: '24px 18px', textAlign: 'center', color: 'var(--t3)', fontSize: 13 }}>
+                        Nessun preventivo trovato per &ldquo;{searchQuery}&rdquo;
+                      </div>
+                    ) : (
+                      <div>
+                        {filtered.map(p => (
+                          <PreventivoRow key={p.id} preventivo={p} />
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    {preventivi
-                      .filter(p => {
-                        if (!searchQuery) return true
-                        const q = searchQuery.toLowerCase()
-                        return p.cliente.toLowerCase().includes(q) || p.servizio?.toLowerCase().includes(q)
-                      })
-                      .map(p => (
-                        <PreventivoRow key={p.id} preventivo={p} />
-                      ))}
-                  </div>
-                </div>
-              )}
+                )
+              })()}
 
               {preventivi.length === 0 && (
                 <EmptyState
