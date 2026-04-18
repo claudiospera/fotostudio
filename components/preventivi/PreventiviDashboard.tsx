@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   FileText, FileSignature, LayoutTemplate, Users2, Wallet, BookOpen, Plus, Search, UserPlus,
 } from 'lucide-react'
@@ -26,7 +26,13 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
 
 export const PreventiviDashboard = () => {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<Tab>('proposte')
+  const searchParams = useSearchParams()
+  const [activeTab, setActiveTab] = useState<Tab>(() => {
+    const tab = searchParams.get('tab')
+    return (tab && ['proposte', 'contratti', 'templates', 'referrals', 'acconti', 'risorse'].includes(tab))
+      ? (tab as Tab)
+      : 'proposte'
+  })
   const [preventivi, setPreventivi] = useState<Preventivo[]>([])
   const [clienti, setClienti] = useState<Cliente[]>([])
   const [showNuova, setShowNuova] = useState(false)

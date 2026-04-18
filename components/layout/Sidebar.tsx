@@ -24,9 +24,10 @@ const navItems = [
   {
     group: 'Lavoro',
     items: [
-      { href: '/preventivi', label: 'Contratti',           icon: FileText    },
-      { href: '/upload',     label: 'Upload clienti',    icon: Upload      },
-      { href: '/ordini',     label: 'Ordini stampe',     icon: ShoppingCart },
+      { href: '/preventivi',              label: 'Contratti',        icon: FileText    },
+      { href: '/appuntamenti/calendari',  label: 'Calendario eventi', icon: CalendarDays },
+      { href: '/upload',                  label: 'Upload clienti',   icon: Upload      },
+      { href: '/ordini',                  label: 'Ordini stampe',    icon: ShoppingCart },
     ],
   },
 ]
