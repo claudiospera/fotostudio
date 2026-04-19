@@ -7,10 +7,8 @@ import { Topbar } from '@/components/layout/Topbar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/Badge'
 import {
-  Images, FileText, Upload, Camera,
-  HardDrive, TrendingUp, Plus, ArrowRight,
-  ShoppingCart, Trash2, AlertCircle, Search,
-  CalendarDays, Users, ChevronDown,
+  Images, HardDrive, TrendingUp, ArrowRight,
+  ShoppingCart, Trash2, AlertCircle, Search, ChevronDown,
 } from 'lucide-react'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -77,51 +75,36 @@ interface GalleryItem {
 // ── KPI Card ─────────────────────────────────────────────────────────────────
 
 function KpiCard({
-  label, value, icon: Icon, color = 'var(--ac)', href,
+  label, value, bg, textColor = '#fff', href,
 }: {
   label: string
   value: string | number
-  icon: React.ElementType
-  color?: string
+  bg: string
+  textColor?: string
   href?: string
 }) {
   const content = (
-    <Card className="hover:border-[var(--b2)] transition-all duration-200 group cursor-pointer">
-      <CardContent className="p-4 sm:p-5">
-        <div className="flex items-start justify-between mb-3">
-          <div
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-[var(--r2)] grid place-items-center shrink-0"
-            style={{ background: `color-mix(in srgb, ${color} 15%, transparent)` }}
-          >
-            <Icon size={16} style={{ color }} />
-          </div>
-          <ArrowRight size={14} className="text-[var(--t3)] opacity-0 group-hover:opacity-100 transition-opacity mt-1" />
-        </div>
-        <p className="text-[24px] sm:text-[28px] font-['Syne'] font-extrabold text-[var(--tx)] leading-none mb-1">
-          {value}
-        </p>
-        <p className="text-[11px] sm:text-[12px] text-[var(--t3)] font-medium">{label}</p>
-      </CardContent>
-    </Card>
+    <div style={{ background: bg, borderRadius: 16, padding: '22px 24px', cursor: href ? 'pointer' : 'default' }}>
+      <p style={{ fontSize: 34, fontFamily: 'Syne, sans-serif', fontWeight: 800, color: textColor, lineHeight: 1, marginBottom: 6 }}>
+        {value}
+      </p>
+      <p style={{ fontSize: 12, color: textColor, opacity: 0.8, fontWeight: 500, letterSpacing: '0.02em' }}>{label}</p>
+    </div>
   )
   return href ? <Link href={href} className="block">{content}</Link> : content
 }
 
 // ── Quick Action ──────────────────────────────────────────────────────────────
 
-function QuickAction({ icon: Icon, label, href }: { icon: React.ElementType; label: string; href: string }) {
+function QuickAction({ label, href, bg, textColor = '#fff' }: {
+  label: string; href: string; bg: string; textColor?: string
+}) {
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 px-4 py-3 rounded-[var(--r2)] bg-[var(--s2)] border border-[var(--b1)] hover:bg-[var(--s3)] hover:border-[var(--b2)] transition-all duration-150 group"
+      style={{ background: bg, borderRadius: 16, padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}
     >
-      <div className="w-8 h-8 rounded-[var(--r2)] bg-[var(--acd)] grid place-items-center shrink-0">
-        <Icon size={15} className="text-[var(--ac)]" />
-      </div>
-      <span className="text-sm text-[var(--t2)] group-hover:text-[var(--tx)] transition-colors font-medium">
-        {label}
-      </span>
-      <ArrowRight size={13} className="ml-auto text-[var(--t3)] opacity-0 group-hover:opacity-60 transition-opacity" />
+      <span style={{ fontSize: 14, fontWeight: 600, color: textColor, textAlign: 'center', lineHeight: 1.3 }}>{label}</span>
     </Link>
   )
 }
@@ -189,14 +172,14 @@ export default function DashboardPage() {
     <>
       <Topbar title="Dashboard" />
 
-      <div className="flex-1 overflow-y-auto overflow-x-hidden bg-[var(--bg)]">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden" style={{ background: '#f5f5f3' }}>
         <div className="max-w-5xl mx-auto space-y-4 sm:space-y-6" style={{ padding: '20px 24px' }}>
 
           {/* ── Greeting ─────────────────────────────────────────────── */}
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 sm:gap-3 pb-4 border-b border-[var(--b1)]">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 sm:gap-3 pb-4 border-b border-[rgba(0,0,0,0.08)]">
             <div className="min-w-0">
-              <p className="text-[11px] text-[var(--t3)] mb-2 capitalize tracking-[.05em]">{todayLabel()}</p>
-              <h1 style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: 'clamp(20px, 5vw, 30px)', color: 'var(--tx)', letterSpacing: '-0.01em', lineHeight: 1.1 }}>
+              <p className="text-[11px] mb-2 capitalize tracking-[.05em]" style={{ color: '#999' }}>{todayLabel()}</p>
+              <h1 style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: 'clamp(20px, 5vw, 30px)', color: '#1a1a1a', letterSpacing: '-0.01em', lineHeight: 1.1 }}>
                 {greeting()}, Claudio
               </h1>
             </div>
@@ -215,40 +198,18 @@ export default function DashboardPage() {
 
           {/* ── KPI ──────────────────────────────────────────────────── */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <KpiCard
-              label="Gallerie attive"
-              value={loadingStats ? '…' : (stats?.gallerieAttive ?? '—')}
-              icon={Images}
-              href="/gallerie"
-            />
-            <KpiCard
-              label="Preventivi aperti"
-              value={loadingStats ? '…' : (stats?.preventiviAperti ?? '—')}
-              icon={FileText}
-              color="var(--amber)"
-              href="/preventivi"
-            />
-            <KpiCard
-              label="Upload ricevuti"
-              value={loadingStats ? '…' : (stats?.uploadRicevuti ?? '—')}
-              icon={Upload}
-              color="#7b9ef0"
-              href="/upload"
-            />
-            <KpiCard
-              label="Foto totali"
-              value={loadingStats ? '…' : (stats?.fotoTotali ?? '—')}
-              icon={Camera}
-              color="var(--t2)"
-            />
+            <KpiCard label="Gallerie attive"    value={loadingStats ? '…' : (stats?.gallerieAttive ?? '—')}   bg="#00BCD4"           href="/gallerie" />
+            <KpiCard label="Preventivi aperti"  value={loadingStats ? '…' : (stats?.preventiviAperti ?? '—')} bg="#FF7043"           href="/preventivi" />
+            <KpiCard label="Upload ricevuti"    value={loadingStats ? '…' : (stats?.uploadRicevuti ?? '—')}   bg="#7B1FA2"           href="/upload" />
+            <KpiCard label="Foto totali"        value={loadingStats ? '…' : (stats?.fotoTotali ?? '—')}       bg="#FDD835" textColor="#333" />
           </div>
 
           {/* ── Azioni rapide ─────────────────────────────────────── */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <QuickAction icon={CalendarDays} label="Calendario eventi" href="/preventivi?tab=proposte" />
-            <QuickAction icon={Users} label="Clienti" href="/clienti" />
-            <QuickAction icon={FileText} label="Preventivi" href="/preventivi?tab=templates" />
-            <QuickAction icon={Upload} label="Link upload" href="/upload" />
+            <QuickAction label="Calendario eventi" href="/preventivi?tab=proposte" bg="#F06292" />
+            <QuickAction label="Clienti"            href="/clienti"                bg="#E91E8C" />
+            <QuickAction label="Preventivi"         href="/preventivi?tab=templates" bg="#FFB300" textColor="#333" />
+            <QuickAction label="Link upload"        href="/upload"                  bg="#7B1FA2" />
           </div>
 
           {/* ── Ultimi eventi ────────────────────────────────────────── */}
