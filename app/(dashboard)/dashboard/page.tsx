@@ -174,7 +174,7 @@ export default function DashboardPage() {
       <Topbar title="Dashboard" />
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden" style={{ background: '#f5f5f3' }}>
-        <div className="max-w-5xl mx-auto space-y-4 sm:space-y-6" style={{ padding: '20px 24px' }}>
+        <div className="max-w-5xl mx-auto space-y-5 sm:space-y-6" style={{ padding: '20px 24px' }}>
 
           {/* ── Greeting ─────────────────────────────────────────────── */}
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 sm:gap-3 pb-4 border-b border-[rgba(0,0,0,0.08)]">
@@ -198,21 +198,21 @@ export default function DashboardPage() {
           </div>
 
           {/* ── KPI ──────────────────────────────────────────────────── */}
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <KpiCard label="Gallerie attive"    value={loadingStats ? '…' : (stats?.gallerieAttive ?? '—')}   bg="#00BCD4"           href="/gallerie" />
             <KpiCard label="Preventivi aperti"  value={loadingStats ? '…' : (stats?.preventiviAperti ?? '—')} bg="#FF7043"           href="/preventivi" />
             <KpiCard label="Foto totali"        value={loadingStats ? '…' : (stats?.fotoTotali ?? '—')}       bg="#FDD835" textColor="#333" />
           </div>
 
           {/* ── Azioni rapide ─────────────────────────────────────── */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <QuickAction label="Calendario eventi" href="/preventivi?tab=proposte" bg="#F06292" />
             <QuickAction label="Clienti"            href="/clienti"                bg="#E91E8C" />
             <QuickAction label="Preventivi"         href="/preventivi?tab=templates" bg="#FFB300" textColor="#333" />
           </div>
 
           {/* ── Sezioni espandibili ─────────────────────────────────── */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 
             {/* Ultimi eventi */}
             <button
