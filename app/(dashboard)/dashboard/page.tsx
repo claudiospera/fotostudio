@@ -243,7 +243,7 @@ export default function DashboardPage() {
 
           {/* ── Azioni rapide ─────────────────────────────────────── */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <QuickAction icon={CalendarDays} label="Calendario eventi" href="/appuntamenti/calendari" />
+            <QuickAction icon={CalendarDays} label="Calendario eventi" href="/preventivi?tab=proposte" />
             <QuickAction icon={Users} label="Clienti" href="/clienti" />
             <QuickAction icon={FileText} label="Preventivi" href="/preventivi?tab=templates" />
             <QuickAction icon={Upload} label="Link upload" href="/upload" />

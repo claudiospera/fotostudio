@@ -16,7 +16,7 @@ import type { Preventivo, PreventivoTemplate, Cliente } from '@/lib/types'
 type Tab = 'proposte' | 'contratti' | 'templates' | 'referrals' | 'acconti' | 'risorse'
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-  { id: 'proposte',   label: 'Proposte',   icon: <FileText size={14} /> },
+  { id: 'proposte',   label: 'Eventi',     icon: <FileText size={14} /> },
   { id: 'contratti',  label: 'Contratti',  icon: <FileSignature size={14} /> },
   { id: 'templates',  label: 'Templates',  icon: <LayoutTemplate size={14} /> },
   { id: 'referrals',  label: 'Referrals',  icon: <Users2 size={14} /> },
