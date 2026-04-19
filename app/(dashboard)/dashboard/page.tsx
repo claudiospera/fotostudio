@@ -84,8 +84,8 @@ function KpiCard({
   href?: string
 }) {
   const content = (
-    <div style={{ background: bg, borderRadius: 16, padding: '22px 24px', cursor: href ? 'pointer' : 'default' }}>
-      <p style={{ fontSize: 34, fontFamily: 'Syne, sans-serif', fontWeight: 800, color: textColor, lineHeight: 1, marginBottom: 6 }}>
+    <div style={{ background: bg, borderRadius: 16, height: 88, padding: '0 24px', display: 'flex', flexDirection: 'column', justifyContent: 'center', cursor: href ? 'pointer' : 'default' }}>
+      <p style={{ fontSize: 30, fontFamily: 'Syne, sans-serif', fontWeight: 800, color: textColor, lineHeight: 1, marginBottom: 5 }}>
         {value}
       </p>
       <p style={{ fontSize: 12, color: textColor, opacity: 0.8, fontWeight: 500, letterSpacing: '0.02em' }}>{label}</p>
@@ -102,7 +102,7 @@ function QuickAction({ label, href, bg, textColor = '#fff' }: {
   return (
     <Link
       href={href}
-      style={{ background: bg, borderRadius: 16, padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}
+      style={{ background: bg, borderRadius: 16, height: 88, padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}
     >
       <span style={{ fontSize: 14, fontWeight: 600, color: textColor, textAlign: 'center', lineHeight: 1.3 }}>{label}</span>
     </Link>
@@ -219,7 +219,7 @@ export default function DashboardPage() {
             {/* Ultimi eventi */}
             <button
               onClick={() => setEventiOpen(o => !o)}
-              style={{ background: '#26C6DA', borderRadius: 16, padding: '16px 20px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}
+              style={{ background: '#26C6DA', borderRadius: 16, height: 88, padding: '0 20px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}
             >
               <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>Ultimi eventi</span>
               <ChevronDown size={15} style={{ color: 'rgba(255,255,255,0.8)', transform: eventiOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }} />
@@ -228,7 +228,7 @@ export default function DashboardPage() {
             {/* Ultimi ordini stampe */}
             <button
               onClick={() => setOrdiniOpen(o => !o)}
-              style={{ background: '#EF5350', borderRadius: 16, padding: '16px 20px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}
+              style={{ background: '#EF5350', borderRadius: 16, height: 88, padding: '0 20px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}
             >
               <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>Ultimi ordini stampe</span>
               <ChevronDown size={15} style={{ color: 'rgba(255,255,255,0.8)', transform: ordiniOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }} />
@@ -237,7 +237,7 @@ export default function DashboardPage() {
             {/* Storage */}
             <button
               onClick={() => setStorageOpen(o => !o)}
-              style={{ background: '#AB47BC', borderRadius: 16, padding: '16px 20px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}
+              style={{ background: '#AB47BC', borderRadius: 16, height: 88, padding: '0 20px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}
             >
               <div style={{ textAlign: 'left' }}>
                 <span style={{ fontSize: 14, fontWeight: 600, color: '#fff', display: 'block' }}>Storage Cloudflare R2</span>
