@@ -198,19 +198,17 @@ export default function DashboardPage() {
           </div>
 
           {/* ── KPI ──────────────────────────────────────────────────── */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
             <KpiCard label="Gallerie attive"    value={loadingStats ? '…' : (stats?.gallerieAttive ?? '—')}   bg="#00BCD4"           href="/gallerie" />
             <KpiCard label="Preventivi aperti"  value={loadingStats ? '…' : (stats?.preventiviAperti ?? '—')} bg="#FF7043"           href="/preventivi" />
-            <KpiCard label="Upload ricevuti"    value={loadingStats ? '…' : (stats?.uploadRicevuti ?? '—')}   bg="#7B1FA2"           href="/upload" />
             <KpiCard label="Foto totali"        value={loadingStats ? '…' : (stats?.fotoTotali ?? '—')}       bg="#FDD835" textColor="#333" />
           </div>
 
           {/* ── Azioni rapide ─────────────────────────────────────── */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <QuickAction label="Calendario eventi" href="/preventivi?tab=proposte" bg="#F06292" />
             <QuickAction label="Clienti"            href="/clienti"                bg="#E91E8C" />
             <QuickAction label="Preventivi"         href="/preventivi?tab=templates" bg="#FFB300" textColor="#333" />
-            <QuickAction label="Link upload"        href="/upload"                  bg="#7B1FA2" />
           </div>
 
           {/* ── Sezioni espandibili ─────────────────────────────────── */}
