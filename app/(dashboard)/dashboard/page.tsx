@@ -197,15 +197,11 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* ── KPI ──────────────────────────────────────────────────── */}
+          {/* ── KPI + Azioni rapide ── griglia 2×3 = 6 celle, nessun buco ── */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <KpiCard label="Gallerie attive"    value={loadingStats ? '…' : (stats?.gallerieAttive ?? '—')}   bg="#00BCD4"           href="/gallerie" />
             <KpiCard label="Preventivi aperti"  value={loadingStats ? '…' : (stats?.preventiviAperti ?? '—')} bg="#FF7043"           href="/preventivi" />
             <KpiCard label="Foto totali"        value={loadingStats ? '…' : (stats?.fotoTotali ?? '—')}       bg="#FDD835" textColor="#333" />
-          </div>
-
-          {/* ── Azioni rapide ─────────────────────────────────────── */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <QuickAction label="Calendario eventi" href="/preventivi?tab=proposte" bg="#F06292" />
             <QuickAction label="Clienti"            href="/clienti"                bg="#E91E8C" />
             <QuickAction label="Preventivi"         href="/preventivi?tab=templates" bg="#FFB300" textColor="#333" />
@@ -235,6 +231,7 @@ export default function DashboardPage() {
             {/* Storage */}
             <button
               onClick={() => setStorageOpen(o => !o)}
+              className="col-span-2 sm:col-span-1"
               style={{ background: '#AB47BC', borderRadius: 16, height: 88, padding: '0 20px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}
             >
               <div style={{ textAlign: 'left' }}>
