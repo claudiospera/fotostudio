@@ -198,21 +198,21 @@ export default function DashboardPage() {
           </div>
 
           {/* ── KPI ──────────────────────────────────────────────────── */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <KpiCard label="Gallerie attive"    value={loadingStats ? '…' : (stats?.gallerieAttive ?? '—')}   bg="#00BCD4"           href="/gallerie" />
             <KpiCard label="Preventivi aperti"  value={loadingStats ? '…' : (stats?.preventiviAperti ?? '—')} bg="#FF7043"           href="/preventivi" />
             <KpiCard label="Foto totali"        value={loadingStats ? '…' : (stats?.fotoTotali ?? '—')}       bg="#FDD835" textColor="#333" />
           </div>
 
           {/* ── Azioni rapide ─────────────────────────────────────── */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <QuickAction label="Calendario eventi" href="/preventivi?tab=proposte" bg="#F06292" />
             <QuickAction label="Clienti"            href="/clienti"                bg="#E91E8C" />
             <QuickAction label="Preventivi"         href="/preventivi?tab=templates" bg="#FFB300" textColor="#333" />
           </div>
 
           {/* ── Sezioni espandibili ─────────────────────────────────── */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
 
             {/* Ultimi eventi */}
             <button
