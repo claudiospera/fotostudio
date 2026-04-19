@@ -10,7 +10,7 @@ import {
   Images, FileText, Upload, Camera,
   HardDrive, TrendingUp, Plus, ArrowRight,
   ShoppingCart, Trash2, AlertCircle, Search,
-  CalendarDays, Users,
+  CalendarDays, Users, ChevronDown,
 } from 'lucide-react'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -141,6 +141,8 @@ export default function DashboardPage() {
   const [loadingGalleries, setLoadingGalleries] = useState(true)
   const [deletingId, setDeletingId]   = useState<string | null>(null)
   const [confirmId, setConfirmId]     = useState<string | null>(null)
+  const [eventiOpen, setEventiOpen]   = useState(false)
+  const [storageOpen, setStorageOpen] = useState(false)
 
   useEffect(() => {
     fetch('/api/dashboard/stats')
@@ -251,17 +253,35 @@ export default function DashboardPage() {
 
           {/* ── Ultimi eventi ────────────────────────────────────────── */}
           <Card>
-            {/* Header */}
-            <CardHeader className="justify-between pb-3">
+            {/* Header — cliccabile per espandere */}
+            <CardHeader
+              className="justify-between pb-3 cursor-pointer select-none"
+              onClick={() => setEventiOpen(o => !o)}
+            >
               <div className="flex items-center gap-2">
                 <Images size={15} className="text-[var(--ac)]" />
                 <CardTitle>Ultimi eventi</CardTitle>
               </div>
-              <Link href="/gallerie" className="text-[11px] text-[var(--ac)] hover:text-[var(--ac2)] transition-colors flex items-center gap-1 shrink-0">
-                Vedi tutte <ArrowRight size={11} />
-              </Link>
+              <div className="flex items-center gap-3">
+                {eventiOpen && (
+                  <Link
+                    href="/gallerie"
+                    onClick={e => e.stopPropagation()}
+                    className="text-[11px] text-[var(--ac)] hover:text-[var(--ac2)] transition-colors flex items-center gap-1 shrink-0"
+                  >
+                    Vedi tutte <ArrowRight size={11} />
+                  </Link>
+                )}
+                <ChevronDown
+                  size={15}
+                  className="text-[var(--t3)] transition-transform duration-200"
+                  style={{ transform: eventiOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                />
+              </div>
             </CardHeader>
 
+            {eventiOpen && (
+              <>
             {/* Search bar — full width */}
             <div className="px-5 pb-3">
               <div className="flex items-center gap-2 px-3 py-2 rounded-[var(--r2)] border border-[var(--b1)] bg-[var(--s2)]">
@@ -338,6 +358,8 @@ export default function DashboardPage() {
                 )
               })()}
             </CardContent>
+              </>
+            )}
           </Card>
 
           {/* ── Middle row ───────────────────────────────────────────── */}
@@ -397,7 +419,10 @@ export default function DashboardPage() {
 
           {/* ── Storage ──────────────────────────────────────────────── */}
           <Card>
-            <CardHeader className="justify-between">
+            <CardHeader
+              className="justify-between cursor-pointer select-none"
+              onClick={() => setStorageOpen(o => !o)}
+            >
               <div className="flex items-center gap-2">
                 <HardDrive size={15} className="text-[var(--ac)]" />
                 <div>
@@ -405,16 +430,23 @@ export default function DashboardPage() {
                   <p className="text-[10px] text-[var(--t3)] mt-0.5">Piano gratuito · 10 GB inclusi</p>
                 </div>
               </div>
-              {!loadingStorage && storage && (
-                <div className="text-right">
-                  <p className="text-sm font-bold font-['Syne']" style={{ color: storCol }}>
-                    {formatBytes(storage.totalBytes)}
-                  </p>
-                  <p className="text-[10px] text-[var(--t3)]">di 10 GB</p>
-                </div>
-              )}
+              <div className="flex items-center gap-3">
+                {!loadingStorage && storage && (
+                  <div className="text-right">
+                    <p className="text-sm font-bold font-['Syne']" style={{ color: storCol }}>
+                      {formatBytes(storage.totalBytes)}
+                    </p>
+                    <p className="text-[10px] text-[var(--t3)]">di 10 GB</p>
+                  </div>
+                )}
+                <ChevronDown
+                  size={15}
+                  className="text-[var(--t3)] transition-transform duration-200"
+                  style={{ transform: storageOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                />
+              </div>
             </CardHeader>
-            <CardContent>
+            {storageOpen && <CardContent>
               {loadingStorage ? (
                 <div className="flex items-center gap-2 text-[var(--t3)] text-sm py-2">
                   <div className="w-4 h-4 border-2 border-[var(--ac)] border-t-transparent rounded-full animate-spin" />
@@ -513,7 +545,7 @@ export default function DashboardPage() {
                   )}
                 </>
               )}
-            </CardContent>
+            </CardContent>}
           </Card>
 
         </div>
