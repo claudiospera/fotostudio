@@ -125,6 +125,7 @@ export default function DashboardPage() {
   const [deletingId, setDeletingId]   = useState<string | null>(null)
   const [confirmId, setConfirmId]     = useState<string | null>(null)
   const [eventiOpen, setEventiOpen]   = useState(false)
+  const [ordiniOpen, setOrdiniOpen]   = useState(false)
   const [storageOpen, setStorageOpen] = useState(false)
 
   useEffect(() => {
@@ -212,57 +213,67 @@ export default function DashboardPage() {
             <QuickAction label="Link upload"        href="/upload"                  bg="#7B1FA2" />
           </div>
 
-          {/* ── Ultimi eventi ────────────────────────────────────────── */}
-          <Card>
-            {/* Header — cliccabile per espandere */}
-            <CardHeader
-              className="justify-between pb-3 cursor-pointer select-none"
+          {/* ── Sezioni espandibili ─────────────────────────────────── */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+
+            {/* Ultimi eventi */}
+            <button
               onClick={() => setEventiOpen(o => !o)}
+              style={{ background: '#26C6DA', borderRadius: 16, padding: '16px 20px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}
             >
-              <div className="flex items-center gap-2">
-                <Images size={15} className="text-[var(--ac)]" />
-                <CardTitle>Ultimi eventi</CardTitle>
-              </div>
-              <div className="flex items-center gap-3">
-                {eventiOpen && (
-                  <Link
-                    href="/gallerie"
-                    onClick={e => e.stopPropagation()}
-                    className="text-[11px] text-[var(--ac)] hover:text-[var(--ac2)] transition-colors flex items-center gap-1 shrink-0"
-                  >
-                    Vedi tutte <ArrowRight size={11} />
-                  </Link>
-                )}
-                <ChevronDown
-                  size={15}
-                  className="text-[var(--t3)] transition-transform duration-200"
-                  style={{ transform: eventiOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
-                />
-              </div>
-            </CardHeader>
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>Ultimi eventi</span>
+              <ChevronDown size={15} style={{ color: 'rgba(255,255,255,0.8)', transform: eventiOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }} />
+            </button>
 
-            {eventiOpen && (
-              <>
-            {/* Search bar — full width */}
-            <div className="px-5 pb-3">
-              <div className="flex items-center gap-2 px-3 py-2 rounded-[var(--r2)] border border-[var(--b1)] bg-[var(--s2)]">
-                <Search size={13} className="text-[var(--t3)] shrink-0" />
-                <input
-                  type="text"
-                  placeholder="Cerca galleria…"
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '13px', color: 'var(--tx)', width: '100%' }}
-                />
-                {searchQuery && (
-                  <button onClick={() => setSearchQuery('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t3)', lineHeight: 1, padding: 0, fontSize: 14 }}>✕</button>
+            {/* Ultimi ordini stampe */}
+            <button
+              onClick={() => setOrdiniOpen(o => !o)}
+              style={{ background: '#EF5350', borderRadius: 16, padding: '16px 20px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}
+            >
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>Ultimi ordini stampe</span>
+              <ChevronDown size={15} style={{ color: 'rgba(255,255,255,0.8)', transform: ordiniOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }} />
+            </button>
+
+            {/* Storage */}
+            <button
+              onClick={() => setStorageOpen(o => !o)}
+              style={{ background: '#AB47BC', borderRadius: 16, padding: '16px 20px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}
+            >
+              <div style={{ textAlign: 'left' }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: '#fff', display: 'block' }}>Storage Cloudflare R2</span>
+                {!loadingStorage && storage && (
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)' }}>{formatBytes(storage.totalBytes)} / 10 GB</span>
                 )}
               </div>
-            </div>
+              <ChevronDown size={15} style={{ color: 'rgba(255,255,255,0.8)', transform: storageOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }} />
+            </button>
+          </div>
 
-            <CardContent className="p-0">
+          {/* Ultimi eventi — contenuto espanso */}
+          {eventiOpen && (
+            <div style={{ background: 'var(--s1)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+              <div style={{ padding: '12px 20px 8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px', height: 36, background: 'var(--s2)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8 }}>
+                  <Search size={13} style={{ color: 'var(--t3)', flexShrink: 0 }} />
+                  <input
+                    type="text"
+                    placeholder="Cerca galleria…"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: 13, color: 'var(--tx)', width: '100%' }}
+                  />
+                  {searchQuery && (
+                    <button onClick={() => setSearchQuery('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t3)', lineHeight: 1, padding: 0, fontSize: 14 }}>✕</button>
+                  )}
+                </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 20px 10px' }}>
+                <Link href="/gallerie" style={{ fontSize: 11, color: 'var(--ac)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  Vedi tutte <ArrowRight size={11} />
+                </Link>
+              </div>
               {loadingGalleries ? (
-                <div className="flex items-center justify-center gap-2 py-10 text-[var(--t3)] text-sm">
+                <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
                   <div className="w-4 h-4 border-2 border-[var(--ac)] border-t-transparent rounded-full animate-spin" />
                 </div>
               ) : (() => {
@@ -271,231 +282,148 @@ export default function DashboardPage() {
                   (g.type ?? '').toLowerCase().includes(searchQuery.toLowerCase())
                 ).slice(0, 10)
                 return filtered.length === 0 ? (
-                  <p className="text-center py-10 text-[var(--t3)] text-sm">
+                  <p style={{ textAlign: 'center', padding: '24px', color: 'var(--t3)', fontSize: 13 }}>
                     {searchQuery ? 'Nessuna galleria trovata.' : 'Nessuna galleria ancora.'}
                   </p>
                 ) : (
-                  <>
-                    {/* Header tabella — nascosto su mobile */}
-                    <div className="hidden sm:grid px-5 py-2 border-y border-[var(--b1)] bg-[var(--s2)]" style={{ gridTemplateColumns: '1fr 130px 120px 90px' }}>
+                  <div>
+                    <div className="hidden sm:grid" style={{ gridTemplateColumns: '1fr 130px 120px 90px', padding: '8px 20px', borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'var(--s2)' }}>
                       {['Nome galleria', 'Tipo', 'Data evento', 'Stato'].map(h => (
-                        <span key={h} className="text-[10px] font-semibold uppercase tracking-[.08em] text-[var(--t3)]">{h}</span>
+                        <span key={h} style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: 'var(--t3)' }}>{h}</span>
                       ))}
                     </div>
-
-                    <div className="divide-y divide-[var(--b1)]">
+                    <div>
                       {filtered.map(g => {
                         const statusColor = g.status === 'active' ? 'var(--ac)' : g.status === 'archived' ? 'var(--red)' : 'var(--amber)'
                         const statusLabel = g.status === 'active' ? 'Attiva' : g.status === 'archived' ? 'Archiviata' : 'Bozza'
                         const dateStr = g.date ? new Date(g.date).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' }) : null
-
                         return (
                           <Link
                             key={g.id}
                             href={`/gallerie/${g.id}`}
-                            className="flex flex-col gap-1 sm:grid px-5 py-4 hover:bg-[var(--s2)] transition-colors"
-                            style={{ gridTemplateColumns: '1fr 130px 120px 90px', alignItems: 'center' }}
+                            className="flex flex-col gap-1 sm:grid"
+                            style={{ gridTemplateColumns: '1fr 130px 120px 90px', alignItems: 'center', padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.04)', textDecoration: 'none' }}
                           >
-                            {/* Nome — sempre visibile */}
-                            <span className="text-[14px] font-semibold text-[var(--tx)] truncate pr-4 leading-snug">{g.name}</span>
-
-                            {/* Mobile: riga secondaria con info + stato */}
-                            <div className="flex items-center gap-3 sm:hidden">
-                              {g.type && <span className="text-[12px] text-[var(--t2)]">{g.type}</span>}
-                              {g.type && dateStr && <span className="text-[var(--b2)]">·</span>}
-                              {dateStr && <span className="text-[12px] text-[var(--t2)]">{dateStr}</span>}
-                              <span className="ml-auto text-[12px] font-semibold" style={{ color: statusColor }}>{statusLabel}</span>
+                            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--tx)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 16 }}>{g.name}</span>
+                            <div className="flex items-center gap-2 sm:hidden" style={{ marginTop: 2 }}>
+                              {g.type && <span style={{ fontSize: 12, color: 'var(--t2)' }}>{g.type}</span>}
+                              {dateStr && <span style={{ fontSize: 12, color: 'var(--t2)' }}>· {dateStr}</span>}
+                              <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 600, color: statusColor }}>{statusLabel}</span>
                             </div>
-
-                            {/* Desktop: colonne separate */}
-                            <span className="hidden sm:block text-[13px] text-[var(--t2)] truncate">{g.type ?? '—'}</span>
-                            <span className="hidden sm:block text-[13px] text-[var(--t2)]">{dateStr ?? '—'}</span>
-                            <span className="hidden sm:block text-[12px] font-semibold" style={{ color: statusColor }}>{statusLabel}</span>
+                            <span className="hidden sm:block" style={{ fontSize: 13, color: 'var(--t2)' }}>{g.type ?? '—'}</span>
+                            <span className="hidden sm:block" style={{ fontSize: 13, color: 'var(--t2)' }}>{dateStr ?? '—'}</span>
+                            <span className="hidden sm:block" style={{ fontSize: 12, fontWeight: 600, color: statusColor }}>{statusLabel}</span>
                           </Link>
                         )
                       })}
                     </div>
-                  </>
+                  </div>
                 )
               })()}
-            </CardContent>
-              </>
-            )}
-          </Card>
+            </div>
+          )}
 
-          {/* ── Middle row ───────────────────────────────────────────── */}
-          <div className="grid grid-cols-1 gap-4">
-
-            {/* Ultimi ordini */}
-            <Card>
-              <CardHeader className="justify-between">
-                <div className="flex items-center gap-2">
-                  <ShoppingCart size={15} className="text-[var(--ac)]" />
-                  <CardTitle>Ultimi ordini stampe</CardTitle>
-                </div>
-                <Link href="/ordini" className="text-[11px] text-[var(--ac)] hover:text-[var(--ac2)] transition-colors flex items-center gap-1">
+          {/* Ultimi ordini — contenuto espanso */}
+          {ordiniOpen && (
+            <div style={{ background: 'var(--s1)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '12px 20px 8px' }}>
+                <Link href="/ordini" style={{ fontSize: 11, color: 'var(--ac)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
                   Vedi tutti <ArrowRight size={11} />
                 </Link>
-              </CardHeader>
-              <CardContent className="p-0">
-                {loadingOrders ? (
-                  <div className="flex items-center justify-center gap-2 py-10 text-[var(--t3)] text-sm">
-                    <div className="w-4 h-4 border-2 border-[var(--ac)] border-t-transparent rounded-full animate-spin" />
-                  </div>
-                ) : orders.length === 0 ? (
-                  <div className="text-center py-10 text-[var(--t3)] text-sm">
-                    Nessun ordine ricevuto
-                  </div>
-                ) : (
-                  <div className="divide-y divide-[var(--b1)]">
-                    {orders.map(order => (
-                      <Link
-                        key={order.id}
-                        href="/ordini"
-                        className="flex items-center gap-3 px-5 py-3 hover:bg-[var(--s2)] transition-colors group"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-[var(--tx)] truncate">
-                            {order.client_name ?? 'Cliente anonimo'}
-                          </p>
-                          <p className="text-[11px] text-[var(--t3)] mt-0.5">
-                            {order.galleries?.name ?? '—'} · {new Date(order.created_at).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <Badge variant={order.status === 'nuovo' ? 'danger' : order.status === 'completato' ? 'active' : 'warning'}>
-                            {order.status === 'nuovo' ? 'Nuovo' : order.status === 'visto' ? 'Visto' : 'Completato'}
-                          </Badge>
-                          <span className="text-sm font-['Syne'] font-bold text-[var(--tx)]">
-                            {order.total.toFixed(2).replace('.', ',')} €
-                          </span>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* ── Storage ──────────────────────────────────────────────── */}
-          <Card>
-            <CardHeader
-              className="justify-between cursor-pointer select-none"
-              onClick={() => setStorageOpen(o => !o)}
-            >
-              <div className="flex items-center gap-2">
-                <HardDrive size={15} className="text-[var(--ac)]" />
-                <div>
-                  <CardTitle>Storage Cloudflare R2</CardTitle>
-                  <p className="text-[10px] text-[var(--t3)] mt-0.5">Piano gratuito · 10 GB inclusi</p>
+              </div>
+              {loadingOrders ? (
+                <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
+                  <div className="w-4 h-4 border-2 border-[var(--ac)] border-t-transparent rounded-full animate-spin" />
                 </div>
-              </div>
-              <div className="flex items-center gap-3">
-                {!loadingStorage && storage && (
-                  <div className="text-right">
-                    <p className="text-sm font-bold font-['Syne']" style={{ color: storCol }}>
-                      {formatBytes(storage.totalBytes)}
-                    </p>
-                    <p className="text-[10px] text-[var(--t3)]">di 10 GB</p>
-                  </div>
-                )}
-                <ChevronDown
-                  size={15}
-                  className="text-[var(--t3)] transition-transform duration-200"
-                  style={{ transform: storageOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
-                />
-              </div>
-            </CardHeader>
-            {storageOpen && <CardContent>
+              ) : orders.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '24px', color: 'var(--t3)', fontSize: 13 }}>Nessun ordine ricevuto</div>
+              ) : (
+                <div className="divide-y divide-[var(--b1)]">
+                  {orders.map(order => (
+                    <Link
+                      key={order.id}
+                      href="/ordini"
+                      className="flex items-center gap-3 hover:bg-[var(--s2)] transition-colors"
+                      style={{ padding: '12px 20px', textDecoration: 'none' }}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--tx)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {order.client_name ?? 'Cliente anonimo'}
+                        </p>
+                        <p style={{ fontSize: 11, color: 'var(--t3)', marginTop: 2 }}>
+                          {order.galleries?.name ?? '—'} · {new Date(order.created_at).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
+                        </p>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                        <Badge variant={order.status === 'nuovo' ? 'danger' : order.status === 'completato' ? 'active' : 'warning'}>
+                          {order.status === 'nuovo' ? 'Nuovo' : order.status === 'visto' ? 'Visto' : 'Completato'}
+                        </Badge>
+                        <span style={{ fontSize: 14, fontFamily: 'Syne, sans-serif', fontWeight: 700, color: 'var(--tx)' }}>
+                          {order.total.toFixed(2).replace('.', ',')} €
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Storage — contenuto espanso */}
+          {storageOpen && (
+            <div style={{ background: 'var(--s1)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)', padding: '20px' }}>
               {loadingStorage ? (
-                <div className="flex items-center gap-2 text-[var(--t3)] text-sm py-2">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--t3)', fontSize: 13 }}>
                   <div className="w-4 h-4 border-2 border-[var(--ac)] border-t-transparent rounded-full animate-spin" />
                   Calcolo spazio occupato…
                 </div>
               ) : !storage ? (
-                <p className="text-sm text-[var(--t3)]">Impossibile caricare i dati storage.</p>
+                <p style={{ fontSize: 13, color: 'var(--t3)' }}>Impossibile caricare i dati storage.</p>
               ) : (
                 <>
-                  {/* Progress bar */}
-                  <div className="mb-5">
-                    <div className="h-2 bg-[var(--s3)] rounded-full overflow-hidden mb-2">
-                      <div
-                        className="h-full rounded-full transition-all duration-700"
-                        style={{ width: `${usedPct.toFixed(1)}%`, background: storCol }}
-                      />
+                  <div style={{ marginBottom: 20 }}>
+                    <div style={{ height: 8, background: 'var(--s3)', borderRadius: 99, overflow: 'hidden', marginBottom: 8 }}>
+                      <div style={{ height: '100%', borderRadius: 99, transition: 'width 0.7s', width: `${usedPct.toFixed(1)}%`, background: storCol }} />
                     </div>
-                    <div className="flex justify-between text-[11px] text-[var(--t3)]">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--t3)' }}>
                       <span style={{ color: storCol }}>{usedPct.toFixed(1)}% utilizzato</span>
                       <span>{formatBytes(storage.limitBytes - storage.totalBytes)} liberi</span>
                     </div>
                   </div>
-
-                  {/* Galleries list */}
                   {storage.galleries.length === 0 ? (
-                    <p className="text-sm text-[var(--t3)] text-center py-4">Nessuna foto caricata su R2 ancora.</p>
+                    <p style={{ fontSize: 13, color: 'var(--t3)', textAlign: 'center', padding: '16px 0' }}>Nessuna foto caricata su R2 ancora.</p>
                   ) : (
                     <>
-                      <p className="text-[10px] font-semibold tracking-[.08em] uppercase text-[var(--t3)] mb-3 flex items-center gap-1.5">
+                      <p style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--t3)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
                         <TrendingUp size={11} /> Gallerie per spazio occupato
                       </p>
-                      <div className="space-y-2">
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {storage.galleries.map(g => {
-                          const gPct   = (g.bytes / storage.limitBytes) * 100
-                          const isDel  = deletingId === g.id
+                          const gPct  = (g.bytes / storage.limitBytes) * 100
+                          const isDel = deletingId === g.id
                           const isConf = confirmId === g.id
                           return (
-                            <div
-                              key={g.id}
-                              className="flex items-center gap-3 px-3 py-2.5 bg-[var(--s2)] border border-[var(--b1)] rounded-[var(--r2)]"
-                            >
-                              <div
-                                className="flex-1 min-w-0 cursor-pointer"
-                                onClick={() => router.push(`/gallerie/${g.id}`)}
-                              >
-                                <div className="flex items-center gap-2 mb-1.5">
-                                  <span className="text-[13px] font-medium text-[var(--tx)] truncate">{g.name}</span>
-                                  {g.status === 'active' && (
-                                    <Badge variant="active">Attiva</Badge>
-                                  )}
+                            <div key={g.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: 'var(--s2)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8 }}>
+                              <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => router.push(`/gallerie/${g.id}`)}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                                  <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--tx)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</span>
+                                  {g.status === 'active' && <Badge variant="active">Attiva</Badge>}
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <div className="flex-1 h-1 bg-[var(--s3)] rounded-full overflow-hidden">
-                                    <div
-                                      className="h-full rounded-full"
-                                      style={{ width: `${Math.min(gPct * 10, 100)}%`, background: storageColor(gPct * 10) }}
-                                    />
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <div style={{ flex: 1, height: 4, background: 'var(--s3)', borderRadius: 99, overflow: 'hidden' }}>
+                                    <div style={{ height: '100%', borderRadius: 99, width: `${Math.min(gPct * 10, 100)}%`, background: storageColor(gPct * 10) }} />
                                   </div>
-                                  <span className="text-[10px] text-[var(--t3)] shrink-0">{formatBytes(g.bytes)}</span>
+                                  <span style={{ fontSize: 10, color: 'var(--t3)', flexShrink: 0 }}>{formatBytes(g.bytes)}</span>
                                 </div>
                               </div>
-
                               {isConf ? (
-                                <div className="flex gap-1.5 shrink-0">
-                                  <button
-                                    onClick={() => deleteGallery(g.id)}
-                                    className="text-[11px] font-medium bg-[rgba(217,112,112,.15)] text-[var(--red)] border border-[rgba(217,112,112,.25)] rounded-md px-2.5 py-1 cursor-pointer hover:bg-[rgba(217,112,112,.25)] transition-colors"
-                                  >
-                                    Conferma
-                                  </button>
-                                  <button
-                                    onClick={() => setConfirmId(null)}
-                                    className="text-[11px] bg-[var(--s3)] text-[var(--t2)] border-none rounded-md px-2.5 py-1 cursor-pointer hover:bg-[var(--s4)] transition-colors"
-                                  >
-                                    Annulla
-                                  </button>
+                                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                                  <button onClick={() => deleteGallery(g.id)} className="text-[11px] font-medium bg-[rgba(217,112,112,.15)] text-[var(--red)] border border-[rgba(217,112,112,.25)] rounded-md px-2.5 py-1 cursor-pointer hover:bg-[rgba(217,112,112,.25)] transition-colors">Conferma</button>
+                                  <button onClick={() => setConfirmId(null)} className="text-[11px] bg-[var(--s3)] text-[var(--t2)] border-none rounded-md px-2.5 py-1 cursor-pointer hover:bg-[var(--s4)] transition-colors">Annulla</button>
                                 </div>
                               ) : (
-                                <button
-                                  onClick={() => setConfirmId(g.id)}
-                                  disabled={isDel}
-                                  title="Elimina galleria"
-                                  className="w-7 h-7 bg-transparent border border-[var(--b1)] rounded-md grid place-items-center text-[var(--t3)] hover:border-[rgba(217,112,112,.4)] hover:text-[var(--red)] transition-all shrink-0 disabled:opacity-40"
-                                >
-                                  {isDel
-                                    ? <div className="w-3 h-3 border border-[var(--red)] border-t-transparent rounded-full animate-spin" />
-                                    : <Trash2 size={12} />
-                                  }
+                                <button onClick={() => setConfirmId(g.id)} disabled={isDel} title="Elimina galleria" className="w-7 h-7 bg-transparent border border-[var(--b1)] rounded-md grid place-items-center text-[var(--t3)] hover:border-[rgba(217,112,112,.4)] hover:text-[var(--red)] transition-all shrink-0 disabled:opacity-40">
+                                  {isDel ? <div className="w-3 h-3 border border-[var(--red)] border-t-transparent rounded-full animate-spin" /> : <Trash2 size={12} />}
                                 </button>
                               )}
                             </div>
@@ -506,8 +434,8 @@ export default function DashboardPage() {
                   )}
                 </>
               )}
-            </CardContent>}
-          </Card>
+            </div>
+          )}
 
         </div>
       </div>
