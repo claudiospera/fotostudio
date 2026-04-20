@@ -208,7 +208,7 @@ export default function DashboardPage() {
           </div>
 
           {/* ── Sezioni espandibili ─────────────────────────────────── */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
 
             {/* Ultimi eventi */}
             <button
