@@ -18,7 +18,8 @@ const MESI = [
   'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
   'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre',
 ]
-const GIORNI = ['LUN', 'MAR', 'MER', 'GIO', 'VEN', 'SAB', 'DOM']
+const GIORNI_BREVI = ['LUN', 'MAR', 'MER', 'GIO', 'VEN', 'SAB', 'DOM']
+const GIORNI_LUNGHI = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica']
 
 const CAT_COLORS: Record<string, string> = {
   'Matrimonio':             '#7a4a6e',
@@ -41,33 +42,36 @@ interface DayEvent {
   type: 'preventivo' | 'cliente'
 }
 
+const toDateStr = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+const getWeekStart = (d: Date): Date => {
+  const day = (d.getDay() + 6) % 7 // 0=Mon
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() - day)
+}
+
 export const PreventiviCalendar = ({ preventivi, clienti = [], onDayClick, onClienteClick }: PreventiviCalendarProps) => {
   const router = useRouter()
   const today = new Date()
-  const [current, setCurrent] = useState(new Date(today.getFullYear(), today.getMonth(), 1))
+  const todayStr = toDateStr(today)
+  const [current, setCurrent] = useState(new Date(today.getFullYear(), today.getMonth(), today.getDate()))
   const [view, setView] = useState<ViewMode>('mese')
   const [popup, setPopup] = useState<{ date: string; events: DayEvent[] } | null>(null)
   const [cardModal, setCardModal] = useState<{ clienti: Cliente[]; dateLabel: string } | null>(null)
 
-  const prevMonth = () => setCurrent(new Date(current.getFullYear(), current.getMonth() - 1, 1))
-  const nextMonth = () => setCurrent(new Date(current.getFullYear(), current.getMonth() + 1, 1))
-  const goToday   = () => setCurrent(new Date(today.getFullYear(), today.getMonth(), 1))
+  const prev = () => {
+    if (view === 'mese') setCurrent(new Date(current.getFullYear(), current.getMonth() - 1, 1))
+    else if (view === 'settimana') setCurrent(new Date(current.getTime() - 7 * 86400000))
+    else setCurrent(new Date(current.getTime() - 86400000))
+  }
+  const next = () => {
+    if (view === 'mese') setCurrent(new Date(current.getFullYear(), current.getMonth() + 1, 1))
+    else if (view === 'settimana') setCurrent(new Date(current.getTime() + 7 * 86400000))
+    else setCurrent(new Date(current.getTime() + 86400000))
+  }
+  const goToday = () => setCurrent(new Date(today.getFullYear(), today.getMonth(), today.getDate()))
 
-  const year  = current.getFullYear()
-  const month = current.getMonth()
-  const firstDay = new Date(year, month, 1)
-  const lastDay  = new Date(year, month + 1, 0)
-
-  const startOffset = (firstDay.getDay() + 6) % 7
-  const daysInMonth = lastDay.getDate()
-
-  const cells: (number | null)[] = []
-  for (let i = 0; i < startOffset; i++) cells.push(null)
-  for (let d = 1; d <= daysInMonth; d++) cells.push(d)
-  while (cells.length % 7 !== 0) cells.push(null)
-
-  const getEventsForDay = (day: number): DayEvent[] => {
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+  const getEventsForDate = (dateStr: string): DayEvent[] => {
     const evPreventivi: DayEvent[] = preventivi
       .filter(p => p.data_evento === dateStr)
       .map(p => ({ id: p.id, label: p.cliente, color: 'var(--ac)', type: 'preventivo' as const }))
@@ -82,51 +86,90 @@ export const PreventiviCalendar = ({ preventivi, clienti = [], onDayClick, onCli
     return [...evClienti, ...evPreventivi]
   }
 
-  const isToday = (day: number) =>
-    day === today.getDate() && month === today.getMonth() && year === today.getFullYear()
-
-  const handleDayClick = (day: number) => {
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+  const handleDayClick = (date: Date) => {
+    const dateStr = toDateStr(date)
     const dayClienti = clienti.filter(c => c.data_evento === dateStr)
 
     if (dayClienti.length > 0) {
-      const dateLabel = new Date(dateStr + 'T00:00:00').toLocaleDateString('it-IT', {
+      const dateLabel = date.toLocaleDateString('it-IT', {
         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
       })
       setCardModal({ clienti: dayClienti, dateLabel })
       return
     }
 
-    const events = getEventsForDay(day)
+    const events = getEventsForDate(dateStr)
     if (events.length > 0) {
       setPopup({ date: dateStr, events })
     } else {
-      onDayClick(new Date(year, month, day))
+      onDayClick(date)
     }
   }
+
+  /* ── Header label ── */
+  const headerLabel = (() => {
+    if (view === 'mese') return `${MESI[current.getMonth()].toUpperCase()} ${current.getFullYear()}`
+    if (view === 'giorno') {
+      return current.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+    }
+    // settimana
+    const ws = getWeekStart(current)
+    const we = new Date(ws.getTime() + 6 * 86400000)
+    const startDay = ws.getDate()
+    const endDay = we.getDate()
+    const startMon = MESI[ws.getMonth()].substring(0, 3).toUpperCase()
+    const endMon = MESI[we.getMonth()].substring(0, 3).toUpperCase()
+    if (ws.getMonth() === we.getMonth()) return `${startDay} – ${endDay} ${endMon} ${we.getFullYear()}`
+    return `${startDay} ${startMon} – ${endDay} ${endMon} ${we.getFullYear()}`
+  })()
+
+  /* ── Month view data ── */
+  const year = current.getFullYear()
+  const month = current.getMonth()
+  const firstDay = new Date(year, month, 1)
+  const lastDay = new Date(year, month + 1, 0)
+  const startOffset = (firstDay.getDay() + 6) % 7
+  const daysInMonth = lastDay.getDate()
+  const cells: (number | null)[] = []
+  for (let i = 0; i < startOffset; i++) cells.push(null)
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d)
+  while (cells.length % 7 !== 0) cells.push(null)
+
+  /* ── Week view data ── */
+  const weekStart = getWeekStart(current)
+  const weekDays = Array.from({ length: 7 }, (_, i) => new Date(weekStart.getTime() + i * 86400000))
 
   return (
     <div style={{ background: 'var(--s1)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 'var(--r)', overflow: 'hidden' }}>
 
       {/* Header */}
       <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {/* Controls row */}
         <div className="cal-header-controls" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <button onClick={prevMonth} style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, background: 'var(--s2)', color: 'var(--t2)', cursor: 'pointer' }}>
-              <ChevronLeft size={14} />
+          <div className="cal-nav-group" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button onClick={prev} className="cal-nav-btn" aria-label="Precedente">
+              <ChevronLeft size={18} />
             </button>
-            <button onClick={nextMonth} style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, background: 'var(--s2)', color: 'var(--t2)', cursor: 'pointer' }}>
-              <ChevronRight size={14} />
+            <button onClick={next} className="cal-nav-btn" aria-label="Successivo">
+              <ChevronRight size={18} />
             </button>
-            <Button variant="ghost" size="sm" onClick={goToday}>Oggi</Button>
+            <Button variant="ghost" size="sm" onClick={goToday} style={{ minHeight: 36, padding: '0 14px', fontSize: 14 }}>Oggi</Button>
           </div>
-          <span className="cal-month-label" style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 14, color: 'var(--tx)', textAlign: 'center' }}>
-            {MESI[month].toUpperCase()} {year}
+          <span className="cal-month-label" style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 14, color: 'var(--tx)', textAlign: 'center', flex: 1 }}>
+            {headerLabel}
           </span>
           <div className="cal-view-switcher" style={{ display: 'flex', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, overflow: 'hidden' }}>
             {(['mese', 'settimana', 'giorno'] as ViewMode[]).map(v => (
-              <button key={v} onClick={() => setView(v)} style={{ padding: '4px 10px', fontSize: 12, fontWeight: 500, background: view === v ? 'var(--s3)' : 'var(--s2)', color: view === v ? 'var(--tx)' : 'var(--t3)', border: 'none', cursor: 'pointer', textTransform: 'capitalize' }}>
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                style={{
+                  padding: '6px 12px', fontSize: 13, fontWeight: 500,
+                  background: view === v ? 'var(--s3)' : 'var(--s2)',
+                  color: view === v ? 'var(--tx)' : 'var(--t3)',
+                  border: 'none', cursor: 'pointer', textTransform: 'capitalize',
+                  minHeight: 36,
+                }}
+              >
                 {v.charAt(0).toUpperCase() + v.slice(1)}
               </button>
             ))}
@@ -144,69 +187,198 @@ export const PreventiviCalendar = ({ preventivi, clienti = [], onDayClick, onCli
         </div>
       </div>
 
-      {/* Giorni settimana */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        {GIORNI.map(g => (
-          <div key={g} style={{ padding: '8px 0', textAlign: 'center', fontSize: 11, fontWeight: 600, color: 'var(--t3)', letterSpacing: '0.06em' }}>
-            {g}
+      {/* ── MONTH VIEW ── */}
+      {view === 'mese' && (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            {GIORNI_BREVI.map(g => (
+              <div key={g} style={{ padding: '8px 0', textAlign: 'center', fontSize: 11, fontWeight: 600, color: 'var(--t3)', letterSpacing: '0.06em' }}>
+                {g}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-
-      {/* Griglia */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
-        {cells.map((day, i) => {
-          const events = day ? getEventsForDay(day) : []
-          const todayCell = day ? isToday(day) : false
-          const hasEvents = events.length > 0
-          return (
-            <div
-              key={i}
-              onClick={() => day && handleDayClick(day)}
-              className="cal-cell"
-              style={{
-                padding: '6px 8px',
-                borderRight: (i + 1) % 7 === 0 ? 'none' : '1px solid rgba(255,255,255,0.04)',
-                borderBottom: i < cells.length - 7 ? '1px solid rgba(255,255,255,0.04)' : 'none',
-                cursor: day ? 'pointer' : 'default',
-                background: todayCell ? 'rgba(142,201,176,0.06)' : 'transparent',
-                transition: 'background 0.15s',
-              }}
-              onMouseEnter={e => { if (day) (e.currentTarget as HTMLDivElement).style.background = todayCell ? 'rgba(142,201,176,0.1)' : 'var(--s2)' }}
-              onMouseLeave={e => { if (day) (e.currentTarget as HTMLDivElement).style.background = todayCell ? 'rgba(142,201,176,0.06)' : 'transparent' }}
-            >
-              {day && (
-                <>
-                  <span style={{
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    width: 22, height: 22, borderRadius: '50%', fontSize: 12, fontWeight: 500,
-                    background: todayCell ? 'var(--ac)' : 'transparent',
-                    color: todayCell ? '#0f0f0f' : 'var(--t2)',
-                  }}>
-                    {day}
-                  </span>
-                  {hasEvents && (
-                    <div className="cal-event-list">
-                      {events.slice(0, 2).map(ev => (
-                        <div key={ev.id} className="cal-event-pill" style={{
-                          background: `${ev.color}22`,
-                          color: ev.color,
-                          border: `1px solid ${ev.color}44`,
-                        }} title={ev.label}>
-                          {ev.label}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
+            {cells.map((day, i) => {
+              const dateStr = day ? `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}` : ''
+              const events = day ? getEventsForDate(dateStr) : []
+              const isToday = dateStr === todayStr
+              return (
+                <div
+                  key={i}
+                  onClick={() => day && handleDayClick(new Date(year, month, day))}
+                  className="cal-cell"
+                  style={{
+                    padding: '6px 8px',
+                    borderRight: (i + 1) % 7 === 0 ? 'none' : '1px solid rgba(255,255,255,0.04)',
+                    borderBottom: i < cells.length - 7 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                    cursor: day ? 'pointer' : 'default',
+                    background: isToday ? 'rgba(142,201,176,0.06)' : 'transparent',
+                    transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={e => { if (day) (e.currentTarget as HTMLDivElement).style.background = isToday ? 'rgba(142,201,176,0.1)' : 'var(--s2)' }}
+                  onMouseLeave={e => { if (day) (e.currentTarget as HTMLDivElement).style.background = isToday ? 'rgba(142,201,176,0.06)' : 'transparent' }}
+                >
+                  {day && (
+                    <>
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        width: 22, height: 22, borderRadius: '50%', fontSize: 12, fontWeight: 500,
+                        background: isToday ? 'var(--ac)' : 'transparent',
+                        color: isToday ? '#0f0f0f' : 'var(--t2)',
+                      }}>
+                        {day}
+                      </span>
+                      {events.length > 0 && (
+                        <div className="cal-event-list">
+                          {events.slice(0, 2).map(ev => (
+                            <div key={ev.id} className="cal-event-pill" style={{
+                              background: `${ev.color}22`,
+                              color: ev.color,
+                              border: `1px solid ${ev.color}44`,
+                            }} title={ev.label}>
+                              {ev.label}
+                            </div>
+                          ))}
+                          {events.length > 2 && (
+                            <span style={{ fontSize: 10, color: 'var(--t3)' }}>+{events.length - 2}</span>
+                          )}
                         </div>
-                      ))}
-                      {events.length > 2 && (
-                        <span style={{ fontSize: 10, color: 'var(--t3)' }}>+{events.length - 2}</span>
                       )}
-                    </div>
+                    </>
                   )}
-                </>
-              )}
-            </div>
-          )
-        })}
-      </div>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
+
+      {/* ── WEEK VIEW ── */}
+      {view === 'settimana' && (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            {weekDays.map((d, i) => {
+              const isToday = toDateStr(d) === todayStr
+              return (
+                <div key={i} style={{
+                  padding: '10px 6px', textAlign: 'center',
+                  background: isToday ? 'rgba(142,201,176,0.06)' : 'transparent',
+                  borderRight: i < 6 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                }}>
+                  <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--t3)', letterSpacing: '0.06em', marginBottom: 4 }}>
+                    {GIORNI_BREVI[i]}
+                  </div>
+                  <div style={{
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    width: 28, height: 28, borderRadius: '50%',
+                    background: isToday ? 'var(--ac)' : 'transparent',
+                    color: isToday ? '#0f0f0f' : 'var(--tx)',
+                    fontSize: 14, fontWeight: 600,
+                  }}>
+                    {d.getDate()}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', minHeight: 180 }}>
+            {weekDays.map((d, i) => {
+              const dateStr = toDateStr(d)
+              const events = getEventsForDate(dateStr)
+              const isToday = dateStr === todayStr
+              return (
+                <div
+                  key={i}
+                  onClick={() => handleDayClick(d)}
+                  style={{
+                    padding: '8px 4px', minHeight: 120,
+                    borderRight: i < 6 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                    background: isToday ? 'rgba(142,201,176,0.04)' : 'transparent',
+                    cursor: 'pointer', transition: 'background 0.12s',
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = isToday ? 'rgba(142,201,176,0.08)' : 'var(--s2)' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = isToday ? 'rgba(142,201,176,0.04)' : 'transparent' }}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    {events.map(ev => (
+                      <div key={ev.id} style={{
+                        fontSize: 10, padding: '3px 5px', borderRadius: 4,
+                        background: `${ev.color}22`, color: ev.color,
+                        border: `1px solid ${ev.color}44`,
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      }} title={ev.label}>
+                        {ev.label}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
+
+      {/* ── DAY VIEW ── */}
+      {view === 'giorno' && (
+        <div style={{ padding: 16 }}>
+          {(() => {
+            const dateStr = toDateStr(current)
+            const events = getEventsForDate(dateStr)
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {events.length === 0 ? (
+                  <div
+                    onClick={() => onDayClick(current)}
+                    style={{
+                      padding: '32px 16px', textAlign: 'center',
+                      border: '1px dashed rgba(255,255,255,0.10)', borderRadius: 'var(--r2)',
+                      color: 'var(--t3)', fontSize: 13, cursor: 'pointer',
+                    }}
+                  >
+                    Nessun evento · clicca per aggiungere
+                  </div>
+                ) : (
+                  events.map(ev => (
+                    <div
+                      key={ev.id}
+                      onClick={() => {
+                        if (ev.type === 'cliente' && onClienteClick) onClienteClick(ev.id)
+                        else setPopup({ date: dateStr, events: [ev] })
+                      }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 12,
+                        padding: '12px 16px', borderRadius: 'var(--r2)',
+                        background: `${ev.color}18`, border: `1px solid ${ev.color}44`,
+                        cursor: 'pointer', transition: 'border-color 0.12s',
+                      }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = `${ev.color}88` }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = `${ev.color}44` }}
+                    >
+                      <div style={{ width: 10, height: 10, borderRadius: '50%', background: ev.color, flexShrink: 0 }} />
+                      <div>
+                        <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--tx)' }}>{ev.label}</p>
+                        <p style={{ margin: 0, fontSize: 11, color: 'var(--t3)' }}>
+                          {ev.type === 'cliente' ? 'Cliente · apri scheda →' : 'Preventivo'}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+                <button
+                  onClick={() => onDayClick(current)}
+                  style={{
+                    marginTop: 4, padding: '10px', borderRadius: 'var(--r2)',
+                    border: '1px dashed rgba(255,255,255,0.12)', background: 'transparent',
+                    color: 'var(--t3)', cursor: 'pointer', fontSize: 13,
+                  }}
+                >
+                  + Nuovo preventivo in questo giorno
+                </button>
+              </div>
+            )
+          })()}
+        </div>
+      )}
 
       {/* Card modal per clienti del giorno */}
       {cardModal && (

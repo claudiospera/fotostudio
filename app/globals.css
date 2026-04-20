@@ -184,14 +184,18 @@ body {
 .cal-month-label { min-width: 140px; }
 .cal-event-list { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; min-width: 0; overflow: hidden; }
 .cal-event-pill { font-size: 10px; padding: 2px 5px; border-radius: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; min-width: 0; }
+.cal-nav-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; background: var(--s2); color: var(--t2); cursor: pointer; flex-shrink: 0; transition: background 0.12s; }
+.cal-nav-btn:hover { background: var(--s3); }
 
 @media (max-width: 640px) {
   .cal-legend  { display: none; }
   .cal-cell    { min-height: 44px; padding: 3px !important; }
   .cal-search  { max-width: 100%; width: 100%; }
   .cal-header-controls { flex-wrap: wrap; gap: 6px !important; }
-  .cal-month-label { min-width: unset !important; font-size: 12px !important; }
-  .cal-view-switcher { display: none; }
+  .cal-month-label { min-width: unset !important; font-size: 13px !important; }
+  .cal-view-switcher button { padding: 8px 14px !important; font-size: 13px !important; min-height: 40px; }
   .cal-event-pill { font-size: 0; width: 8px; height: 8px; border-radius: 50%; padding: 0; flex-shrink: 0; }
+  .cal-nav-btn { width: 44px; height: 44px; border-radius: 10px; }
+  .cal-nav-group { gap: 8px !important; }
 }
 

@@ -154,15 +154,30 @@ export const PreventiviDashboard = () => {
                 </div>
               </div>
 
-              <PreventiviCalendar preventivi={preventivi} clienti={clienti} onDayClick={handleDayClick} onClienteClick={handleClienteClick} />
+              {(() => {
+                const q = searchQuery.toLowerCase()
+                const filteredPreventivi = searchQuery
+                  ? preventivi.filter(p => p.cliente.toLowerCase().includes(q) || p.servizio?.toLowerCase().includes(q))
+                  : preventivi
+                const filteredClienti = searchQuery
+                  ? clienti.filter(c => (c.nome1 + ' ' + (c.nome2 ?? '')).toLowerCase().includes(q))
+                  : clienti
+                return (
+                  <PreventiviCalendar
+                    preventivi={filteredPreventivi}
+                    clienti={filteredClienti}
+                    onDayClick={handleDayClick}
+                    onClienteClick={handleClienteClick}
+                  />
+                )
+              })()}
 
               {/* Lista preventivi */}
               {preventivi.length > 0 && (() => {
-                const filtered = preventivi.filter(p => {
-                  if (!searchQuery) return true
-                  const q = searchQuery.toLowerCase()
-                  return p.cliente.toLowerCase().includes(q) || p.servizio?.toLowerCase().includes(q)
-                })
+                const q = searchQuery.toLowerCase()
+                const filtered = searchQuery
+                  ? preventivi.filter(p => p.cliente.toLowerCase().includes(q) || p.servizio?.toLowerCase().includes(q))
+                  : preventivi
                 return (
                   <div
                     style={{
