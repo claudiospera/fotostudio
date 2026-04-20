@@ -21,15 +21,24 @@ const MESI = [
 const GIORNI_BREVI = ['LUN', 'MAR', 'MER', 'GIO', 'VEN', 'SAB', 'DOM']
 const GIORNI_LUNGHI = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica']
 
+const PAL = {
+  coral:   '#e8614a',
+  yellow:  '#f2c929',
+  pink:    '#e8849d',
+  magenta: '#d1346b',
+  orange:  '#e8a02a',
+  cyan:    '#38b8c8',
+}
+
 const CAT_COLORS: Record<string, string> = {
-  'Matrimonio':             '#7a4a6e',
-  'Promessa di Matrimonio': '#9e5a8a',
-  'Battesimo':              '#4a7a9b',
+  'Matrimonio':             PAL.magenta,
+  'Promessa di Matrimonio': PAL.pink,
+  'Battesimo':              PAL.cyan,
   'Comunione':              '#5e8a5e',
-  '1 Anno':                 '#c9a84c',
-  '18 Anni':                '#b85c38',
+  '1 Anno':                 PAL.yellow,
+  '18 Anni':                PAL.coral,
   'Anniversario':           '#6b5b8a',
-  'Shooting Fotografico':   '#3d6b6b',
+  'Shooting Fotografico':   PAL.orange,
   'Altra Cerimonia':        '#7a6b55',
 }
 
@@ -146,28 +155,51 @@ export const PreventiviCalendar = ({ preventivi, clienti = [], onDayClick, onCli
       <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div className="cal-header-controls" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
           <div className="cal-nav-group" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <button onClick={prev} className="cal-nav-btn" aria-label="Precedente">
+            <button
+              onClick={prev}
+              className="cal-nav-btn"
+              aria-label="Precedente"
+              style={{ background: PAL.coral, border: 'none', color: '#1a0a06' }}
+            >
               <ChevronLeft size={18} />
             </button>
-            <button onClick={next} className="cal-nav-btn" aria-label="Successivo">
+            <button
+              onClick={next}
+              className="cal-nav-btn"
+              aria-label="Successivo"
+              style={{ background: PAL.cyan, border: 'none', color: '#061618' }}
+            >
               <ChevronRight size={18} />
             </button>
-            <Button variant="ghost" size="sm" onClick={goToday} style={{ minHeight: 36, padding: '0 14px', fontSize: 14 }}>Oggi</Button>
+            <button
+              onClick={goToday}
+              style={{
+                minHeight: 36, padding: '0 16px', fontSize: 14, fontWeight: 600,
+                background: PAL.yellow, border: 'none', borderRadius: 8,
+                color: '#1a1400', cursor: 'pointer',
+              }}
+            >
+              Oggi
+            </button>
           </div>
-          <span className="cal-month-label" style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 14, color: 'var(--tx)', textAlign: 'center', flex: 1 }}>
+          <span className="cal-month-label" style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 15, color: PAL.orange, textAlign: 'center', flex: 1, letterSpacing: '-0.01em' }}>
             {headerLabel}
           </span>
-          <div className="cal-view-switcher" style={{ display: 'flex', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, overflow: 'hidden' }}>
-            {(['mese', 'settimana', 'giorno'] as ViewMode[]).map(v => (
+          <div className="cal-view-switcher" style={{ display: 'flex', border: `1px solid ${PAL.magenta}44`, borderRadius: 8, overflow: 'hidden' }}>
+            {([
+              { v: 'mese',      color: PAL.magenta },
+              { v: 'settimana', color: PAL.orange  },
+              { v: 'giorno',    color: PAL.pink    },
+            ] as { v: ViewMode; color: string }[]).map(({ v, color }) => (
               <button
                 key={v}
                 onClick={() => setView(v)}
                 style={{
-                  padding: '6px 12px', fontSize: 13, fontWeight: 500,
-                  background: view === v ? 'var(--s3)' : 'var(--s2)',
-                  color: view === v ? 'var(--tx)' : 'var(--t3)',
+                  padding: '6px 12px', fontSize: 13, fontWeight: 600,
+                  background: view === v ? color : 'var(--s2)',
+                  color: view === v ? '#fff' : 'var(--t3)',
                   border: 'none', cursor: 'pointer', textTransform: 'capitalize',
-                  minHeight: 36,
+                  minHeight: 36, transition: 'background 0.15s, color 0.15s',
                 }}
               >
                 {v.charAt(0).toUpperCase() + v.slice(1)}
@@ -191,11 +223,14 @@ export const PreventiviCalendar = ({ preventivi, clienti = [], onDayClick, onCli
       {view === 'mese' && (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            {GIORNI_BREVI.map(g => (
-              <div key={g} style={{ padding: '8px 0', textAlign: 'center', fontSize: 11, fontWeight: 600, color: 'var(--t3)', letterSpacing: '0.06em' }}>
-                {g}
-              </div>
-            ))}
+            {GIORNI_BREVI.map((g, i) => {
+              const dayColors = [PAL.coral, PAL.orange, PAL.yellow, PAL.cyan, PAL.pink, PAL.magenta, PAL.orange]
+              return (
+                <div key={g} style={{ padding: '8px 0', textAlign: 'center', fontSize: 11, fontWeight: 700, color: dayColors[i], letterSpacing: '0.06em' }}>
+                  {g}
+                </div>
+              )
+            })}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
             {cells.map((day, i) => {
@@ -222,9 +257,10 @@ export const PreventiviCalendar = ({ preventivi, clienti = [], onDayClick, onCli
                     <>
                       <span style={{
                         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                        width: 22, height: 22, borderRadius: '50%', fontSize: 12, fontWeight: 500,
-                        background: isToday ? 'var(--ac)' : 'transparent',
-                        color: isToday ? '#0f0f0f' : 'var(--t2)',
+                        width: 22, height: 22, borderRadius: '50%', fontSize: 12, fontWeight: 700,
+                        background: isToday ? PAL.magenta : 'transparent',
+                        color: isToday ? '#fff' : 'var(--t2)',
+                        boxShadow: isToday ? `0 0 8px ${PAL.magenta}88` : 'none',
                       }}>
                         {day}
                       </span>
@@ -271,9 +307,10 @@ export const PreventiviCalendar = ({ preventivi, clienti = [], onDayClick, onCli
                   <div style={{
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                     width: 28, height: 28, borderRadius: '50%',
-                    background: isToday ? 'var(--ac)' : 'transparent',
-                    color: isToday ? '#0f0f0f' : 'var(--tx)',
-                    fontSize: 14, fontWeight: 600,
+                    background: isToday ? PAL.magenta : 'transparent',
+                    color: isToday ? '#fff' : 'var(--tx)',
+                    fontSize: 14, fontWeight: 700,
+                    boxShadow: isToday ? `0 0 10px ${PAL.magenta}88` : 'none',
                   }}>
                     {d.getDate()}
                   </div>
