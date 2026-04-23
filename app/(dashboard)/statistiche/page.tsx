@@ -58,11 +58,11 @@ export default function StatistichePage() {
   })
 
   // ── KPI ────────────────────────────────────────────────────────────────────
-  const fatturato    = clientiAnno.reduce((s, c) => s + (c.importo_totale || 0), 0)
-  const incassato    = clientiAnno.reduce((s, c) => s + (c.acconto || 0) + (c.saldo || 0), 0)
+  const fatturato    = clientiAnno.reduce((s, c) => s + (Number(c.importo_totale) || 0), 0)
+  const incassato    = clientiAnno.reduce((s, c) => s + (Number(c.acconto) || 0) + (Number(c.saldo) || 0), 0)
   const daIncassare  = fatturato - incassato
   const nEventi      = clientiAnno.length
-  const conAcconto   = clientiAnno.filter(c => (c.acconto || 0) > 0).length
+  const conAcconto   = clientiAnno.filter(c => (Number(c.acconto) || 0) > 0).length
   const pctAcconto   = nEventi > 0 ? Math.round((conAcconto / nEventi) * 100) : 0
   const mediaFattura = nEventi > 0 ? Math.round(fatturato / nEventi) : 0
 
@@ -71,8 +71,8 @@ export default function StatistichePage() {
   const meseSaldo   = Array(12).fill(0)
   for (const c of clientiAnno) {
     const m = new Date(c.data_evento!).getMonth()
-    meseAcconto[m] += c.acconto || 0
-    meseSaldo[m]   += c.saldo   || 0
+    meseAcconto[m] += Number(c.acconto) || 0
+    meseSaldo[m]   += Number(c.saldo)  || 0
   }
   const meseMax = Math.max(...meseAcconto.map((a, i) => a + meseSaldo[i]), 1)
 
@@ -117,7 +117,7 @@ export default function StatistichePage() {
   // ── Top 5 per importo ─────────────────────────────────────────────────────
   const top5 = [...clientiAnno]
     .filter(c => (c.importo_totale || 0) > 0)
-    .sort((a, b) => (b.importo_totale || 0) - (a.importo_totale || 0))
+    .sort((a, b) => (Number(b.importo_totale) || 0) - (Number(a.importo_totale) || 0))
     .slice(0, 5)
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -303,7 +303,7 @@ export default function StatistichePage() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {top5.map((c, i) => {
                       const col = CAT_COLORS[c.categoria] ?? '#8ec9b0'
-                      const pct = fatturato > 0 ? Math.round(((c.importo_totale || 0) / fatturato) * 100) : 0
+                      const pct = fatturato > 0 ? Math.round(((Number(c.importo_totale) || 0) / fatturato) * 100) : 0
                       return (
                         <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--t3)', minWidth: 16, textAlign: 'right' }}>
@@ -315,7 +315,7 @@ export default function StatistichePage() {
                                 {c.nome1}{c.nome2 ? ` & ${c.nome2}` : ''}
                               </span>
                               <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--tx)', flexShrink: 0, marginLeft: 8 }}>
-                                {fmt(c.importo_totale || 0)}
+                                {fmt(Number(c.importo_totale) || 0)}
                               </span>
                             </div>
                             <div style={{ height: 4, background: 'var(--s3)', borderRadius: 2, overflow: 'hidden' }}>

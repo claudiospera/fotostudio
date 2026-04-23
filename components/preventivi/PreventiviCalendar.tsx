@@ -81,11 +81,12 @@ export const PreventiviCalendar = ({ preventivi, clienti = [], onDayClick, onCli
   const goToday = () => setCurrent(new Date(today.getFullYear(), today.getMonth(), today.getDate()))
 
   const getEventsForDate = (dateStr: string): DayEvent[] => {
+    const normDate = (d: string | null | undefined) => d ? d.slice(0, 10) : null
     const evPreventivi: DayEvent[] = preventivi
-      .filter(p => p.data_evento === dateStr)
+      .filter(p => normDate(p.data_evento) === dateStr)
       .map(p => ({ id: p.id, label: p.cliente, color: 'var(--ac)', type: 'preventivo' as const }))
     const evClienti: DayEvent[] = clienti
-      .filter(c => c.data_evento === dateStr)
+      .filter(c => normDate(c.data_evento) === dateStr)
       .map(c => ({
         id: c.id,
         label: c.nome1 + (c.nome2 ? ` & ${c.nome2}` : ''),
@@ -97,7 +98,7 @@ export const PreventiviCalendar = ({ preventivi, clienti = [], onDayClick, onCli
 
   const handleDayClick = (date: Date) => {
     const dateStr = toDateStr(date)
-    const dayClienti = clienti.filter(c => c.data_evento === dateStr)
+    const dayClienti = clienti.filter(c => (c.data_evento ?? '').slice(0, 10) === dateStr)
 
     if (dayClienti.length > 0) {
       const dateLabel = date.toLocaleDateString('it-IT', {
