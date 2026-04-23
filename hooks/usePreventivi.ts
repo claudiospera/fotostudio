@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import type { Preventivo } from '@/lib/types'
 
 export const usePreventivi = () => {
@@ -7,30 +6,26 @@ export const usePreventivi = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const supabase = createClient()
-
   const fetch = useCallback(async () => {
     setLoading(true)
     setError(null)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { setLoading(false); return }
-
-    const { data, error: err } = await supabase
-      .from('preventivi')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-
-    if (err) setError(`Errore caricamento preventivi: ${err.message}`)
-    else setPreventivi(data as Preventivo[])
-    setLoading(false)
-  }, [supabase])
+    try {
+      const res = await window.fetch('/api/preventivi')
+      if (!res.ok) throw new Error('Errore caricamento preventivi')
+      const data = await res.json()
+      setPreventivi(data as Preventivo[])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Errore sconosciuto')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => { fetch() }, [fetch])
 
   const deletePreventivo = async (id: string) => {
-    const { error: err } = await supabase.from('preventivi').delete().eq('id', id)
-    if (err) throw new Error(`Errore eliminazione preventivo: ${err.message}`)
+    const res = await window.fetch(`/api/preventivi/${id}`, { method: 'DELETE' })
+    if (!res.ok) throw new Error('Errore eliminazione preventivo')
     setPreventivi((prev) => prev.filter((p) => p.id !== id))
   }
 

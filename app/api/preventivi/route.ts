@@ -1,34 +1,30 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase/server'
+import { auth } from '@clerk/nextjs/server'
+import { sql } from '@/lib/db'
 
 export async function GET() {
-  const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
+  const { userId } = await auth()
+  if (!userId) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
-  const { data, error } = await supabase
-    .from('preventivi')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  const data = await sql`SELECT * FROM preventivi WHERE user_id = ${userId} ORDER BY created_at DESC`
   return NextResponse.json(data)
 }
 
 export async function POST(request: Request) {
-  const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
+  const { userId } = await auth()
+  if (!userId) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
+
+  await sql`INSERT INTO profiles (id) VALUES (${userId}) ON CONFLICT (id) DO NOTHING`
 
   const body = await request.json()
+  const { cliente, email, servizio, data_evento, gallery_id, voci, totale, stato, note } = body
 
-  const { data, error } = await supabase
-    .from('preventivi')
-    .insert({ ...body, user_id: user.id })
-    .select()
-    .single()
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data, { status: 201 })
+  const [row] = await sql`
+    INSERT INTO preventivi (user_id, cliente, email, servizio, data_evento, gallery_id, voci, totale, stato, note)
+    VALUES (${userId}, ${cliente}, ${email ?? null}, ${servizio ?? null}, ${data_evento ?? null},
+            ${gallery_id ?? null}, ${JSON.stringify(voci ?? [])}, ${totale ?? 0},
+            ${stato ?? 'bozza'}, ${note ?? null})
+    RETURNING *
+  `
+  return NextResponse.json(row, { status: 201 })
 }

@@ -1,33 +1,27 @@
 import { NextResponse } from 'next/server'
-import { createServiceClient } from '@/lib/supabase/service'
+import { sql } from '@/lib/db'
 
-// Route pubblica: nessun auth check, usa service role.
-// Espone solo gallerie con status 'active'.
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const supabase = createServiceClient()
 
-  const { data, error } = await supabase
-    .from('galleries')
-    .select(`
-      id, name, subtitle, type, date, status, cover_color, cover_url, settings,
-      photos ( id, url, filename, size_bytes, order_index, created_at ),
-      profiles ( name, studio_name )
-    `)
-    .eq('id', id)
-    .eq('status', 'active')
-    .single()
+  const rows = await sql`
+    SELECT
+      g.id, g.name, g.subtitle, g.type, g.date, g.status,
+      g.cover_color, g.cover_url, g.settings,
+      COALESCE(
+        (SELECT json_agg(
+          json_build_object('id', p.id, 'url', p.url, 'filename', p.filename,
+            'size_bytes', p.size_bytes, 'order_index', p.order_index, 'created_at', p.created_at)
+          ORDER BY p.filename)
+         FROM photos p WHERE p.gallery_id = g.id),
+        '[]'::json
+      ) AS photos,
+      (SELECT json_build_object('name', pr.name, 'studio_name', pr.studio_name)
+       FROM profiles pr WHERE pr.id = g.user_id) AS profiles
+    FROM galleries g
+    WHERE g.id = ${id} AND g.status = 'active'
+  `
 
-  if (error || !data) {
-    return NextResponse.json({ error: 'Galleria non trovata o non disponibile' }, { status: 404 })
-  }
-
-  // Ordina le foto per nome file (alfabetico/numerico)
-  if (data.photos) {
-    (data.photos as { filename: string }[]).sort((a, b) =>
-      (a.filename ?? '').localeCompare(b.filename ?? '', 'it', { numeric: true, sensitivity: 'base' })
-    )
-  }
-
-  return NextResponse.json(data)
+  if (!rows.length) return NextResponse.json({ error: 'Galleria non trovata o non disponibile' }, { status: 404 })
+  return NextResponse.json(rows[0])
 }

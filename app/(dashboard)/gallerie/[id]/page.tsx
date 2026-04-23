@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import type { Gallery, Photo, GalleryStatus } from '@/lib/types'
-import { createClient } from '@/lib/supabase/client'
+// Neon + Clerk: uploads via R2 presign
 import { useUIStore } from '@/store/ui'
 import { Menu } from 'lucide-react'
 
@@ -177,23 +177,29 @@ export default function GalleryDetailPage() {
         // 1. Comprimi se qualità bassa
         const fileToUpload = uploadQuality === 'bassa' ? await compressImage(file) : file
 
-        // 2. Carica su Supabase Storage (supporta iOS Safari nativamente)
-        const supabase = createClient()
-        const ext = fileToUpload.name.split('.').pop() ?? 'jpg'
-        const storagePath = `${id}/${folder ? folder + '/' : ''}${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-        const { data: uploaded, error: uploadError } = await supabase.storage
-          .from('photos')
-          .upload(storagePath, fileToUpload, { upsert: false, contentType: fileToUpload.type || 'image/jpeg' })
-        if (uploadError) throw new Error(`Upload fallito: ${uploadError.message}`)
+        // 2. Ottieni presign URL da R2
+        const presignRes = await fetch('/api/photos/presign', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename: fileToUpload.name, contentType: fileToUpload.type || 'image/jpeg', galleryId: id, folder }),
+        })
+        if (!presignRes.ok) throw new Error('Presign URL fallito')
+        const { uploadUrl, publicUrl, key: storagePath } = await presignRes.json()
+
+        // Carica su R2
+        const uploadRes = await fetch(uploadUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': fileToUpload.type || 'image/jpeg' },
+          body: fileToUpload,
+        })
+        if (!uploadRes.ok) throw new Error(`Upload R2 fallito: ${uploadRes.status}`)
         setUploads(m => new Map(m).set(key, 100))
 
-        const { data: { publicUrl } } = supabase.storage.from('photos').getPublicUrl(uploaded.path)
-
-        // 2. Salva i metadati nel DB
+        // 3. Salva i metadati nel DB
         const saveRes = await fetch('/api/photos', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ gallery_id: id, url: publicUrl, storage_path: uploaded.path, filename: file.name, size_bytes: fileToUpload.size, folder }),
+          body: JSON.stringify({ gallery_id: id, url: publicUrl, storage_path: storagePath, filename: file.name, size_bytes: fileToUpload.size, folder }),
         })
         if (!saveRes.ok) {
           const e = await saveRes.json().catch(() => ({}))

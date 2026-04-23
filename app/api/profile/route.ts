@@ -1,38 +1,39 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase/server'
+import { auth } from '@clerk/nextjs/server'
+import { sql } from '@/lib/db'
 
 export async function GET() {
-  const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
+  const { userId } = await auth()
+  if (!userId) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
-  const { data } = await supabase
-    .from('profiles')
-    .select('id, name, studio_name, plan, telefono, email, iban')
-    .eq('id', user.id)
-    .single()
+  // Upsert profile on first access
+  await sql`INSERT INTO profiles (id) VALUES (${userId}) ON CONFLICT (id) DO NOTHING`
 
-  return NextResponse.json(data ?? {})
+  const [profile] = await sql`
+    SELECT id, name, studio_name, plan, telefono, email, iban
+    FROM profiles WHERE id = ${userId}
+  `
+  return NextResponse.json(profile ?? {})
 }
 
 export async function PATCH(request: Request) {
-  const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
+  const { userId } = await auth()
+  if (!userId) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
   const body = await request.json()
   const allowed = ['name', 'studio_name', 'telefono', 'email', 'iban']
-  const patch = Object.fromEntries(
-    Object.entries(body).filter(([k]) => allowed.includes(k))
+  const patch = Object.fromEntries(Object.entries(body).filter(([k]) => allowed.includes(k)))
+
+  if (Object.keys(patch).length === 0) return NextResponse.json({ error: 'Nessun campo' }, { status: 400 })
+
+  const keys = Object.keys(patch)
+  const vals = Object.values(patch)
+  const setClauses = keys.map((k, i) => `${k} = $${i + 2}`).join(', ')
+
+  const updated = await sql.query(
+    `UPDATE profiles SET ${setClauses} WHERE id = $1 RETURNING *`,
+    [userId, ...vals]
   )
-
-  const { data, error } = await supabase
-    .from('profiles')
-    .update(patch)
-    .eq('id', user.id)
-    .select()
-    .single()
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data)
+  const rows = (updated as unknown as { rows: unknown[] }).rows ?? updated
+  return NextResponse.json((rows as unknown[])[0])
 }

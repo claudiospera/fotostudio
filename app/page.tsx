@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { createServerClient } from '@/lib/supabase/server'
+import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import {
   Heart, User, Users, Camera, Briefcase, Star,
@@ -8,9 +8,8 @@ import {
 
 // Se il fotografo è già loggato, va direttamente alla dashboard
 export default async function HomePage() {
-  const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (user) redirect('/dashboard')
+  const { userId } = await auth()
+  if (userId) redirect('/dashboard')
 
   return (
     <div style={{ fontFamily: 'DM Sans, sans-serif', color: 'var(--tx)', background: 'var(--bg)', minHeight: '100vh' }}>

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createServiceClient } from '@/lib/supabase/service'
+import { sql } from '@/lib/db'
 
 const PHOTOGRAPHER_EMAIL = 'info@claudiospera.com'
 
@@ -196,16 +196,12 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Parametri mancanti' }, { status: 400 })
   }
 
-  const supabase = createServiceClient()
-  const { data, error } = await supabase
-    .from('print_orders')
-    .select('*')
-    .eq('session_id', session_id)
-    .eq('gallery_id', gallery_id)
-    .order('created_at', { ascending: false })
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data ?? [])
+  const data = await sql`
+    SELECT * FROM print_orders
+    WHERE session_id = ${session_id} AND gallery_id = ${gallery_id}
+    ORDER BY created_at DESC
+  `
+  return NextResponse.json(data)
 }
 
 // ── POST: crea ordine ────────────────────────────────────────────────────────
@@ -216,19 +212,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Dati ordine incompleti' }, { status: 400 })
   }
 
-  const supabase = createServiceClient()
+  const [gallery] = await sql`SELECT name FROM galleries WHERE id = ${gallery_id}`
 
-  // Recupera nome galleria per l'email
-  const { data: gallery } = await supabase.from('galleries').select('name').eq('id', gallery_id).single()
-
-  // Salva ordine su DB
-  const { data: order, error } = await supabase
-    .from('print_orders')
-    .insert({ gallery_id, session_id, client_name, client_email, items, total, notes, status: 'nuovo' })
-    .select()
-    .single()
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  const [order] = await sql`
+    INSERT INTO print_orders (gallery_id, session_id, client_name, client_email, items, total, notes, status)
+    VALUES (${gallery_id}, ${session_id}, ${client_name ?? null}, ${client_email ?? null},
+            ${JSON.stringify(items)}, ${total}, ${notes ?? null}, 'nuovo')
+    RETURNING *
+  `
+  if (!order) return NextResponse.json({ error: 'Errore creazione ordine' }, { status: 500 })
 
   // Invia email al fotografo
   const emailPayload = {

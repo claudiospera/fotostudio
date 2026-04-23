@@ -1,40 +1,27 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase/server'
+import { auth } from '@clerk/nextjs/server'
+import { sql } from '@/lib/db'
 
 export async function GET() {
-  const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
+  const { userId } = await auth()
+  if (!userId) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
-  // Recupera tutte le foto dell'utente con size_bytes e gallery info
-  const { data: photos, error } = await supabase
-    .from('photos')
-    .select('size_bytes, gallery_id, galleries!inner(id, name, status, user_id)')
-    .eq('galleries.user_id', user.id)
+  const rows = await sql`
+    SELECT
+      g.id, g.name, g.status,
+      COALESCE(SUM(p.size_bytes), 0)::bigint AS bytes
+    FROM galleries g
+    LEFT JOIN photos p ON p.gallery_id = g.id
+    WHERE g.user_id = ${userId}
+    GROUP BY g.id, g.name, g.status
+    ORDER BY bytes DESC
+  `
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-
-  const bytesByGallery: Record<string, { bytes: number; name: string; status: string }> = {}
-  let totalBytes = 0
-
-  for (const photo of photos ?? []) {
-    const size = photo.size_bytes ?? 0
-    const gId = photo.gallery_id
-    const gallery = Array.isArray(photo.galleries) ? photo.galleries[0] : photo.galleries
-    if (!bytesByGallery[gId]) {
-      bytesByGallery[gId] = { bytes: 0, name: (gallery as { name: string }).name ?? 'Senza nome', status: (gallery as { status: string }).status ?? '' }
-    }
-    bytesByGallery[gId].bytes += size
-    totalBytes += size
-  }
-
-  const galleriesList = Object.entries(bytesByGallery)
-    .map(([id, { bytes, name, status }]) => ({ id, name, status, bytes }))
-    .sort((a, b) => b.bytes - a.bytes)
+  const totalBytes = (rows as { bytes: number }[]).reduce((acc, r) => acc + Number(r.bytes), 0)
 
   return NextResponse.json({
     totalBytes,
-    limitBytes: 10 * 1024 * 1024 * 1024, // 10 GB
-    galleries: galleriesList,
+    limitBytes: 10 * 1024 * 1024 * 1024,
+    galleries: rows,
   })
 }

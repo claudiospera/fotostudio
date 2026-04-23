@@ -1,34 +1,42 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase/server'
+import { auth } from '@clerk/nextjs/server'
+import { sql } from '@/lib/db'
 
 export async function GET() {
-  const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
+  const { userId } = await auth()
+  if (!userId) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
-  const { data, error } = await supabase
-    .from('galleries')
-    .select('*, photos(id, url, order_index)')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
+  const data = await sql`
+    SELECT g.*,
+      COALESCE(
+        (SELECT json_agg(json_build_object('id', p.id, 'url', p.url, 'order_index', p.order_index) ORDER BY p.order_index)
+         FROM photos p WHERE p.gallery_id = g.id),
+        '[]'::json
+      ) AS photos
+    FROM galleries g
+    WHERE g.user_id = ${userId}
+    ORDER BY g.created_at DESC
+  `
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
 }
 
 export async function POST(request: Request) {
-  const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
+  const { userId } = await auth()
+  if (!userId) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
+
+  // Ensure profile exists
+  await sql`INSERT INTO profiles (id) VALUES (${userId}) ON CONFLICT (id) DO NOTHING`
 
   const body = await request.json()
+  const { name, subtitle, type, date, status, cover_color, settings } = body
 
-  const { data, error } = await supabase
-    .from('galleries')
-    .insert({ ...body, user_id: user.id })
-    .select()
-    .single()
+  const [row] = await sql`
+    INSERT INTO galleries (user_id, name, subtitle, type, date, status, cover_color, settings)
+    VALUES (${userId}, ${name}, ${subtitle ?? null}, ${type ?? null}, ${date ?? null},
+            ${status ?? 'draft'}, ${cover_color ?? '#2a3830'}, ${settings ? JSON.stringify(settings) : null})
+    RETURNING *
+  `
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data, { status: 201 })
+  return NextResponse.json(row, { status: 201 })
 }

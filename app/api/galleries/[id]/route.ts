@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase/server'
+import { auth } from '@clerk/nextjs/server'
+import { sql } from '@/lib/db'
 import { S3Client, ListObjectsV2Command, DeleteObjectsCommand } from '@aws-sdk/client-s3'
 
 const r2 = new S3Client({
@@ -13,37 +14,41 @@ const r2 = new S3Client({
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
+  const { userId } = await auth()
+  if (!userId) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
-  const { data, error } = await supabase
-    .from('galleries')
-    .select('*, photos(*), clients:gallery_clients(*)')
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .order('filename', { referencedTable: 'photos', ascending: true })
-    .single()
+  const rows = await sql`
+    SELECT g.*,
+      COALESCE(
+        (SELECT json_agg(p.* ORDER BY p.filename)
+         FROM photos p WHERE p.gallery_id = g.id),
+        '[]'::json
+      ) AS photos,
+      COALESCE(
+        (SELECT json_agg(c.*)
+         FROM gallery_clients c WHERE c.gallery_id = g.id),
+        '[]'::json
+      ) AS clients
+    FROM galleries g
+    WHERE g.id = ${id} AND g.user_id = ${userId}
+  `
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 404 })
-  return NextResponse.json(data)
+  if (!rows.length) return NextResponse.json({ error: 'Galleria non trovata' }, { status: 404 })
+  return NextResponse.json(rows[0])
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
+  const { userId } = await auth()
+  if (!userId) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
-  // Verifica proprietà
-  const { data: gallery } = await supabase.from('galleries').select('id').eq('id', id).eq('user_id', user.id).single()
-  if (!gallery) return NextResponse.json({ error: 'Galleria non trovata' }, { status: 404 })
+  const rows = await sql`SELECT id FROM galleries WHERE id = ${id} AND user_id = ${userId}`
+  if (!rows.length) return NextResponse.json({ error: 'Galleria non trovata' }, { status: 404 })
 
-  // Elimina tutti gli oggetti R2 della galleria
   try {
     const listed = await r2.send(new ListObjectsV2Command({
       Bucket: process.env.CLOUDFLARE_R2_BUCKET!,
-      Prefix: `${user.id}/${id}/`,
+      Prefix: `${userId}/${id}/`,
     }))
     const keys = (listed.Contents ?? []).map(o => ({ Key: o.Key! }))
     if (keys.length > 0) {
@@ -54,29 +59,32 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     }
   } catch { /* se R2 fallisce, prosegui comunque */ }
 
-  // Elimina dal DB (CASCADE elimina photos, favorites, comments)
-  const { error } = await supabase.from('galleries').delete().eq('id', id).eq('user_id', user.id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-
+  await sql`DELETE FROM galleries WHERE id = ${id} AND user_id = ${userId}`
   return NextResponse.json({ ok: true })
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
+  const { userId } = await auth()
+  if (!userId) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
   const body = await request.json()
+  const allowed = ['name','subtitle','type','date','status','cover_color','cover_url','settings']
+  const patch = Object.fromEntries(Object.entries(body).filter(([k]) => allowed.includes(k)))
 
-  const { data, error } = await supabase
-    .from('galleries')
-    .update(body)
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .select()
-    .single()
+  if (Object.keys(patch).length === 0) return NextResponse.json({ error: 'Nessun campo' }, { status: 400 })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data)
+  // Dynamic PATCH: build positional params
+  const keys = Object.keys(patch)
+  const vals = Object.values(patch)
+  const setClauses = keys.map((k, i) => `${k} = $${i + 3}`).join(', ')
+
+  const updated = await sql.query(
+    `UPDATE galleries SET ${setClauses}, updated_at = now() WHERE id = $1 AND user_id = $2 RETURNING *`,
+    [id, userId, ...vals]
+  )
+
+  const rows = (updated as unknown as { rows: unknown[] }).rows ?? updated
+  if (!(rows as unknown[]).length) return NextResponse.json({ error: 'Galleria non trovata' }, { status: 404 })
+  return NextResponse.json((rows as unknown[])[0])
 }

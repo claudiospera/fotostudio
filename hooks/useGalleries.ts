@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import type { Gallery } from '@/lib/types'
 
 export const useGalleries = () => {
@@ -7,30 +6,26 @@ export const useGalleries = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const supabase = createClient()
-
   const fetch = useCallback(async () => {
     setLoading(true)
     setError(null)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { setLoading(false); return }
-
-    const { data, error: err } = await supabase
-      .from('galleries')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-
-    if (err) setError(`Errore caricamento gallerie: ${err.message}`)
-    else setGalleries(data as Gallery[])
-    setLoading(false)
-  }, [supabase])
+    try {
+      const res = await window.fetch('/api/galleries')
+      if (!res.ok) throw new Error('Errore caricamento gallerie')
+      const data = await res.json()
+      setGalleries(data as Gallery[])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Errore sconosciuto')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => { fetch() }, [fetch])
 
   const deleteGallery = async (id: string) => {
-    const { error: err } = await supabase.from('galleries').delete().eq('id', id)
-    if (err) throw new Error(`Errore eliminazione galleria: ${err.message}`)
+    const res = await window.fetch(`/api/galleries/${id}`, { method: 'DELETE' })
+    if (!res.ok) throw new Error('Errore eliminazione galleria')
     setGalleries((prev) => prev.filter((g) => g.id !== id))
   }
 

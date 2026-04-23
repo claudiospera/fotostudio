@@ -1,64 +1,43 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase/server'
-import { createServiceClient } from '@/lib/supabase/service'
+import { auth } from '@clerk/nextjs/server'
+import { sql } from '@/lib/db'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const auth = await createServerClient()
-  const { data: { user } } = await auth.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
+  const { userId } = await auth()
+  if (!userId) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
-  const { data: gallery } = await auth.from('galleries').select('id').eq('id', id).eq('user_id', user.id).single()
-  if (!gallery) return NextResponse.json({ error: 'Galleria non trovata' }, { status: 404 })
+  const gallery = await sql`SELECT id FROM galleries WHERE id = ${id} AND user_id = ${userId}`
+  if (!gallery.length) return NextResponse.json({ error: 'Galleria non trovata' }, { status: 404 })
 
-  const supabase = createServiceClient()
-  const { data, error } = await supabase
-    .from('print_orders')
-    .select('*')
-    .eq('gallery_id', id)
-    .order('created_at', { ascending: false })
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data ?? [])
+  const data = await sql`SELECT * FROM print_orders WHERE gallery_id = ${id} ORDER BY created_at DESC`
+  return NextResponse.json(data)
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const auth = await createServerClient()
-  const { data: { user } } = await auth.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
+  const { userId } = await auth()
+  if (!userId) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
   const { order_id, status } = await req.json()
-  const supabase = createServiceClient()
-  const { data, error } = await supabase
-    .from('print_orders')
-    .update({ status })
-    .eq('id', order_id)
-    .eq('gallery_id', id)
-    .select()
-    .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data)
+  const updated = await sql.query(
+    'UPDATE print_orders SET status = $1 WHERE id = $2 AND gallery_id = $3 RETURNING *',
+    [status, order_id, id]
+  )
+  const rows = (updated as unknown as { rows: unknown[] }).rows ?? updated
+  return NextResponse.json((rows as unknown[])[0])
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const auth = await createServerClient()
-  const { data: { user } } = await auth.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
+  const { userId } = await auth()
+  if (!userId) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
-  const { data: gallery } = await auth.from('galleries').select('id').eq('id', id).eq('user_id', user.id).single()
-  if (!gallery) return NextResponse.json({ error: 'Galleria non trovata' }, { status: 404 })
+  const gallery = await sql`SELECT id FROM galleries WHERE id = ${id} AND user_id = ${userId}`
+  if (!gallery.length) return NextResponse.json({ error: 'Galleria non trovata' }, { status: 404 })
 
   const { order_id } = await req.json()
-  const supabase = createServiceClient()
-  const { error } = await supabase
-    .from('print_orders')
-    .delete()
-    .eq('id', order_id)
-    .eq('gallery_id', id)
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  await sql`DELETE FROM print_orders WHERE id = ${order_id} AND gallery_id = ${id}`
   return NextResponse.json({ ok: true })
 }
