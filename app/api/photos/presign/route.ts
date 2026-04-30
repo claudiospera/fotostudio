@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
-import { getPresignedUploadUrl } from '@/lib/r2'
+import { getPresignedUploadUrl, ensureCors } from '@/lib/r2'
 
 export async function POST(request: Request) {
   const { userId } = await auth()
@@ -10,6 +10,9 @@ export async function POST(request: Request) {
   if (!filename || !contentType || !galleryId) {
     return NextResponse.json({ error: 'Parametri mancanti' }, { status: 400 })
   }
+
+  // Garantisce che il bucket R2 abbia la CORS policy corretta
+  await ensureCors()
 
   const ext = filename.split('.').pop()
   const folderPath = folder ? `${folder}/` : ''

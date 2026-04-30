@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
+import { S3Client, PutObjectCommand, DeleteObjectCommand, PutBucketCorsCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 // Cloudflare R2 è S3-compatibile — usa l'endpoint specifico dell'account
@@ -26,6 +26,29 @@ export async function uploadToR2(
     ContentType: contentType,
   }))
   return `${publicUrl}/${key}`
+}
+
+// Applica CORS al bucket una volta sola per cold-start
+let corsApplied = false
+export async function ensureCors(): Promise<void> {
+  if (corsApplied) return
+  corsApplied = true
+  const origins = [
+    process.env.NEXT_PUBLIC_APP_URL,
+    'http://localhost:3000',
+  ].filter(Boolean) as string[]
+  await r2.send(new PutBucketCorsCommand({
+    Bucket: bucket,
+    CORSConfiguration: {
+      CORSRules: [{
+        AllowedOrigins: origins,
+        AllowedMethods: ['GET', 'PUT', 'DELETE', 'HEAD'],
+        AllowedHeaders: ['*'],
+        ExposeHeaders: ['ETag'],
+        MaxAgeSeconds: 3600,
+      }],
+    },
+  }))
 }
 
 export async function getPresignedUploadUrl(
