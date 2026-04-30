@@ -2,11 +2,11 @@ import { S3Client, PutObjectCommand, DeleteObjectCommand, PutBucketCorsCommand }
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 // Cloudflare R2 è S3-compatibile — usa l'endpoint specifico dell'account
-const accountId = process.env.CLOUDFLARE_R2_ACCOUNT_ID!
-const accessKeyId = process.env.CLOUDFLARE_R2_ACCESS_KEY!
-const secretAccessKey = process.env.CLOUDFLARE_R2_SECRET_KEY!
-const bucket = process.env.CLOUDFLARE_R2_BUCKET!
-const publicUrl = process.env.CLOUDFLARE_R2_PUBLIC_URL! // es. https://pub-xxx.r2.dev
+const accountId = process.env.CLOUDFLARE_R2_ACCOUNT_ID!.trim()
+const accessKeyId = process.env.CLOUDFLARE_R2_ACCESS_KEY!.trim()
+const secretAccessKey = process.env.CLOUDFLARE_R2_SECRET_KEY!.trim()
+const bucket = process.env.CLOUDFLARE_R2_BUCKET!.trim()
+const publicUrl = process.env.CLOUDFLARE_R2_PUBLIC_URL!.trim() // es. https://pub-xxx.r2.dev
 
 export const r2 = new S3Client({
   region: 'auto',
