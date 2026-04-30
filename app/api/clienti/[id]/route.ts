@@ -16,9 +16,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     `UPDATE clienti SET ${setClauses}, updated_at = now() WHERE id = $1 AND user_id = $2 RETURNING *`,
     [id, userId, ...vals]
   )
-  const rows = (updated as unknown as { rows: unknown[] }).rows ?? updated
+  const rows = (updated as unknown as { rows: Record<string, unknown>[] }).rows ?? updated
   if (!(rows as unknown[]).length) return NextResponse.json({ error: 'Non trovato' }, { status: 404 })
-  return NextResponse.json((rows as unknown[])[0])
+  const NUMERIC_FIELDS = ['importo_totale', 'acconto', 'saldo', 'album_pagine']
+  const row = { ...(rows as Record<string, unknown>[])[0] }
+  for (const f of NUMERIC_FIELDS) {
+    if (row[f] !== null && row[f] !== undefined) row[f] = Number(row[f])
+  }
+  return NextResponse.json(row)
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {

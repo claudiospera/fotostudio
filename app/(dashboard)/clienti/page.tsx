@@ -39,11 +39,11 @@ const CATEGORIE: CategoriaCliente[] = [
 
 function formatDate(d?: string) {
   if (!d) return '—'
-  return new Date(d).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })
+  return new Date(d.slice(0, 10) + 'T00:00:00').toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
 function saldo(c: Cliente) {
-  return (c.importo_totale || 0) - (c.acconto || 0) - (c.saldo || 0)
+  return Number(c.importo_totale ?? 0) - Number(c.acconto ?? 0) - Number(c.saldo ?? 0)
 }
 
 // ── EMPTY FORM ──────────────────────────────────────────────────────────────
@@ -507,14 +507,14 @@ function ClienteCard({ cliente: c, onEdit, onDelete }: {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 4 }}>
           <div style={{ background: 'var(--s2)', borderRadius: 'var(--r2)', padding: '10px 12px', border: '1px solid rgba(255,255,255,0.06)' }}>
             <p style={{ margin: 0, fontSize: 10, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Acconto</p>
-            <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: (c.acconto || 0) > 0 ? 'var(--ac)' : 'var(--t3)' }}>
-              {(c.acconto || 0) > 0 ? `${(c.acconto).toLocaleString('it-IT')} €` : '—'}
+            <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: Number(c.acconto) > 0 ? 'var(--ac)' : 'var(--t3)' }}>
+              {Number(c.acconto) > 0 ? `${Number(c.acconto).toLocaleString('it-IT')} €` : '—'}
             </p>
           </div>
           <div style={{ background: 'var(--s2)', borderRadius: 'var(--r2)', padding: '10px 12px', border: '1px solid rgba(255,255,255,0.06)' }}>
             <p style={{ margin: 0, fontSize: 10, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Totale</p>
-            <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: (c.importo_totale || 0) > 0 ? 'var(--tx)' : 'var(--t3)' }}>
-              {(c.importo_totale || 0) > 0 ? `${(c.importo_totale).toLocaleString('it-IT')} €` : '—'}
+            <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: Number(c.importo_totale) > 0 ? 'var(--tx)' : 'var(--t3)' }}>
+              {Number(c.importo_totale) > 0 ? `${Number(c.importo_totale).toLocaleString('it-IT')} €` : '—'}
             </p>
           </div>
         </div>
@@ -630,7 +630,7 @@ function ClienteForm({ initial, onSave, onClose }: {
   const showPersona2    = MATRIMONIO_TYPES.includes(form.categoria)
   const showGenitori    = GENITORI_TYPES.includes(form.categoria)
   const showPacchetti   = PKG_TYPES.includes(form.categoria)
-  const residuo         = (form.importo_totale || 0) - (form.acconto || 0) - (form.saldo || 0)
+  const residuo         = Number(form.importo_totale ?? 0) - Number(form.acconto ?? 0) - Number(form.saldo ?? 0)
 
   return (
     <div

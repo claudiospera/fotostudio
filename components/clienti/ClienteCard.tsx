@@ -30,14 +30,15 @@ const CAT_EMOJI: Record<CategoriaCliente, string> = {
 
 function formatDate(d?: string) {
   if (!d) return '—'
-  return new Date(d + 'T00:00:00').toLocaleDateString('it-IT', {
+  return new Date(d.slice(0, 10) + 'T00:00:00').toLocaleDateString('it-IT', {
     day: '2-digit', month: 'long', year: 'numeric',
   })
 }
 
-function formatEuro(n?: number) {
-  if (!n) return '—'
-  return '€' + n.toLocaleString('it-IT')
+function formatEuro(n?: number | string | null) {
+  const num = Number(n)
+  if (!num) return '—'
+  return '€' + num.toLocaleString('it-IT')
 }
 
 interface ClienteCardProps {
@@ -50,7 +51,7 @@ interface ClienteCardProps {
 export const ClienteCard = ({ cliente: c, profile, onModifica, onElimina }: ClienteCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null)
 
-  const saldo = (c.importo_totale ?? 0) - (c.acconto ?? 0) - (c.saldo ?? 0)
+  const saldo = Number(c.importo_totale ?? 0) - Number(c.acconto ?? 0) - Number(c.saldo ?? 0)
   const catColor = CAT_COLORS[c.categoria] ?? '#666'
   const catEmoji = CAT_EMOJI[c.categoria] ?? '📷'
 

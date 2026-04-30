@@ -96,7 +96,7 @@ function NuovoCalendarioModal({ onClose, onSaved }: { onClose: () => void; onSav
 }
 
 function formatDateRange(d1?: string, d2?: string) {
-  const fmt = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  const fmt = (d: string) => new Date(d.slice(0, 10) + 'T00:00:00').toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })
   if (d1 && d2) return `${fmt(d1)} – ${fmt(d2)}`
   if (d1) return `Dal ${fmt(d1)}`
   if (d2) return `Fino al ${fmt(d2)}`

@@ -38,22 +38,32 @@ async function compressImage(file: File, maxSide = 1920, quality = 0.7): Promise
     /\.hei[cf]$/i.test(file.name)
   if (isHeic) return file
   return new Promise(resolve => {
+    // Fallback timeout: se canvas.toBlob non chiama il callback entro 10s, usa il file originale
+    const timer = setTimeout(() => resolve(file), 10_000)
+
     const img = new Image()
     const url = URL.createObjectURL(file)
     img.onload = () => {
+      clearTimeout(timer)
       URL.revokeObjectURL(url)
-      const scale = Math.min(1, maxSide / Math.max(img.width, img.height))
-      const canvas = document.createElement('canvas')
-      canvas.width  = Math.round(img.width  * scale)
-      canvas.height = Math.round(img.height * scale)
-      canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
-      canvas.toBlob(blob => {
-        if (!blob) return resolve(file)
-        const name = file.name.replace(/\.[^.]+$/, '.jpg')
-        resolve(new File([blob], name, { type: 'image/jpeg' }))
-      }, 'image/jpeg', quality)
+      try {
+        const scale = Math.min(1, maxSide / Math.max(img.width || 1, img.height || 1))
+        const canvas = document.createElement('canvas')
+        canvas.width  = Math.round(img.width  * scale) || 1
+        canvas.height = Math.round(img.height * scale) || 1
+        const ctx = canvas.getContext('2d')
+        if (!ctx) { resolve(file); return }
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        canvas.toBlob(blob => {
+          if (!blob || blob.size === 0) { resolve(file); return }
+          const name = file.name.replace(/\.[^.]+$/, '.jpg')
+          resolve(new File([blob], name, { type: 'image/jpeg' }))
+        }, 'image/jpeg', quality)
+      } catch {
+        resolve(file)
+      }
     }
-    img.onerror = () => { URL.revokeObjectURL(url); resolve(file) }
+    img.onerror = () => { clearTimeout(timer); URL.revokeObjectURL(url); resolve(file) }
     img.src = url
   })
 }
@@ -169,6 +179,8 @@ export default function GalleryDetailPage() {
 
     const folder = targetFolder !== undefined ? targetFolder : uploadFolder
 
+    setUploadError(null)
+
     for (const file of list) {
       const key = `${file.name}-${file.size}`
       setUploads(m => new Map(m).set(key, 0))
@@ -176,26 +188,27 @@ export default function GalleryDetailPage() {
       try {
         // 1. Comprimi se qualità bassa
         const fileToUpload = uploadQuality === 'bassa' ? await compressImage(file) : file
+        const contentType = fileToUpload.type || 'image/jpeg'
 
         // 2. Ottieni presign URL da R2
         const presignRes = await fetch('/api/photos/presign', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ filename: fileToUpload.name, contentType: fileToUpload.type || 'image/jpeg', galleryId: id, folder }),
+          body: JSON.stringify({ filename: fileToUpload.name, contentType, galleryId: id, folder }),
         })
-        if (!presignRes.ok) throw new Error('Presign URL fallito')
+        if (!presignRes.ok) throw new Error(`Errore server (presign): ${presignRes.status}`)
         const { uploadUrl, publicUrl, key: storagePath } = await presignRes.json()
 
-        // Carica su R2
+        // 3. Carica su R2
         const uploadRes = await fetch(uploadUrl, {
           method: 'PUT',
-          headers: { 'Content-Type': fileToUpload.type || 'image/jpeg' },
+          headers: { 'Content-Type': contentType },
           body: fileToUpload,
         })
-        if (!uploadRes.ok) throw new Error(`Upload R2 fallito: ${uploadRes.status}`)
+        if (!uploadRes.ok) throw new Error(`Errore upload R2: ${uploadRes.status}`)
         setUploads(m => new Map(m).set(key, 100))
 
-        // 3. Salva i metadati nel DB
+        // 4. Salva i metadati nel DB
         const saveRes = await fetch('/api/photos', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -203,7 +216,7 @@ export default function GalleryDetailPage() {
         })
         if (!saveRes.ok) {
           const e = await saveRes.json().catch(() => ({}))
-          throw new Error(`Salvataggio DB fallito: ${e.error ?? saveRes.status}`)
+          throw new Error(`Errore salvataggio DB: ${e.error ?? saveRes.status}`)
         }
         const photo: Photo = await saveRes.json()
         setPhotos(prev => [...prev, photo].sort((a, b) => (a.filename ?? '').localeCompare(b.filename ?? '', 'it', { numeric: true, sensitivity: 'base' })))

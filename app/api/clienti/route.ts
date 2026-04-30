@@ -2,6 +2,16 @@ import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { sql } from '@/lib/db'
 
+const NUMERIC_FIELDS = ['importo_totale', 'acconto', 'saldo', 'album_pagine']
+
+function normalizeCliente(row: Record<string, unknown>) {
+  const out = { ...row }
+  for (const f of NUMERIC_FIELDS) {
+    if (out[f] !== null && out[f] !== undefined) out[f] = Number(out[f])
+  }
+  return out
+}
+
 export async function GET() {
   const { userId } = await auth()
   if (!userId) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
@@ -10,7 +20,7 @@ export async function GET() {
     SELECT * FROM clienti WHERE user_id = ${userId}
     ORDER BY data_evento ASC NULLS LAST
   `
-  return NextResponse.json(data)
+  return NextResponse.json((data as Record<string, unknown>[]).map(normalizeCliente))
 }
 
 export async function POST(req: Request) {
@@ -29,6 +39,6 @@ export async function POST(req: Request) {
     `INSERT INTO clienti (${colList}) VALUES (${placeholders}) RETURNING *`,
     [userId, ...vals]
   )
-  const rows = (updated as unknown as { rows: unknown[] }).rows ?? updated
-  return NextResponse.json((rows as unknown[])[0], { status: 201 })
+  const rows = (updated as unknown as { rows: Record<string, unknown>[] }).rows ?? updated
+  return NextResponse.json(normalizeCliente((rows as Record<string, unknown>[])[0]), { status: 201 })
 }

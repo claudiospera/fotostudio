@@ -19,7 +19,7 @@ export const slugify = (text: string): string =>
 
 export const formatDate = (dateStr: string | undefined): string => {
   if (!dateStr) return '—'
-  return new Date(dateStr).toLocaleDateString('it-IT', {
+  return new Date(dateStr.slice(0, 10) + 'T00:00:00').toLocaleDateString('it-IT', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',

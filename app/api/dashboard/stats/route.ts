@@ -6,6 +6,8 @@ export async function GET() {
   const { userId } = await auth()
   if (!userId) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
+  await sql`INSERT INTO profiles (id) VALUES (${userId}) ON CONFLICT (id) DO NOTHING`
+
   const [stats] = await sql`
     SELECT
       (SELECT COUNT(*) FROM galleries WHERE user_id = ${userId} AND status = 'active')::int AS "gallerieAttive",
