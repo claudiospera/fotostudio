@@ -11,8 +11,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Parametri mancanti' }, { status: 400 })
   }
 
-  // Garantisce che il bucket R2 abbia la CORS policy corretta
-  await ensureCors()
+  // Tenta di applicare CORS — non blocca l'upload se fallisce
+  const cors = await ensureCors()
+  if (!cors.ok) console.warn('[presign] CORS non applicata:', cors.error)
 
   const ext = filename.split('.').pop()
   const folderPath = folder ? `${folder}/` : ''

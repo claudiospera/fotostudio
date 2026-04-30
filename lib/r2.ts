@@ -28,27 +28,31 @@ export async function uploadToR2(
   return `${publicUrl}/${key}`
 }
 
-// Applica CORS al bucket una volta sola per cold-start
-let corsApplied = false
-export async function ensureCors(): Promise<void> {
-  if (corsApplied) return
-  corsApplied = true
+export async function ensureCors(): Promise<{ ok: boolean; error?: string }> {
   const origins = [
     process.env.NEXT_PUBLIC_APP_URL,
     'http://localhost:3000',
   ].filter(Boolean) as string[]
-  await r2.send(new PutBucketCorsCommand({
-    Bucket: bucket,
-    CORSConfiguration: {
-      CORSRules: [{
-        AllowedOrigins: origins,
-        AllowedMethods: ['GET', 'PUT', 'DELETE', 'HEAD'],
-        AllowedHeaders: ['*'],
-        ExposeHeaders: ['ETag'],
-        MaxAgeSeconds: 3600,
-      }],
-    },
-  }))
+  try {
+    await r2.send(new PutBucketCorsCommand({
+      Bucket: bucket,
+      CORSConfiguration: {
+        CORSRules: [{
+          AllowedOrigins: origins,
+          AllowedMethods: ['GET', 'PUT', 'DELETE', 'HEAD'],
+          AllowedHeaders: ['*'],
+          ExposeHeaders: ['ETag'],
+          MaxAgeSeconds: 86400,
+        }],
+      },
+    }))
+    console.log('[R2] CORS applicata per origini:', origins)
+    return { ok: true }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('[R2] Errore PutBucketCors:', msg)
+    return { ok: false, error: msg }
+  }
 }
 
 export async function getPresignedUploadUrl(
