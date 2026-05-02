@@ -43,7 +43,7 @@ function formatDate(d?: string) {
 }
 
 function saldo(c: Cliente) {
-  return Number(c.importo_totale ?? 0) - Number(c.acconto ?? 0) - Number(c.saldo ?? 0)
+  return Number(c.importo_totale ?? 0) - Number(c.acconto ?? 0)
 }
 
 // ── EMPTY FORM ──────────────────────────────────────────────────────────────
@@ -424,7 +424,7 @@ function ClienteCard({ cliente: c, onEdit, onDelete }: {
     }
     if (Number(c.importo_totale) > 0) lines.push(`\nTotale: €${Number(c.importo_totale).toLocaleString('it-IT')}`)
     if (Number(c.acconto) > 0) lines.push(`Acconto: €${Number(c.acconto).toLocaleString('it-IT')}`)
-    const res = Number(c.importo_totale ?? 0) - Number(c.acconto ?? 0) - Number(c.saldo ?? 0)
+    const res = Number(c.importo_totale ?? 0) - Number(c.acconto ?? 0)
     if (res !== 0) lines.push(`Saldo residuo: €${res.toLocaleString('it-IT')}`)
     if (c.album_tipo || c.album_formato) lines.push(`\nAlbum: ${[c.album_tipo, c.album_formato, c.album_pagine ? `${c.album_pagine} fogli` : ''].filter(Boolean).join(' · ')}`)
     if (c.note) lines.push(`\nNote: ${c.note}`)
@@ -683,7 +683,7 @@ function ClienteForm({ initial, onSave, onClose }: {
   const showPersona2    = MATRIMONIO_TYPES.includes(form.categoria)
   const showGenitori    = GENITORI_TYPES.includes(form.categoria)
   const showPacchetti   = PKG_TYPES.includes(form.categoria)
-  const residuo         = Number(form.importo_totale ?? 0) - Number(form.acconto ?? 0) - Number(form.saldo ?? 0)
+  const residuo         = Number(form.importo_totale ?? 0) - Number(form.acconto ?? 0)
 
   return (
     <div
