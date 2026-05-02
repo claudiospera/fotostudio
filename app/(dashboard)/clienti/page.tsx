@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, Suspense } from 'react'
+import React, { useEffect, useState, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Plus, Search, Pencil, Trash2, Phone, Mail, Calendar, MapPin, Download, Menu } from 'lucide-react'
 import type { Cliente, CategoriaCliente, PacchettoCliente } from '@/lib/types'
@@ -392,6 +392,7 @@ function ClienteCard({ cliente: c, onEdit, onDelete }: {
   onEdit: () => void
   onDelete: () => void
 }) {
+  const cardRef = React.useRef<HTMLDivElement>(null)
   const col     = CAT_COLORS[c.categoria] ?? '#8ec9b0'
   const emoji   = CAT_EMOJI[c.categoria]  ?? '📋'
   const residuo = saldo(c)
@@ -407,6 +408,16 @@ function ClienteCard({ cliente: c, onEdit, onDelete }: {
   const openEmail = () => {
     if (emailAddress) window.open(`mailto:${emailAddress}`, '_blank')
   }
+  const saveJpeg = async () => {
+    if (!cardRef.current) return
+    const html2canvas = (await import('html2canvas')).default
+    const canvas = await html2canvas(cardRef.current, { backgroundColor: '#1a1c1a', scale: 2 })
+    const link = document.createElement('a')
+    link.download = `${c.nome1}${c.nome2 ? `-${c.nome2}` : ''}.jpg`
+    link.href = canvas.toDataURL('image/jpeg', 0.92)
+    link.click()
+  }
+
   const printScheda = () => {
     const lines: string[] = []
     lines.push(`SCHEDA CLIENTE — ${c.nome1}${c.nome2 ? ` e ${c.nome2}` : ''}`)
@@ -452,7 +463,7 @@ function ClienteCard({ cliente: c, onEdit, onDelete }: {
   }
 
   return (
-    <div style={{
+    <div ref={cardRef} style={{
       background: 'var(--s1)',
       border: '1px solid rgba(255,255,255,0.07)',
       borderRadius: 'var(--r)',
@@ -592,6 +603,7 @@ function ClienteCard({ cliente: c, onEdit, onDelete }: {
           { label: '💬 WhatsApp',  action: openWhatsApp, border: true, disabled: !phoneNumber },
           { label: '✉️ Email',     action: openEmail,    border: false, disabled: !emailAddress },
           { label: '🖨️ Stampa',    action: printScheda,  border: true  },
+          { label: '🖼️ Salva JPEG', action: saveJpeg,     border: false },
         ].map(({ label, action, border, danger, disabled }) => (
           <button
             key={label}
