@@ -2,6 +2,7 @@ import type { ServiceType, GalleryStatus, PreventivoStato, PreventivoTemplate } 
 
 export const SERVICE_TYPES: ServiceType[] = [
   'Matrimonio',
+  'Promessa di Matrimonio',
   'Battesimo',
   'Comunione',
   '1 Anno',
@@ -19,6 +20,7 @@ export const SERVICE_TYPES: ServiceType[] = [
 
 export const SERVICE_TYPES_CERIMONIE: ServiceType[] = [
   'Matrimonio',
+  'Promessa di Matrimonio',
   'Battesimo',
   'Comunione',
   '1 Anno',

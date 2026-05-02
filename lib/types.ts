@@ -4,6 +4,7 @@ export type GalleryStatus = 'active' | 'draft' | 'archived'
 export type PreventivoStato = 'bozza' | 'inviato' | 'accettato' | 'rifiutato'
 export type ServiceType =
   | 'Matrimonio'
+  | 'Promessa di Matrimonio'
   | 'Battesimo'
   | 'Comunione'
   | '1 Anno'
