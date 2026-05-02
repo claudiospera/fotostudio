@@ -182,6 +182,10 @@ function ClientiContent() {
       if (res.ok) {
         const updated = await res.json()
         setClienti(prev => prev.map(c => c.id === updated.id ? updated : c))
+        setShowForm(false)
+        setEditing(null)
+      } else {
+        alert('Errore durante il salvataggio. Riprova.')
       }
     } else {
       const res = await fetch('/api/clienti', {
@@ -192,10 +196,12 @@ function ClientiContent() {
       if (res.ok) {
         const nuovo = await res.json()
         setClienti(prev => [nuovo, ...prev])
+        setShowForm(false)
+        setEditing(null)
+      } else {
+        alert('Errore durante il salvataggio. Riprova.')
       }
     }
-    setShowForm(false)
-    setEditing(null)
   }
 
   const handleDelete = async (id: string) => {
@@ -389,14 +395,60 @@ function ClienteCard({ cliente: c, onEdit, onDelete }: {
   const col     = CAT_COLORS[c.categoria] ?? '#8ec9b0'
   const emoji   = CAT_EMOJI[c.categoria]  ?? '📋'
   const residuo = saldo(c)
-  const contatto = c.tel1 || c.email1 || c.whatsapp1
+  const contatto = c.tel1 || c.email1 || c.whatsapp1 || c.genitore1_tel
+
+  const phoneNumber = c.whatsapp1 || c.tel1 || c.genitore1_tel || ''
+  const emailAddress = c.email1 || ''
 
   const openWhatsApp = () => {
-    const num = (c.whatsapp1 || c.tel1 || '').replace(/\D/g, '')
+    const num = phoneNumber.replace(/\D/g, '')
     if (num) window.open(`https://wa.me/39${num}`, '_blank')
   }
   const openEmail = () => {
-    if (c.email1) window.open(`mailto:${c.email1}`, '_blank')
+    if (emailAddress) window.open(`mailto:${emailAddress}`, '_blank')
+  }
+  const printScheda = () => {
+    const lines: string[] = []
+    lines.push(`SCHEDA CLIENTE — ${c.nome1}${c.nome2 ? ` e ${c.nome2}` : ''}`)
+    lines.push(`Categoria: ${c.categoria}`)
+    if (c.data_evento) lines.push(`Data evento: ${formatDate(c.data_evento)}`)
+    if (c.luogo_evento) lines.push(`Luogo: ${c.luogo_evento}`)
+    if (c.tel1) lines.push(`Tel: ${c.tel1}`)
+    if (c.whatsapp1) lines.push(`WhatsApp: ${c.whatsapp1}`)
+    if (c.email1) lines.push(`Email: ${c.email1}`)
+    if (c.genitore1_nome) lines.push(`Genitore 1: ${c.genitore1_nome}${c.genitore1_tel ? ` — ${c.genitore1_tel}` : ''}`)
+    if (c.genitore2_nome) lines.push(`Genitore 2: ${c.genitore2_nome}${c.genitore2_tel ? ` — ${c.genitore2_tel}` : ''}`)
+    if (c.pacchetti && c.pacchetti.length > 0) {
+      lines.push(`\nPacchetti:`)
+      c.pacchetti.forEach(p => lines.push(`  • ${p.nome}${p.prezzo ? ` — €${p.prezzo}` : ''}`))
+    }
+    if (Number(c.importo_totale) > 0) lines.push(`\nTotale: €${Number(c.importo_totale).toLocaleString('it-IT')}`)
+    if (Number(c.acconto) > 0) lines.push(`Acconto: €${Number(c.acconto).toLocaleString('it-IT')}`)
+    const res = Number(c.importo_totale ?? 0) - Number(c.acconto ?? 0) - Number(c.saldo ?? 0)
+    if (res !== 0) lines.push(`Saldo residuo: €${res.toLocaleString('it-IT')}`)
+    if (c.album_tipo || c.album_formato) lines.push(`\nAlbum: ${[c.album_tipo, c.album_formato, c.album_pagine ? `${c.album_pagine} fogli` : ''].filter(Boolean).join(' · ')}`)
+    if (c.note) lines.push(`\nNote: ${c.note}`)
+
+    const win = window.open('', '_blank')
+    if (!win) return
+    win.document.write(`
+      <html><head><title>Scheda — ${c.nome1}</title>
+      <style>
+        body { font-family: Arial, sans-serif; font-size: 13px; line-height: 1.6; padding: 32px; max-width: 600px; margin: 0 auto; color: #222; }
+        h1 { font-size: 18px; margin: 0 0 4px; }
+        hr { border: none; border-top: 1px solid #ccc; margin: 16px 0; }
+        pre { white-space: pre-wrap; font-family: inherit; margin: 0; }
+        @media print { body { padding: 0; } }
+      </style></head>
+      <body>
+        <h1>${c.nome1}${c.nome2 ? ` e ${c.nome2}` : ''}</h1>
+        <p style="color:#666;margin:0 0 16px">${c.categoria}${c.data_evento ? ` · ${formatDate(c.data_evento)}` : ''}</p>
+        <hr/>
+        <pre>${lines.slice(2).join('\n')}</pre>
+        <script>window.onload=()=>{window.print()}<\/script>
+      </body></html>
+    `)
+    win.document.close()
   }
 
   return (
@@ -456,7 +508,7 @@ function ClienteCard({ cliente: c, onEdit, onDelete }: {
           {contatto && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, color: 'var(--t2)' }}>
               <Phone size={12} style={{ color: 'var(--t3)', flexShrink: 0 }} />
-              <span>{c.tel1 || c.whatsapp1}</span>
+              <span>{c.tel1 || c.whatsapp1 || c.genitore1_tel}</span>
             </div>
           )}
         </div>
@@ -537,8 +589,9 @@ function ClienteCard({ cliente: c, onEdit, onDelete }: {
         {[
           { label: '✏️ Modifica',  action: onEdit,       border: true  },
           { label: '🗑️ Elimina',   action: onDelete,     border: false, danger: true },
-          { label: '💬 WhatsApp',  action: openWhatsApp, border: true, disabled: !c.tel1 && !c.whatsapp1 },
-          { label: '✉️ Email',     action: openEmail,    border: false, disabled: !c.email1 },
+          { label: '💬 WhatsApp',  action: openWhatsApp, border: true, disabled: !phoneNumber },
+          { label: '✉️ Email',     action: openEmail,    border: false, disabled: !emailAddress },
+          { label: '🖨️ Stampa',    action: printScheda,  border: true  },
         ].map(({ label, action, border, danger, disabled }) => (
           <button
             key={label}
