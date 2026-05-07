@@ -824,11 +824,6 @@ export default function ClientePortalPage() {
 
   const downloadAll = useCallback(async () => {
     if (!gallery || downloading) return
-    // iOS Safari non supporta download ZIP via browser
-    if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-      alert('Su iPhone/iPad non è possibile scaricare tutte le foto in una volta.\nPremi a lungo su ogni foto e scegli "Aggiungi alla Foto" per salvarla.')
-      return
-    }
     const abort = new AbortController()
     abortRef.current = abort
     setDownloading(true)
