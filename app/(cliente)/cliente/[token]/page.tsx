@@ -746,6 +746,7 @@ export default function ClientePortalPage() {
   // zip download
   const [downloading, setDownloading] = useState(false)
   const [downloadProgress, setDownloadProgress] = useState(0)
+  const abortRef = useRef<AbortController | null>(null)
 
   // istruzioni modal
   const [showIstruzioni, setShowIstruzioni] = useState(false)
@@ -817,27 +818,44 @@ export default function ClientePortalPage() {
   }, [])
 
   // ── download all as ZIP ───────────────────────────────────────────────────
+  const cancelDownload = useCallback(() => {
+    abortRef.current?.abort()
+  }, [])
+
   const downloadAll = useCallback(async () => {
     if (!gallery || downloading) return
+    // iOS Safari non supporta download ZIP via browser
+    if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+      alert('Su iPhone/iPad non è possibile scaricare tutte le foto in una volta.\nPremi a lungo su ogni foto e scegli "Aggiungi alla Foto" per salvarla.')
+      return
+    }
+    const abort = new AbortController()
+    abortRef.current = abort
     setDownloading(true)
     setDownloadProgress(0)
     try {
       const zip = new JSZip()
       const photos = gallery.photos
       for (let i = 0; i < photos.length; i++) {
+        if (abort.signal.aborted) break
         const photo = photos[i]
-        const res = await fetch(`/api/download?url=${encodeURIComponent(photo.url)}`)
+        const res = await fetch(`/api/download?url=${encodeURIComponent(photo.url)}`, { signal: abort.signal })
         const blob = await res.blob()
         zip.file(photo.filename || `foto-${i + 1}.jpg`, blob)
         setDownloadProgress(Math.round(((i + 1) / photos.length) * 100))
       }
-      const content = await zip.generateAsync({ type: 'blob' })
-      const a = document.createElement('a')
-      a.href = URL.createObjectURL(content)
-      a.download = `${gallery.name.replace(/[^a-z0-9]/gi, '-')}.zip`
-      a.click()
-      URL.revokeObjectURL(a.href)
+      if (!abort.signal.aborted) {
+        const content = await zip.generateAsync({ type: 'blob' })
+        const a = document.createElement('a')
+        a.href = URL.createObjectURL(content)
+        a.download = `${gallery.name.replace(/[^a-z0-9]/gi, '-')}.zip`
+        a.click()
+        URL.revokeObjectURL(a.href)
+      }
+    } catch (e) {
+      if ((e as Error).name !== 'AbortError') throw e
     } finally {
+      abortRef.current = null
       setDownloading(false)
       setDownloadProgress(0)
     }
@@ -1010,6 +1028,15 @@ export default function ClientePortalPage() {
                 </>
               )}
             </button>}
+            {downloading && (
+              <button
+                onClick={cancelDownload}
+                style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#fff0f0', color: '#c0392b', border: '1px solid #f5c6c6', borderRadius: 6, padding: '7px 12px', fontSize: '11px', fontWeight: 600, letterSpacing: '.04em', cursor: 'pointer', transition: 'all .15s', textTransform: 'uppercase' }}
+              >
+                <svg viewBox="0 0 24 24" width={11} height={11} fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                Annulla
+              </button>
+            )}
             {/* CTA Scorri */}
             <a
               href="#photos"
@@ -1095,6 +1122,22 @@ export default function ClientePortalPage() {
                   </>
                 )}
               </button>}
+            {downloading && (
+              <button
+                onClick={cancelDownload}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  background: '#fff0f0', color: '#c0392b',
+                  border: '1px solid #f5c6c6', borderRadius: 10, padding: '14px 24px',
+                  fontSize: '14px', fontWeight: 600, cursor: 'pointer',
+                  letterSpacing: '.03em', transition: 'all .15s', justifyContent: 'center',
+                  boxShadow: '0 2px 8px rgba(0,0,0,.06)',
+                }}
+              >
+                <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                Annulla
+              </button>
+            )}
             <button
               onClick={() => setShowIstruzioni(true)}
               style={{
