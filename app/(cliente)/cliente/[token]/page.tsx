@@ -85,7 +85,8 @@ function getSessionId(): string {
 }
 
 async function downloadPhoto(photo: Photo) {
-  const res = await fetch(photo.url)
+  const res = await fetch(`/api/download?url=${encodeURIComponent(photo.url)}`)
+  if (!res.ok) throw new Error('Download fallito')
   const blob = await res.blob()
   const a = document.createElement('a')
   a.href = URL.createObjectURL(blob)
@@ -825,7 +826,7 @@ export default function ClientePortalPage() {
       const photos = gallery.photos
       for (let i = 0; i < photos.length; i++) {
         const photo = photos[i]
-        const res = await fetch(photo.url)
+        const res = await fetch(`/api/download?url=${encodeURIComponent(photo.url)}`)
         const blob = await res.blob()
         zip.file(photo.filename || `foto-${i + 1}.jpg`, blob)
         setDownloadProgress(Math.round(((i + 1) / photos.length) * 100))
