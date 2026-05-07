@@ -1186,6 +1186,7 @@ export default function ClientePortalPage() {
               <p style={{ margin: '0 0 12px' }}>Puoi condividere il link con chi desideri: ognuno potrà scaricare solo le foto che preferisce.</p>
               <p style={{ margin: '0 0 12px' }}>Se deciderete di fare l&apos;album, vi basterà scegliere la quantità di foto concordata con il fotografo (c&apos;è anche un contatore all&apos;inizio della galleria), mettendo il &quot;like&quot; a quelle che vi emozionano di più (clic sul cuore).</p>
               <p style={{ margin: '0 0 12px' }}>In questo modo l&apos;album racconterà la vostra giornata attraverso gli scatti che sentite più vicini al cuore.</p>
+              <p style={{ margin: '0 0 12px' }}>Se invece dovete modificare un fotolibro, utilizzate il tasto commenti sotto le foto e suggerite al fotografo le modifiche da effettuare a quella pagina.</p>
               <p style={{ margin: '0 0 16px' }}>In ogni caso, vi chiedo di avvisarmi.</p>
               <p style={{ margin: '0 0 16px', fontStyle: 'italic', color: '#555' }}>PS: Se pubblichi qualcosa sui social, mi farebbe super piacere se mi taggassi!</p>
               <div style={{ background: '#f5f5f5', borderRadius: 8, padding: '10px 14px', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
