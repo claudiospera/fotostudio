@@ -85,7 +85,7 @@ export const Sidebar = () => {
       <Link
         href={href}
         className={cn(
-          'flex items-center gap-3 px-3 rounded-[var(--r2)] mb-1 text-[14px] transition-all duration-150 select-none relative',
+          'flex items-center gap-3 pl-4 pr-3 rounded-[var(--r2)] mb-1 text-[14px] transition-all duration-150 select-none relative',
           active
             ? 'text-[var(--ac)] font-medium'
             : 'text-[var(--t2)] hover:text-[var(--tx)] hover:bg-[var(--s2)]'
@@ -177,7 +177,7 @@ export const Sidebar = () => {
             <button
               onClick={() => setAppuntamentiOpen(o => !o)}
               className={cn(
-                'w-full flex items-center gap-3 px-3 rounded-[var(--r2)] mb-1 text-[14px] transition-all duration-150 select-none relative',
+                'w-full flex items-center gap-3 pl-4 pr-3 rounded-[var(--r2)] mb-1 text-[14px] transition-all duration-150 select-none relative',
                 isAppuntamentiActive
                   ? 'text-[var(--ac)] font-medium'
                   : 'text-[var(--t2)] hover:text-[var(--tx)] hover:bg-[var(--s2)]'
@@ -222,7 +222,7 @@ export const Sidebar = () => {
               <Link
                 key={href}
                 href={href}
-                className="flex items-center gap-3 px-3 rounded-[var(--r2)] mb-1 text-[14px] text-[var(--t2)] hover:text-[var(--ac)] hover:bg-[var(--acd)] transition-all duration-150"
+                className="flex items-center gap-3 pl-4 pr-3 rounded-[var(--r2)] mb-1 text-[14px] text-[var(--t2)] hover:text-[var(--ac)] hover:bg-[var(--acd)] transition-all duration-150"
                 style={{ minHeight: 52 }}
               >
                 <Icon size={17} className="shrink-0 opacity-50" />
@@ -235,7 +235,7 @@ export const Sidebar = () => {
 
         {/* User */}
         <div className="px-3 py-4 border-t border-[var(--b1)] mt-auto shrink-0">
-          <div className="flex items-center gap-3 px-3 rounded-[var(--r2)] hover:bg-[var(--s2)] transition-colors cursor-pointer group" style={{ minHeight: 52 }}>
+          <div className="flex items-center gap-3 pl-4 pr-3 rounded-[var(--r2)] hover:bg-[var(--s2)] transition-colors cursor-pointer group" style={{ minHeight: 52 }}>
             <div
               className="w-8 h-8 rounded-full grid place-items-center font-['Syne'] font-bold text-[12px] shrink-0"
               style={{ background: 'var(--acd)', color: 'var(--ac)', border: '1px solid rgba(125,171,150,.2)' }}
