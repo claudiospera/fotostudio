@@ -6,32 +6,32 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg:    #f2f4f7;
+  --bg:    #eef0f8;
   --s1:    #ffffff;
-  --s2:    #f7f8fa;
-  --s3:    #edf0f4;
-  --s4:    #e2e5ea;
+  --s2:    #f4f4fc;
+  --s3:    #eaebf6;
+  --s4:    #dde0f0;
 
-  --b1:    rgba(0,0,0,0.07);
-  --b2:    rgba(0,0,0,0.13);
-  --b3:    rgba(0,0,0,0.20);
+  --b1:    rgba(60,60,120,0.08);
+  --b2:    rgba(60,60,120,0.14);
+  --b3:    rgba(60,60,120,0.22);
 
-  --tx:    #0f1117;
-  --t2:    #6b7280;
-  --t3:    #a0a8b4;
+  --tx:    #1a1a2e;
+  --t2:    #6b6b8a;
+  --t3:    #9a9ab0;
 
-  --ac:    #2da882;
-  --ac2:   #1a9070;
-  --acd:   rgba(45,168,130,0.10);
-  --acd2:  rgba(45,168,130,0.05);
+  --ac:    #5b3fc8;
+  --ac2:   #7a5fe8;
+  --acd:   rgba(91,63,200,0.10);
+  --acd2:  rgba(91,63,200,0.05);
 
   --red:   #dc3545;
   --amber: #f59e0b;
 
   --sw:    230px;
   --hh:    54px;
-  --r:     12px;
-  --r2:    7px;
+  --r:     14px;
+  --r2:    10px;
 }
 
 html, body { height: 100%; overflow-x: hidden; }
