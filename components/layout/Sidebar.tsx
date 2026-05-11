@@ -158,8 +158,8 @@ export const Sidebar = () => {
         {/* Nav */}
         <nav className="flex-1 py-2">
           {navItems.map(({ group, items }) => (
-            <div key={group} className="px-3 pt-5 pb-1">
-              <p className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[var(--t3)] px-3 mb-2">
+            <div key={group} className="px-4 pt-5 pb-1">
+              <p className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[var(--t3)] px-2 mb-2">
                 {group}
               </p>
               {items.map(({ href, label, icon }) => (
@@ -169,8 +169,8 @@ export const Sidebar = () => {
           ))}
 
           {/* Appuntamenti — collapsible */}
-          <div className="px-3 pt-5 pb-1">
-            <p className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[var(--t3)] px-3 mb-2">
+          <div className="px-4 pt-5 pb-1">
+            <p className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[var(--t3)] px-2 mb-2">
               Agenda
             </p>
             {/* Toggle button */}
@@ -209,8 +209,8 @@ export const Sidebar = () => {
           </div>
 
           {/* Azioni rapide */}
-          <div className="px-3 pt-5 pb-1">
-            <p className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[var(--t3)] px-3 mb-2">
+          <div className="px-4 pt-5 pb-1">
+            <p className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[var(--t3)] px-2 mb-2">
               Azioni rapide
             </p>
             {[
@@ -234,7 +234,7 @@ export const Sidebar = () => {
         </nav>
 
         {/* User */}
-        <div className="px-3 py-4 border-t border-[var(--b1)] mt-auto shrink-0">
+        <div className="px-4 py-4 border-t border-[var(--b1)] mt-auto shrink-0">
           <div className="flex items-center gap-3 pl-5 pr-3 rounded-[var(--r2)] hover:bg-[var(--s2)] transition-colors cursor-pointer group" style={{ minHeight: 52 }}>
             <div
               className="w-8 h-8 rounded-full grid place-items-center font-['Syne'] font-bold text-[12px] shrink-0"
