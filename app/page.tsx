@@ -36,6 +36,10 @@ export default async function HomePage() {
             className="nav-link">Servizi</a>
           <a href="#galleria-cliente" style={{ fontSize: '13px', color: 'var(--t2)', textDecoration: 'none', padding: '6px 12px', borderRadius: 'var(--r2)', transition: 'color .15s' }}
             className="nav-link">Galleria</a>
+          <Link href="/provino" style={{ fontSize: '13px', color: '#7dab96', textDecoration: 'none', padding: '6px 12px', borderRadius: 'var(--r2)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 5 }}
+            className="nav-link">
+            <span style={{ fontSize: 10 }}>✦</span> Provino
+          </Link>
           <Link href="/login" style={{
             fontSize: '12px', fontWeight: 500, color: 'var(--tx)',
             background: 'var(--s2)', border: '1px solid var(--b2)',
