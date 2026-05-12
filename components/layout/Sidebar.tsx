@@ -247,6 +247,16 @@ export const Sidebar = () => {
             </svg>
             <span>Torna al sito</span>
           </Link>
+          <button
+            onClick={() => signOut({ redirectUrl: '/' })}
+            className="w-full flex items-center gap-2 pl-5 pr-3 rounded-[var(--r2)] text-[13px] transition-all duration-150 mb-1"
+            style={{ minHeight: 40, color: 'var(--red)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(217,112,112,0.08)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+          >
+            <LogOut size={14} className="shrink-0 opacity-70" />
+            <span>Esci</span>
+          </button>
         </div>
 
         {/* User */}
