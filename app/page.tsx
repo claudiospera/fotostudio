@@ -1,15 +1,10 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { auth } from '@clerk/nextjs/server'
-import { redirect } from 'next/navigation'
 import {
   Heart, User, Users, Camera, Briefcase, Star,
 } from 'lucide-react'
 
-// Se il fotografo è già loggato, va direttamente alla dashboard
 export default async function HomePage() {
-  const { userId } = await auth()
-  if (userId) redirect('/dashboard')
 
   return (
     <div style={{ fontFamily: 'DM Sans, sans-serif', color: 'var(--tx)', background: 'var(--bg)', minHeight: '100vh' }}>
