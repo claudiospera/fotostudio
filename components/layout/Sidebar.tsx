@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/store/ui'
+import { useClerk } from '@clerk/nextjs'
 import {
   LayoutGrid, Images, FileText, Upload, ShoppingCart, LogOut, Plus, Users, BarChart2,
   CalendarCheck, ChevronDown, CalendarDays, ClipboardList,
@@ -34,6 +35,7 @@ const navItems = [
 
 export const Sidebar = () => {
   const pathname = usePathname()
+  const { signOut } = useClerk()
   const [newOrders, setNewOrders] = useState(0)
   const [appuntamentiOpen, setAppuntamentiOpen] = useState(
     () => pathname.startsWith('/appuntamenti')
@@ -249,7 +251,12 @@ export const Sidebar = () => {
 
         {/* User */}
         <div className="px-4 py-4 border-t border-[var(--b1)] shrink-0">
-          <div className="flex items-center gap-3 pl-5 pr-3 rounded-[var(--r2)] hover:bg-[var(--s2)] transition-colors cursor-pointer group" style={{ minHeight: 52 }}>
+          <div
+            className="flex items-center gap-3 pl-5 pr-3 rounded-[var(--r2)] hover:bg-[var(--s2)] transition-colors cursor-pointer group"
+            style={{ minHeight: 52 }}
+            onClick={() => signOut({ redirectUrl: '/' })}
+            title="Esci"
+          >
             <div
               className="w-8 h-8 rounded-full grid place-items-center font-['Syne'] font-bold text-[12px] shrink-0"
               style={{ background: 'var(--acd)', color: 'var(--ac)', border: '1px solid rgba(125,171,150,.2)' }}
