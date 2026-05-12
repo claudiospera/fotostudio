@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 export default function LoginPage() {
-  const { signIn, isLoaded, setActive } = useSignIn()
+  const { signIn, setActive } = useSignIn()
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -14,7 +14,7 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!isLoaded) return
+    if (!signIn) return
     setLoading(true)
     setError('')
     try {
