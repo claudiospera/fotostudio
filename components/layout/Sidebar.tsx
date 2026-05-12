@@ -233,8 +233,22 @@ export const Sidebar = () => {
           </div>
         </nav>
 
+        {/* Torna al sito */}
+        <div className="px-4 pb-2 shrink-0">
+          <Link
+            href="/"
+            className="flex items-center gap-2 pl-5 pr-3 rounded-[var(--r2)] text-[13px] text-[var(--t3)] hover:text-[var(--t2)] hover:bg-[var(--s2)] transition-all duration-150"
+            style={{ minHeight: 40 }}
+          >
+            <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-60">
+              <path d="M19 12H5M5 12l7-7M5 12l7 7"/>
+            </svg>
+            <span>Torna al sito</span>
+          </Link>
+        </div>
+
         {/* User */}
-        <div className="px-4 py-4 border-t border-[var(--b1)] mt-auto shrink-0">
+        <div className="px-4 py-4 border-t border-[var(--b1)] shrink-0">
           <div className="flex items-center gap-3 pl-5 pr-3 rounded-[var(--r2)] hover:bg-[var(--s2)] transition-colors cursor-pointer group" style={{ minHeight: 52 }}>
             <div
               className="w-8 h-8 rounded-full grid place-items-center font-['Syne'] font-bold text-[12px] shrink-0"
