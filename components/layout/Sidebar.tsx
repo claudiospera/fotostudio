@@ -123,7 +123,7 @@ export const Sidebar = () => {
       <aside
         style={{ width: 'var(--sw)' }}
         className={cn(
-          'dashboard-sidebar bg-[var(--s1)] border-r border-[var(--b1)] flex flex-col h-screen fixed left-0 top-0 z-50 overflow-y-auto overflow-x-hidden',
+          'dashboard-sidebar bg-[var(--s1)] border-r border-[var(--b1)] flex flex-col h-screen fixed left-0 top-0 z-50 overflow-hidden',
           isSidebarOpen && 'is-open'
         )}
       >
@@ -158,7 +158,7 @@ export const Sidebar = () => {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 py-2">
+        <nav className="flex-1 min-h-0 overflow-y-auto py-2">
           {navItems.map(({ group, items }) => (
             <div key={group} className="px-4 pt-5 pb-1">
               <p className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[var(--t3)] px-2 mb-2">
@@ -236,7 +236,7 @@ export const Sidebar = () => {
         </nav>
 
         {/* Bottom actions */}
-        <div className="px-4 pb-2 mt-auto shrink-0 border-t border-[var(--b1)] pt-3">
+        <div className="px-4 pb-2 shrink-0 border-t border-[var(--b1)] pt-3">
           <Link
             href="/"
             className="flex items-center gap-2 pl-5 pr-3 rounded-[var(--r2)] text-[13px] text-[var(--t3)] hover:text-[var(--t2)] hover:bg-[var(--s2)] transition-all duration-150 mb-1"
