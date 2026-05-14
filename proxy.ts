@@ -7,6 +7,11 @@ const isPublicRoute = createRouteMatcher([
   '/cliente(.*)',
   '/api/public(.*)',
   '/api/preventivi-pubblici/(.*)',
+  // Shop pubblico — /shop/admin resta protetto (non incluso qui)
+  '/shop',
+  '/shop/carrello',
+  '/shop/:categoria',
+  '/shop/:categoria/:prodotto',
 ])
 
 export default clerkMiddleware(async (auth, request) => {

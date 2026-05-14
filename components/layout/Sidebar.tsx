@@ -9,7 +9,7 @@ import { useUIStore } from '@/store/ui'
 import { useClerk } from '@clerk/nextjs'
 import {
   LayoutGrid, Images, FileText, Upload, ShoppingCart, LogOut, Plus, Users, BarChart2,
-  CalendarCheck, ChevronDown, CalendarDays, ClipboardList,
+  CalendarCheck, ChevronDown, CalendarDays, ClipboardList, ShoppingBag,
 } from 'lucide-react'
 
 const navItems = [
@@ -29,6 +29,7 @@ const navItems = [
       { href: '/preventivi?tab=proposte',  label: 'Calendario eventi', icon: CalendarDays },
       { href: '/upload',                  label: 'Upload clienti',   icon: Upload      },
       { href: '/ordini',                  label: 'Ordini stampe',    icon: ShoppingCart },
+      { href: '/shop/admin',              label: 'Shop online',      icon: ShoppingBag  },
     ],
   },
 ]

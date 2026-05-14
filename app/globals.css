@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600&family=Poppins:wght@600;700;800&family=Montserrat:wght@400;500;700&display=swap');
 @import "tailwindcss";
 
 /* ─── FOTOSTUDIO DESIGN SYSTEM ─── */
@@ -114,7 +114,27 @@ body {
 }
 
 /* ─── LANDING PAGE ─── */
-.nav-link:hover { color: var(--tx) !important; background: var(--s2); }
+.nav-link:hover { color: #0a0a0a !important; background: #f3f3f3; }
+
+/* ─── SHOP / HOME NEURO THEME ─── */
+.neuro-root {
+  --n-bg:      #ffffff;
+  --n-surface: #f3f3f3;
+  --n-border:  #e8e8e8;
+  --n-tx:      #0a0a0a;
+  --n-t2:      #555555;
+  --n-t3:      #999999;
+  --n-ac:      #00c1de;
+  --n-ac-dark: #009ab3;
+  --n-ac-dim:  rgba(0,193,222,0.10);
+  --n-purple:  #958cff;
+  --n-yellow:  #f1e67c;
+  --n-r:       16px;
+  --n-r2:      10px;
+  font-family: 'Montserrat', sans-serif;
+  color: #0a0a0a;
+  background: #ffffff;
+}
 
 /* ─── PORTAL RESPONSIVE ─── */
 .portal-btn-label { }
