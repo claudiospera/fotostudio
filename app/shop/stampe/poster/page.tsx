@@ -42,6 +42,8 @@ const FINISH_LABEL = 'Carta fotografica satinata'
 interface PhotoItem {
   id: string
   url: string
+  uploadedUrl?: string
+  uploading: boolean
   name: string
   natW: number; natH: number
   orientation: 'portrait' | 'landscape' | 'square'
@@ -199,6 +201,25 @@ export default function PosterPage() {
 
   useEffect(() => { return () => photos.forEach(p => URL.revokeObjectURL(p.url)) }, []) // eslint-disable-line
 
+  const uploadToR2 = useCallback(async (id: string, file: File) => {
+    try {
+      const res = await fetch('/api/shop/presign-photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: file.name, contentType: file.type }),
+      })
+      if (res.ok) {
+        const { uploadUrl, publicUrl } = await res.json()
+        await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
+        setPhotos(prev => prev.map(p => p.id === id ? { ...p, uploadedUrl: publicUrl, uploading: false } : p))
+      } else {
+        setPhotos(prev => prev.map(p => p.id === id ? { ...p, uploading: false } : p))
+      }
+    } catch {
+      setPhotos(prev => prev.map(p => p.id === id ? { ...p, uploading: false } : p))
+    }
+  }, [])
+
   const loadFiles = useCallback((files: FileList | File[]) => {
     Array.from(files).filter(f => f.type.startsWith('image/')).forEach(file => {
       const url = URL.createObjectURL(file)
@@ -206,8 +227,9 @@ export default function PosterPage() {
       img.onload = () => {
         const nW = img.naturalWidth, nH = img.naturalHeight
         const orientation: PhotoItem['orientation'] = nW > nH ? 'landscape' : nW < nH ? 'portrait' : 'square'
+        const id = uid()
         const p: PhotoItem = {
-          id: uid(), url, name: file.name,
+          id, url, name: file.name, uploading: true,
           natW: nW, natH: nH, orientation,
           zoom: 1, offsetX: 0, offsetY: 0, copies: 1, fitMode: 'cover',
           variantId: variant.id,
@@ -218,10 +240,11 @@ export default function PosterPage() {
           if (prev.length === 0) setActiveId(p.id)
           return next
         })
+        uploadToR2(id, file)
       }
       img.src = url
     })
-  }, [])
+  }, [uploadToR2])
 
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) loadFiles(e.target.files)
@@ -249,17 +272,21 @@ export default function PosterPage() {
     })
   }
 
+  const isUploading = photos.some(p => p.uploading)
+
   function handleAddToCart() {
+    if (isUploading) return
     photos.forEach(p => {
       const pv = VARIANTS.find(v => v.id === p.variantId) ?? VARIANTS[0]
       addItem({
         productId: 'poster',
-        variantId: `${pv.id}__satinata`,
+        variantId: `${pv.id}__satinata--${p.id}`,
         quantity: p.copies,
         productName: 'Poster',
         variantLabel: `${pv.label} · ${FINISH_LABEL}`,
         price: pv.price,
-        image: p.url,
+        image: p.uploadedUrl || p.url,
+        filename: p.name,
       })
     })
     setAdded(true)
@@ -685,16 +712,17 @@ export default function PosterPage() {
                   {FINISH_LABEL} · {totalPrints} stampe
                 </div>
 
-                <button onClick={handleAddToCart}
+                <button onClick={handleAddToCart} disabled={isUploading}
                   style={{
                     width: '100%', padding: '14px', borderRadius: 12, border: 'none',
-                    background: added ? '#22c55e' : '#00c1de',
+                    background: added ? '#22c55e' : isUploading ? '#b0e6f0' : '#00c1de',
                     color: '#fff', fontFamily: 'Poppins, sans-serif', fontWeight: 700,
-                    fontSize: '14px', cursor: 'pointer', transition: 'background .2s',
+                    fontSize: '14px', cursor: isUploading ? 'not-allowed' : 'pointer',
+                    transition: 'background .2s', opacity: isUploading ? 0.75 : 1,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   }}
                 >
-                  {added ? <><Check size={17} strokeWidth={3} /> Aggiunto!</> : <><ShoppingCart size={17} /> Aggiungi al carrello</>}
+                  {added ? <><Check size={17} strokeWidth={3} /> Aggiunto!</> : isUploading ? <>Caricamento foto…</> : <><ShoppingCart size={17} /> Aggiungi al carrello</>}
                 </button>
 
                 <p style={{ fontSize: '11px', color: '#bbb', textAlign: 'center' }}>

@@ -276,8 +276,11 @@ export default function HahnemuhlePage() {
   const [qty,        setQty]        = useState(1)
   const [added,      setAdded]      = useState(false)
   const [showDesc,   setShowDesc]   = useState(false)
-  const [photoUrl,   setPhotoUrl]   = useState<string | null>(null)
-  const [zoom,       setZoom]       = useState(1)
+  const [photoUrl,      setPhotoUrl]      = useState<string | null>(null)
+  const [uploadedUrl,   setUploadedUrl]   = useState<string | null>(null)
+  const [uploading,     setUploading]     = useState(false)
+  const [photoFilename, setPhotoFilename] = useState<string | undefined>(undefined)
+  const [zoom,          setZoom]          = useState(1)
   const [whiteBorder, setWhiteBorder] = useState(false)
   const [borderCm,    setBorderCm]    = useState<2.5 | 5>(2.5)
   const [rotated,     setRotated]     = useState(false)
@@ -296,17 +299,33 @@ export default function HahnemuhlePage() {
     return () => { if (photoUrl) URL.revokeObjectURL(photoUrl) }
   }, [photoUrl])
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     if (photoUrl) URL.revokeObjectURL(photoUrl)
     setPhotoUrl(URL.createObjectURL(file))
+    setUploadedUrl(null)
+    setPhotoFilename(file.name)
+    setUploading(true)
     setZoom(1)
     e.target.value = ''
+    try {
+      const res = await fetch('/api/shop/presign-photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: file.name, contentType: file.type }),
+      })
+      if (res.ok) {
+        const { uploadUrl, publicUrl } = await res.json()
+        await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
+        setUploadedUrl(publicUrl)
+      }
+    } catch { /* usa blob url come fallback */ }
+    setUploading(false)
   }, [photoUrl])
 
   function handleAddToCart() {
-    if (!format || !price) return
+    if (!format || !price || uploading) return
     addItem({
       productId:    'hahnemuhle',
       variantId:    `${paper.id}__${format.fmt.replace('×', 'x')}`,
@@ -314,7 +333,8 @@ export default function HahnemuhlePage() {
       productName:  'Stampa Fine Art Hahnemühle',
       variantLabel: `${paper.label} — ${fmtW}×${fmtH} cm${isSquare ? '' : rotated ? ' (orizzontale)' : ' (verticale)'}`,
       price,
-      image:        photoUrl ?? '/images/shop/hahnemuhle/catalogo.jpg',
+      image:        uploadedUrl ?? photoUrl ?? '/images/shop/hahnemuhle/catalogo.jpg',
+      filename:     photoFilename,
     })
     setAdded(true)
     setTimeout(() => setAdded(false), 2500)
@@ -776,15 +796,17 @@ export default function HahnemuhlePage() {
                   disabled={!format}
                   style={{
                     width: '100%', padding: '14px', borderRadius: 12, border: 'none',
-                    background: !format ? '#d0d0d0' : added ? '#22c55e' : paper.color,
+                    background: !format || uploading ? '#d0d0d0' : added ? '#22c55e' : paper.color,
                     color: '#fff', fontFamily: 'Poppins, sans-serif', fontWeight: 700,
-                    fontSize: '14px', cursor: !format ? 'not-allowed' : 'pointer',
-                    transition: 'background .2s',
+                    fontSize: '14px', cursor: (!format || uploading) ? 'not-allowed' : 'pointer',
+                    transition: 'background .2s', opacity: uploading ? 0.75 : 1,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   }}
                 >
                   {added ? (
                     <><Check size={17} strokeWidth={3} /> Aggiunto al carrello!</>
+                  ) : uploading ? (
+                    <>Caricamento foto…</>
                   ) : (
                     <><ShoppingCart size={17} /> {!format ? 'Seleziona un formato' : 'Aggiungi al carrello'}</>
                   )}

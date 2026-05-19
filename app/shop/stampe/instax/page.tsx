@@ -32,6 +32,9 @@ interface FrameDesign {
 interface UploadedPhoto {
   id: string
   url: string
+  uploadedUrl?: string
+  uploading: boolean
+  name: string
   natW: number; natH: number
   zoom: number
   offsetX: number; offsetY: number
@@ -468,6 +471,25 @@ export default function InstaxPage() {
     return () => { photos.forEach(p => URL.revokeObjectURL(p.url)) }
   }, []) // eslint-disable-line
 
+  const uploadToR2 = useCallback(async (id: string, file: File) => {
+    try {
+      const res = await fetch('/api/shop/presign-photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: file.name, contentType: file.type }),
+      })
+      if (res.ok) {
+        const { uploadUrl, publicUrl } = await res.json()
+        await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
+        setPhotos(prev => prev.map(p => p.id === id ? { ...p, uploadedUrl: publicUrl, uploading: false } : p))
+      } else {
+        setPhotos(prev => prev.map(p => p.id === id ? { ...p, uploading: false } : p))
+      }
+    } catch {
+      setPhotos(prev => prev.map(p => p.id === id ? { ...p, uploading: false } : p))
+    }
+  }, [])
+
   const loadFiles = useCallback((files: FileList | File[]) => {
     Array.from(files)
       .filter(f => f.type.startsWith('image/'))
@@ -475,8 +497,9 @@ export default function InstaxPage() {
         const url = URL.createObjectURL(file)
         const img = new Image()
         img.onload = () => {
+          const id = uid()
           const newPhoto: UploadedPhoto = {
-            id: uid(), url,
+            id, url, name: file.name, uploading: true,
             natW: img.naturalWidth, natH: img.naturalHeight,
             zoom: 1, offsetX: 0, offsetY: 0, copies: 1,
             fitMode: 'cover',
@@ -490,10 +513,11 @@ export default function InstaxPage() {
             if (prev.length === 0) setActiveId(newPhoto.id)
             return updated
           })
+          uploadToR2(id, file)
         }
         img.src = url
       })
-  }, [])
+  }, [uploadToR2])
 
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) loadFiles(e.target.files)
@@ -525,16 +549,20 @@ export default function InstaxPage() {
     setPhotos(prev => prev.map(p => p.id === activeId ? { ...p, labelOffsetX: x, labelOffsetY: y } : p))
   }, [activeId])
 
+  const isUploading = photos.some(p => p.uploading)
+
   function handleAddToCart() {
+    if (isUploading) return
     photos.forEach(p => {
       addItem({
         productId:    'stampe-instax',
-        variantId:    `${format.id}__${frame.id}`,
+        variantId:    `${format.id}__${frame.id}--${p.id}`,
         quantity:     p.copies,
         productName:  'Stampa Instax',
         variantLabel: `${format.label} — ${frame.label}`,
         price:        unitPrice,
-        image:        p.url,
+        image:        p.uploadedUrl || p.url,
+        filename:     p.name,
       })
     })
     setAddedFeedback(true)
@@ -1113,16 +1141,20 @@ export default function InstaxPage() {
 
                 <button
                   onClick={handleAddToCart}
+                  disabled={isUploading}
                   style={{
                     width: '100%', padding: '14px', borderRadius: 12, border: 'none',
-                    background: addedFeedback ? '#22c55e' : '#00c1de',
+                    background: addedFeedback ? '#22c55e' : isUploading ? '#b0e6f0' : '#00c1de',
                     color: '#fff', fontFamily: 'Poppins, sans-serif', fontWeight: 700,
-                    fontSize: '14px', cursor: 'pointer', transition: 'background .2s',
+                    fontSize: '14px', cursor: isUploading ? 'not-allowed' : 'pointer',
+                    transition: 'background .2s', opacity: isUploading ? 0.75 : 1,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   }}
                 >
                   {addedFeedback ? (
                     <><Check size={17} strokeWidth={3} /> Aggiunto al carrello!</>
+                  ) : isUploading ? (
+                    <>Caricamento foto…</>
                   ) : (
                     <><ShoppingCart size={17} /> Aggiungi al carrello</>
                   )}
