@@ -3,7 +3,7 @@
 // components/shop/ShopNavbar.tsx
 
 import Link from 'next/link'
-import { ShoppingCart, Settings } from 'lucide-react'
+import { ShoppingCart } from 'lucide-react'
 import { useCart } from './CartProvider'
 import { CATEGORY_META } from '@/lib/shop/types'
 
@@ -29,14 +29,19 @@ export function ShopNavbar() {
         gap: 24,
       }}>
         {/* Brand */}
-        <Link href="/shop" style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-          <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.18em', textTransform: 'uppercase', color: 'var(--n-ac)' }}>
-            Shop
-          </span>
-          <span style={{ fontSize: '15px', fontWeight: 700, fontFamily: 'Poppins, sans-serif', color: 'var(--n-tx)' }}>
-            Storie da Raccontare
-          </span>
-        </Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <a href="https://storiedaraccontare.it" style={{ fontSize: '12px', color: 'var(--n-t3)', textDecoration: 'none', fontWeight: 500 }}>
+            ← Home
+          </a>
+          <Link href="/shop" style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+            <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.18em', textTransform: 'uppercase', color: 'var(--n-ac)' }}>
+              Shop
+            </span>
+            <span style={{ fontSize: '15px', fontWeight: 700, fontFamily: 'Poppins, sans-serif', color: 'var(--n-tx)' }}>
+              Storie da Raccontare
+            </span>
+          </Link>
+        </div>
 
         {/* Categorie */}
         <nav style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -59,26 +64,6 @@ export function ShopNavbar() {
             </Link>
           ))}
         </nav>
-
-        {/* Admin */}
-        <Link
-          href="/shop/admin"
-          title="Admin shop"
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            width: 36, height: 36,
-            borderRadius: 'var(--n-r2)',
-            border: '1px solid var(--n-border)',
-            background: '#fff',
-            color: 'var(--n-t3)',
-            textDecoration: 'none',
-            transition: 'all .15s',
-            flexShrink: 0,
-          }}
-          className="shop-admin-link"
-        >
-          <Settings size={15} />
-        </Link>
 
         {/* Carrello */}
         <Link href="/shop/carrello" style={{
