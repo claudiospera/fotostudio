@@ -3,6 +3,7 @@
 // app/shop/carrello/page.tsx
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Trash2 } from 'lucide-react'
 import { useCart } from '@/components/shop/CartProvider'
@@ -13,6 +14,7 @@ function formatPrice(cents: number): string {
 
 export default function CartPage() {
   const { cart, total, removeItem, updateQuantity, clearCart } = useCart()
+  const router = useRouter()
 
   if (cart.items.length === 0) {
     return (
@@ -120,7 +122,7 @@ export default function CartPage() {
           <span style={{ fontSize: '22px', fontWeight: 800, fontFamily: 'Poppins, sans-serif', color: 'var(--n-ac)' }}>{formatPrice(total)}</span>
         </div>
         <p style={{ fontSize: '11px', color: 'var(--n-t3)', marginBottom: 28 }}>
-          Spedizione e IVA calcolate al momento dell&apos;ordine.
+          Ritiro in studio · nessuna spedizione
         </p>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <button
@@ -131,7 +133,7 @@ export default function CartPage() {
               padding: '14px 24px', fontSize: '14px', fontWeight: 700,
               cursor: 'pointer', letterSpacing: '.02em',
             }}
-            onClick={() => alert('Checkout — da implementare')}
+            onClick={() => router.push('/shop/checkout')}
           >
             Procedi all&apos;ordine →
           </button>

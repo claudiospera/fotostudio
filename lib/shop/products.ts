@@ -57,8 +57,18 @@ const breaks13x9: PriceBreak[] = [
   { minQty: 500, price:  20 },
 ]
 
-// Instax (tutti i formati): stesso listino del 13x9
-const breaksInstax: PriceBreak[] = breaks13x9
+const breaksInstax: PriceBreak[] = [
+  { minQty:   1, price: 200 },
+  { minQty:   2, price: 150 },
+  { minQty:  11, price:  80 },
+  { minQty:  21, price:  70 },
+  { minQty:  31, price:  60 },
+  { minQty:  51, price:  50 },
+  { minQty:  71, price:  35 },
+  { minQty:  91, price:  30 },
+  { minQty: 200, price:  25 },
+  { minQty: 500, price:  20 },
+]
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -76,7 +86,7 @@ export const PRODUCTS: Product[] = [
       'Più stampe ordini, meno paghi: il prezzo unitario scende automaticamente in base alla quantità.',
     category: 'stampe',
     status: 'available',
-    images: ['https://images.unsplash.com/photo-1502982720700-bfff97f2ecac?w=800&q=80'],
+    images: ['/images/shop/stampe/classiche.png'],
     variants: [
       {
         id: 'sc-10x15',
@@ -127,7 +137,7 @@ export const PRODUCTS: Product[] = [
 
   {
     id: 'stampe-instax',
-    slug: 'stampe-polaroid',
+    slug: 'instax',
     name: 'Stampa Instax / Polaroid',
     shortDescription: 'Formato Instax Mini, Square e Wide con prezzi a volume',
     description:
@@ -135,7 +145,7 @@ export const PRODUCTS: Product[] = [
       'Perfette come ricordo da regalare o da esporre in una galleria fotografica.',
     category: 'stampe',
     status: 'available',
-    images: ['https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800&q=80'],
+    images: ['/images/shop/stampe/instax.png'],
     variants: [
       {
         id: 'pol-mini',
@@ -161,6 +171,27 @@ export const PRODUCTS: Product[] = [
   },
 
   {
+    id: 'hahnemuhle',
+    slug: 'hahnemuhle',
+    name: 'Stampa Fine Art Hahnemühle',
+    shortDescription: 'Stampa su carta Fine Art 100% cotone: Photo Rag, Museum Etching, Matt Baryta, Matte FineArt',
+    description:
+      'Stampa professionale su carta Fine Art Hahnemühle 100% cotone. ' +
+      'Quattro tipi di carta tra cui scegliere: Photo Rag 308, Museum Etching 350, Photo Rag Matt Baryta 308 e Matte FineArt 200. ' +
+      'Disponibile in 25 formati fino al 60×90 cm.',
+    category: 'stampe',
+    status: 'available',
+    images: ['/images/shop/hahnemuhle/catalogo.jpg'],
+    thumbnailImage: '/images/shop/hahnemuhle/catalogo.jpg',
+    variants: [
+      // prezzo minimo = Matte FineArt 10x15 = €4.00
+      { id: 'hah-10x15', label: '10×15 cm', price: 400, widthCm: 10, heightCm: 15 },
+    ],
+    featured: true,
+    createdAt: '2026-01-01T00:00:00Z',
+  },
+
+  {
     id: 'poster',
     slug: 'poster',
     name: 'Poster',
@@ -169,16 +200,21 @@ export const PRODUCTS: Product[] = [
       'Poster fotografici nei formati grandi, ideali per decorare pareti. Stampa su carta fotografica ad alta definizione.',
     category: 'stampe',
     status: 'available',
-    images: ['https://images.unsplash.com/photo-1543946207-39bd91e70ca7?w=800&q=80'],
+    images: ['/images/shop/stampe/poster.jpg'],
     variants: [
-      { id: 'pos-20x30',  label: '20×30 cm',  price:  600 },
-      { id: 'pos-30x40',  label: '30×40 cm',  price: 1000 },
-      { id: 'pos-30x45',  label: '30×45 cm',  price: 1200 },
-      { id: 'pos-40x50',  label: '40×50 cm',  price: 1700 },
-      { id: 'pos-40x60',  label: '40×60 cm',  price: 1900 },
-      { id: 'pos-50x60',  label: '50×60 cm',  price: 2300 },
-      { id: 'pos-50x70',  label: '50×70 cm',  price: 2500 },
-      { id: 'pos-70x100', label: '70×100 cm', price: 5000 },
+      { id: 'pos-20x30', label: '20×30 cm', price:  600 },
+      { id: 'pos-24x30', label: '24×30 cm', price:  700 },
+      { id: 'pos-30x30', label: '30×30 cm', price:  800 },
+      { id: 'pos-30x40', label: '30×40 cm', price: 1000 },
+      { id: 'pos-30x45', label: '30×45 cm', price: 1200 },
+      { id: 'pos-36x42', label: '36×42 cm', price: 1200 },
+      { id: 'pos-40x40', label: '40×40 cm', price: 1600 },
+      { id: 'pos-35x50', label: '35×50 cm', price: 1600 },
+      { id: 'pos-40x50', label: '40×50 cm', price: 1700 },
+      { id: 'pos-40x60', label: '40×60 cm', price: 1900 },
+      { id: 'pos-50x50', label: '50×50 cm', price: 2000 },
+      { id: 'pos-50x60', label: '50×60 cm', price: 2300 },
+      { id: 'pos-50x70', label: '50×70 cm', price: 2500 },
     ],
     featured: false,
     createdAt: '2026-01-01T00:00:00Z',
@@ -196,7 +232,7 @@ export const PRODUCTS: Product[] = [
       'Effetto pittorico elegante, pronta da appendere.',
     category: 'decorazioni',
     status: 'available',
-    images: ['https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=800&q=80'],
+    images: ['/images/shop/tela/catalogo.jpg', '/images/shop/tela/interno.png'],
     variants: [
       { id: 'tel-30x30',  label: '30×30 cm',  price:  3000 },
       { id: 'tel-30x40',  label: '30×40 cm',  price:  3500 },
@@ -220,14 +256,22 @@ export const PRODUCTS: Product[] = [
       'Stampa fotografica su pannello in forex (PVC espanso) da 5mm. Effetto moderno e minimalista, leggerissima e pronta da appendere.',
     category: 'decorazioni',
     status: 'available',
-    images: ['https://images.unsplash.com/photo-1533158326339-7f3cf2404354?w=800&q=80'],
+    images: ['/images/shop/forex/ambientata.png', '/images/shop/forex/catalogo.png'],
+    thumbnailImage: '/images/shop/forex/catalogo.png',
     variants: [
-      { id: 'fx-20x30', label: '20×30 cm', price: 0 },
-      { id: 'fx-30x40', label: '30×40 cm', price: 0 },
-      { id: 'fx-40x60', label: '40×60 cm', price: 0 },
-      { id: 'fx-50x70', label: '50×70 cm', price: 0 },
+      { id: 'fx-15x20', label: '15×20 cm', price: 1000, widthCm: 15, heightCm: 20 },
+      { id: 'fx-20x30', label: '20×30 cm', price: 2000, widthCm: 20, heightCm: 30 },
+      { id: 'fx-30x30', label: '30×30 cm', price: 2500, widthCm: 30, heightCm: 30 },
+      { id: 'fx-30x40', label: '30×40 cm', price: 3000, widthCm: 30, heightCm: 40 },
+      { id: 'fx-30x50', label: '30×50 cm', price: 3500, widthCm: 30, heightCm: 50 },
+      { id: 'fx-40x40', label: '40×40 cm', price: 3500, widthCm: 40, heightCm: 40 },
+      { id: 'fx-40x50', label: '40×50 cm', price: 4000, widthCm: 40, heightCm: 50 },
+      { id: 'fx-40x60', label: '40×60 cm', price: 4200, widthCm: 40, heightCm: 60 },
+      { id: 'fx-50x50', label: '50×50 cm', price: 4500, widthCm: 50, heightCm: 50 },
+      { id: 'fx-50x60', label: '50×60 cm', price: 4700, widthCm: 50, heightCm: 60 },
+      { id: 'fx-50x70', label: '50×70 cm', price: 5000, widthCm: 50, heightCm: 70 },
     ],
-    featured: false,
+    featured: true,
     createdAt: '2026-01-01T00:00:00Z',
   },
 
@@ -235,26 +279,40 @@ export const PRODUCTS: Product[] = [
     id: 'cornici',
     slug: 'cornici',
     name: 'Foto in Cornice',
-    shortDescription: 'Stampa + cornice, pronta da regalare o appendere',
+    shortDescription: 'La tua foto incorniciata, pronta da appendere o regalare',
     description:
-      'Stampa fotografica montata in cornice in legno. Disponibile con o senza passepartout. Colori cornice: nero, bianco, legno naturale.',
+      'La tua foto stampata e incorniciata, pronta da appendere. Scegli la cornice, il tipo di carta e il passepartout.',
     category: 'decorazioni',
     status: 'available',
-    images: ['https://images.unsplash.com/photo-1416339306562-f3d12fefd36f?w=800&q=80'],
+    images: ['/images/shop/stampe/cornici.png'],
     variants: [
-      { id: 'cor-10x15-no', label: '10×15 cm — senza passepartout', price: 0 },
-      { id: 'cor-10x15-si', label: '10×15 cm — con passepartout',   price: 0 },
-      { id: 'cor-13x18-no', label: '13×18 cm — senza passepartout', price: 0 },
-      { id: 'cor-13x18-si', label: '13×18 cm — con passepartout',   price: 0 },
-      { id: 'cor-15x20-no', label: '15×20 cm — senza passepartout', price: 0 },
-      { id: 'cor-15x20-si', label: '15×20 cm — con passepartout',   price: 0 },
-      { id: 'cor-20x30-no', label: '20×30 cm — senza passepartout', price: 0 },
-      { id: 'cor-20x30-si', label: '20×30 cm — con passepartout',   price: 0 },
-      { id: 'cor-30x40-no', label: '30×40 cm — senza passepartout', price: 0 },
-      { id: 'cor-30x40-si', label: '30×40 cm — con passepartout',   price: 0 },
+      { id: '10x15', label: '10×15 cm', price: 1500, widthCm: 10, heightCm: 15 },
+      { id: '13x18', label: '13×18 cm', price: 1800, widthCm: 13, heightCm: 18 },
+      { id: '15x20', label: '15×20 cm', price: 2200, widthCm: 15, heightCm: 20 },
+      { id: '20x30', label: '20×30 cm', price: 2800, widthCm: 20, heightCm: 30 },
+      { id: '30x40', label: '30×40 cm', price: 3800, widthCm: 30, heightCm: 40 },
     ],
-    featured: false,
+    featured: true,
     createdAt: '2026-01-01T00:00:00Z',
+    options: {
+      frames: [
+        { id: 'bianco',      label: 'Bianco',         color: '#FFFFFF', border: '#d0d0d0' },
+        { id: 'nero',        label: 'Nero',           color: '#1a1a1a', border: '#000000' },
+        { id: 'oak',         label: 'Oak',            color: '#C19A6B', border: '#A0784A' },
+        { id: 'argentato',   label: 'Argentato',      color: '#C0C0C0', border: '#A8A8A8' },
+        { id: 'dorato',      label: 'Dorato',         color: '#D4AF37', border: '#B8960C' },
+        { id: 'marrone-oro', label: 'Marrone Dorato', color: '#5C3A1E', border: '#D4AF37' },
+      ],
+      printTypes: [
+        { id: 'foto',       label: 'Carta Fotografica',      description: 'Lucida, colori brillanti',   extraPrice:   0 },
+        { id: 'hahnemuhle', label: 'Hahnemühle Matt Fibre',  description: 'Fine art, opaca, premium',   extraPrice: 800 },
+      ],
+      passepartout: [
+        { id: 'none',  label: 'Senza passepartout', color: undefined,   extraPrice:   0 },
+        { id: 'bianco', label: 'Passepartout Bianco', color: '#FFFFFF', extraPrice: 500 },
+        { id: 'nero',   label: 'Passepartout Nero',  color: '#1a1a1a',  extraPrice: 500 },
+      ],
+    },
   },
 
   // ─── GADGET ───────────────────────────────────────────────────────────────

@@ -66,7 +66,7 @@ export default async function CategoryPage({ params }: Props) {
             Nessun prodotto disponibile in questa categoria.
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
+          <div className="shop-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
             {products.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}

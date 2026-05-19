@@ -1,7 +1,8 @@
 // lib/shop/types.ts
 
 export type ProductStatus = 'available' | 'sold_out' | 'discontinued'
-export type OrderStatus = 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled'
+export type OrderStatus = 'pending' | 'confirmed' | 'ready' | 'delivered' | 'cancelled'
+export type PaymentMethod = 'online' | 'studio'
 export type ProductCategory = 'stampe' | 'decorazioni' | 'gadget'
 
 // Scaglione di prezzo per quantità (stampe con listino a volume)
@@ -16,7 +17,41 @@ export interface ProductVariant {
   price: number         // prezzo unitario base (da 1 pz) in centesimi
   priceBreaks?: PriceBreak[]  // scaglioni volume — se assente, prezzo fisso
   stock?: number        // undefined = illimitato
+  // dimensioni fisiche (cm) — usate per calcolare l'aspect ratio nell'anteprima
+  widthCm?: number
+  heightCm?: number
 }
+
+// Opzioni configuratore cornici ──────────────────────────────────────────────
+
+export interface FrameOption {
+  id: string
+  label: string
+  color: string   // CSS color per il swatch della cornice
+  border: string  // CSS color per il contorno del swatch
+}
+
+export interface PrintTypeOption {
+  id: string
+  label: string
+  description: string
+  extraPrice: number  // in centesimi (aggiuntivo al prezzo base variante)
+}
+
+export interface PassepartoutOption {
+  id: string
+  label: string
+  color?: string      // CSS color (undefined per 'none')
+  extraPrice: number  // in centesimi
+}
+
+export interface ProductOptions {
+  frames?: FrameOption[]
+  printTypes?: PrintTypeOption[]
+  passepartout?: PassepartoutOption[]
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export interface Product {
   id: string
@@ -26,10 +61,12 @@ export interface Product {
   shortDescription: string
   category: ProductCategory
   status: ProductStatus
-  images: string[]    // URLs
+  images: string[]         // URLs — images[0] usata nella scheda prodotto
+  thumbnailImage?: string  // se presente, usata al posto di images[0] nella card categoria
   variants: ProductVariant[]
   featured: boolean
   createdAt: string
+  options?: ProductOptions  // configuratore avanzato (es. cornici)
 }
 
 export interface CartItem {
@@ -60,24 +97,19 @@ export interface OrderItem {
 export interface CustomerInfo {
   name: string
   email: string
-  phone?: string
-  address?: {
-    street: string
-    city: string
-    zip: string
-    province: string
-  }
+  phone: string
+  notes?: string
 }
 
 export interface Order {
   id: string
   status: OrderStatus
+  payment_method: PaymentMethod
+  payment_status: 'unpaid' | 'paid'
   customer: CustomerInfo
   items: OrderItem[]
-  subtotal: number    // in centesimi
-  shipping: number    // in centesimi
   total: number       // in centesimi
-  notes?: string
+  stripe_session_id?: string
   createdAt: string
   updatedAt: string
 }

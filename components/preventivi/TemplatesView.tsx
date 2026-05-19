@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Clock, Copy, FileText, Pencil, Plus, Trash2, RotateCcw } from 'lucide-react'
+import { Clock, Copy, FileText, Pencil, Plus, Trash2, RotateCcw, Send, Printer } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { PREVENTIVO_TEMPLATES, SERVICE_TYPES_CERIMONIE } from '@/lib/constants'
 import type { PreventivoTemplate, ServiceType, VocePreventivo } from '@/lib/types'
@@ -29,6 +29,7 @@ export const TemplatesView = ({ onUseTemplate }: TemplatesViewProps) => {
   const [filterServizio, setFilterServizio] = useState<ServiceType | 'tutti'>('tutti')
   const [preview, setPreview] = useState<PreventivoTemplate | null>(null)
   const [editing, setEditing] = useState<PreventivoTemplate | null>(null)
+  const [interattivo, setInterattivo] = useState<PreventivoTemplate | null>(null)
   const [custom, setCustom] = useState<Record<string, PreventivoTemplate>>({})
 
   useEffect(() => {
@@ -96,6 +97,7 @@ export const TemplatesView = ({ onUseTemplate }: TemplatesViewProps) => {
             onPreview={() => setPreview(t)}
             onUse={() => onUseTemplate(t)}
             onEdit={() => setEditing({ ...t, voci: t.voci.map(v => ({ ...v })) })}
+            onInvia={() => setInterattivo(t)}
           />
         ))}
       </div>
@@ -108,6 +110,14 @@ export const TemplatesView = ({ onUseTemplate }: TemplatesViewProps) => {
           onClose={() => setPreview(null)}
           onUse={() => { onUseTemplate(preview); setPreview(null) }}
           onEdit={() => { setEditing({ ...preview, voci: preview.voci.map(v => ({ ...v })) }); setPreview(null) }}
+        />
+      )}
+
+      {/* Modal interattivo cliente */}
+      {interattivo && (
+        <PreventivoInterattivoModal
+          template={interattivo}
+          onClose={() => setInterattivo(null)}
         />
       )}
 
@@ -152,7 +162,7 @@ const FilterChip = ({
 
 /* ─── Template Card ─── */
 const TemplateCard = ({
-  template: t, isCustomized, formatEuro, onPreview, onUse, onEdit,
+  template: t, isCustomized, formatEuro, onPreview, onUse, onEdit, onInvia,
 }: {
   template: PreventivoTemplate
   isCustomized: boolean
@@ -160,6 +170,7 @@ const TemplateCard = ({
   onPreview: () => void
   onUse: () => void
   onEdit: () => void
+  onInvia: () => void
 }) => (
   <div
     style={{
@@ -262,13 +273,13 @@ const TemplateCard = ({
             <Clock size={11} />
             {t.durata_ore}h
           </div>
-          <Button variant="ghost" size="sm" onClick={onPreview}>
-            <FileText size={12} />
-            Dettaglio
-          </Button>
           <Button variant="ghost" size="sm" onClick={onEdit}>
             <Pencil size={12} />
             Modifica
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onInvia}>
+            <Send size={12} />
+            Invia cliente
           </Button>
           <Button variant="primary" size="sm" onClick={onUse}>
             <Copy size={12} />
@@ -338,7 +349,7 @@ const TemplateEditModal = ({
           position: 'relative', width: '100%', maxWidth: 600,
           maxHeight: '90vh', overflowY: 'auto',
           background: 'var(--s1)', border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 'var(--r)', overflow: 'hidden',
+          borderRadius: 'var(--r)',
           boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
         }}
       >
@@ -661,3 +672,204 @@ const VoceRow = ({ voce, formatEuro, last }: { voce: VocePreventivo; formatEuro:
     </span>
   </div>
 )
+
+/* ─── Modal Interattivo Cliente ─── */
+const PreventivoInterattivoModal = ({
+  template: t,
+  onClose,
+}: {
+  template: PreventivoTemplate
+  onClose: () => void
+}) => {
+  const [slug, setSlug] = useState<string | null>(null)
+  const [selected, setSelected] = useState<number[]>([])
+  const [creating, setCreating] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  // Crea la sessione al primo render
+  useEffect(() => {
+    setCreating(true)
+    fetch('/api/preventivo-sessioni', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        template_id: t.id,
+        template_nome: t.nome,
+        colore: t.colore,
+        voci: t.voci,
+      }),
+    })
+      .then(r => r.json())
+      .then(d => { if (d.slug) setSlug(d.slug) })
+      .finally(() => setCreating(false))
+  }, [t.id, t.nome, t.colore, t.voci])
+
+  // Polling ogni 3 secondi per vedere le selezioni del cliente
+  useEffect(() => {
+    if (!slug) return
+    const interval = setInterval(async () => {
+      const r = await fetch(`/api/preventivo-sessioni/${slug}`)
+      const d = await r.json()
+      if (Array.isArray(d.selected)) setSelected(d.selected)
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [slug])
+
+  const appUrl = typeof window !== 'undefined' ? window.location.origin : ''
+  const link = slug ? `${appUrl}/p/${slug}` : ''
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(link)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleWhatsApp = () => {
+    const testo = `Ciao! Ho preparato il preventivo fotografico per te.\n\nClicca qui per scegliere le opzioni che preferisci:\n${link}`
+    window.open(`https://wa.me/?text=${encodeURIComponent(testo)}`, '_blank')
+  }
+
+  const handleStampaRiepilogo = () => {
+    const righe = t.voci
+      .filter((_, i) => selected.includes(i))
+      .map(v => `<tr><td style="padding:8px 0;border-bottom:1px solid #eee;">${v.desc}</td><td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right;font-weight:600;">${v.prezzo > 0 ? `€${v.prezzo.toLocaleString('it-IT')}` : '—'}</td></tr>`)
+      .join('')
+    const totale = t.voci.filter((_, i) => selected.includes(i)).reduce((s, v) => s + v.prezzo, 0)
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Preventivo — ${t.nome}</title>
+    <style>body{font-family:Arial,sans-serif;padding:40px;max-width:600px;margin:0 auto;color:#222;}
+    h1{font-size:22px;margin-bottom:4px;}p{color:#666;margin:0 0 24px;}
+    table{width:100%;border-collapse:collapse;}
+    .totale{font-size:18px;font-weight:700;text-align:right;padding-top:16px;}
+    </style></head><body>
+    <h1>Preventivo fotografico</h1><p>${t.nome}</p>
+    <table>${righe}</table>
+    <div class="totale">Totale: €${totale.toLocaleString('it-IT')}</div>
+    </body></html>`
+    const w = window.open('', '_blank')
+    if (w) { w.document.write(html); w.document.close(); w.print() }
+  }
+
+  const totale = t.voci.filter((_, i) => selected.includes(i)).reduce((s, v) => s + v.prezzo, 0)
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }} onClick={onClose} />
+      <div
+        style={{
+          position: 'relative', width: '100%', maxWidth: 580,
+          maxHeight: '90vh', overflowY: 'auto',
+          background: 'var(--s1)', border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 'var(--r)',
+          boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
+        }}
+      >
+        {/* Accent bar */}
+        <div style={{ height: 3, background: t.colore, borderRadius: 'var(--r) var(--r) 0 0' }} />
+
+        {/* Header */}
+        <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+          <div>
+            <h2 style={{ margin: 0, fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 18 }}>
+              Invia preventivo al cliente
+            </h2>
+            <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--t3)' }}>
+              {t.nome} — Il cliente seleziona le opzioni e vedi il totale in tempo reale
+            </p>
+          </div>
+          <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid rgba(255,255,255,0.08)', background: 'var(--s2)', color: 'var(--t2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>×</button>
+        </div>
+
+        {/* Link da inviare */}
+        <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <p style={{ margin: '0 0 10px', fontSize: 11, fontWeight: 600, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+            Link per il cliente
+          </p>
+          {creating ? (
+            <div style={{ padding: '12px 14px', background: 'var(--s2)', borderRadius: 'var(--r2)', fontSize: 13, color: 'var(--t3)' }}>
+              Generazione link…
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ flex: 1, padding: '10px 14px', background: 'var(--s2)', borderRadius: 'var(--r2)', fontSize: 12, color: 'var(--t2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', border: '1px solid rgba(255,255,255,0.06)' }}>
+                {link}
+              </div>
+              <Button variant="ghost" size="sm" onClick={handleCopy}>
+                {copied ? '✓ Copiato' : 'Copia'}
+              </Button>
+              <Button variant="primary" size="sm" onClick={handleWhatsApp}>
+                <Send size={12} />
+                WhatsApp
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Live view — selezioni del cliente */}
+        <div style={{ padding: '16px 24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+              Selezioni del cliente
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--ac)' }}>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--ac)', animation: 'pulse 2s infinite' }} />
+              aggiornamento in tempo reale
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            {t.voci.map((v, i) => {
+              const checked = selected.includes(i)
+              return (
+                <div
+                  key={i}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '10px 14px', borderRadius: 'var(--r2)',
+                    background: checked ? 'rgba(142,201,176,0.1)' : 'var(--s2)',
+                    border: checked ? '1px solid rgba(142,201,176,0.35)' : '1px solid rgba(255,255,255,0.05)',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <div style={{
+                    width: 16, height: 16, borderRadius: 4, flexShrink: 0,
+                    background: checked ? 'var(--ac)' : 'var(--s3)',
+                    border: checked ? 'none' : '1px solid rgba(255,255,255,0.15)',
+                    display: 'grid', placeItems: 'center',
+                  }}>
+                    {checked && <span style={{ fontSize: 10, color: '#111', fontWeight: 700 }}>✓</span>}
+                  </div>
+                  <span style={{ flex: 1, fontSize: 12, color: checked ? 'var(--tx)' : 'var(--t3)' }}>{v.desc}</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, flexShrink: 0, color: checked ? 'var(--ac)' : 'var(--t3)' }}>
+                    {v.prezzo > 0 ? `€${v.prezzo.toLocaleString('it-IT')}` : '—'}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Totale */}
+          <div style={{ marginTop: 14, padding: '14px 18px', background: 'rgba(142,201,176,0.08)', border: '1px solid rgba(142,201,176,0.2)', borderRadius: 'var(--r2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 13, color: 'var(--t2)' }}>
+              {selected.length === 0 ? 'Nessuna voce selezionata' : `${selected.length} ${selected.length === 1 ? 'voce' : 'voci'} selezionate`}
+            </span>
+            <span style={{ fontSize: 22, fontWeight: 800, color: t.colore }}>
+              {totale > 0 ? `€${totale.toLocaleString('it-IT')}` : '—'}
+            </span>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: '0 24px 20px', display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+          <Button variant="secondary" onClick={onClose}>Chiudi</Button>
+          <Button variant="ghost" onClick={handleStampaRiepilogo} disabled={selected.length === 0}>
+            <Printer size={13} />
+            Stampa riepilogo
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}

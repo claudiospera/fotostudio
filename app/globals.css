@@ -219,3 +219,100 @@ body {
   .cal-nav-group { gap: 8px !important; }
 }
 
+
+/* ═══════════════════════════════════════════════════════════════
+   SHOP — RESPONSIVE UTILITIES
+   Queste classi vengono usate affiancate agli inline style
+   delle pagine shop per gestire i breakpoint.
+   !important è necessario per sovrascrivere gli inline style.
+═══════════════════════════════════════════════════════════════ */
+
+/* Two-column configurator grid → colonna singola su mobile */
+.shop-cfg-grid {
+  display: grid;
+}
+
+/* Griglia prodotti/card con minimo adattivo */
+.shop-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+/* Griglia format/opzioni con minimo più piccolo */
+.shop-format-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+}
+
+@media (max-width: 767px) {
+
+  /* ── Layout a due colonne → colonna singola ── */
+  .shop-cfg-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 20px !important;
+  }
+
+  /* Pannello sticky → statico su mobile */
+  .shop-sticky {
+    position: static !important;
+    top: auto !important;
+  }
+
+  /* Pannello che deve apparire PRIMA su mobile (es. CTA / riepilogo) */
+  .shop-first-mobile {
+    order: -1;
+  }
+
+  /* Griglia prodotti → due colonne su mobile */
+  .shop-cards-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(220px, calc(50% - 8px)), 1fr)) !important;
+  }
+
+  /* Griglia format/opzioni → due colonne compatte su mobile */
+  .shop-format-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(120px, calc(50% - 6px)), 1fr)) !important;
+  }
+
+  /* Thumbnail griglia ordine configuratori */
+  .shop-thumb-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(140px, calc(50% - 6px)), 1fr)) !important;
+  }
+
+  /* Nascondi elementi superflui su mobile */
+  .shop-hide-mobile {
+    display: none !important;
+  }
+
+  /* Step bar del configuratore → compatta */
+  .shop-step-bar {
+    padding: 0 clamp(12px, 3vw, 24px) !important;
+    gap: 2px !important;
+  }
+
+  .shop-step-label {
+    display: none !important;
+  }
+
+  /* Cart row → non si spezza */
+  .shop-cart-row {
+    align-items: flex-start !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+  }
+
+  .shop-cart-info {
+    flex-basis: calc(100% - 88px) !important;
+  }
+
+  .shop-cart-controls {
+    margin-left: 88px;
+  }
+}
+
+@media (max-width: 479px) {
+  /* Ulteriore compressione su schermi molto piccoli */
+  .shop-cards-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(160px, calc(50% - 6px)), 1fr)) !important;
+  }
+}

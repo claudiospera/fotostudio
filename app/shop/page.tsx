@@ -5,11 +5,6 @@ import { ProductCard } from '@/components/shop/ProductCard'
 import { CATEGORY_META } from '@/lib/shop/types'
 import Link from 'next/link'
 
-const CATEGORY_ICONS: Record<string, string> = {
-  stampe: '🖼️',
-  decorazioni: '🏠',
-  gadget: '🎁',
-}
 
 export default function ShopHomePage() {
   const featured = getFeaturedProducts()
@@ -78,7 +73,7 @@ export default function ShopHomePage() {
           }}>
             Categorie
           </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
+          <div className="shop-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
             {Object.values(CATEGORY_META).map((cat) => (
               <Link
                 key={cat.slug}
@@ -95,8 +90,7 @@ export default function ShopHomePage() {
                 }}
                   className="category-card"
                 >
-                  <div style={{ fontSize: '32px', marginBottom: 12 }}>{CATEGORY_ICONS[cat.slug] ?? '📦'}</div>
-                  <p style={{ fontSize: '14px', fontWeight: 700, fontFamily: 'Poppins, sans-serif', color: 'var(--n-tx)', marginBottom: 6 }}>
+<p style={{ fontSize: '14px', fontWeight: 700, fontFamily: 'Poppins, sans-serif', color: 'var(--n-tx)', marginBottom: 6 }}>
                     {cat.label}
                   </p>
                   <p style={{ fontSize: '11px', color: 'var(--n-t3)', lineHeight: 1.5 }}>
@@ -126,7 +120,7 @@ export default function ShopHomePage() {
                 Scelti per te
               </span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
+            <div className="shop-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
               {featured.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
@@ -143,7 +137,7 @@ export default function ShopHomePage() {
           }}>
             Tutti i prodotti
           </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
+          <div className="shop-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
             {PRODUCTS.filter((p) => p.status !== 'discontinued').map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}

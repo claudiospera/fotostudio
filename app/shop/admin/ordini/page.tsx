@@ -1,97 +1,254 @@
-// app/shop/admin/ordini/page.tsx
-// Lista ordini — protetta da Clerk (middleware)
+'use client'
 
-import { auth } from '@clerk/nextjs/server'
-import { redirect } from 'next/navigation'
-import type { Order } from '@/lib/shop/types'
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 
-// Dati placeholder — da sostituire con query Supabase
-const MOCK_ORDERS: Order[] = []
-
-function formatPrice(cents: number): string {
-  return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(
-    cents / 100
-  )
+interface OrderItem {
+  productName: string
+  variantLabel: string
+  quantity: number
+  price: number
 }
 
-const STATUS_LABEL: Record<Order['status'], string> = {
-  pending: 'In attesa',
+interface ShopOrder {
+  id: string
+  status: 'pending' | 'confirmed' | 'ready' | 'delivered' | 'cancelled'
+  payment_method: 'online' | 'studio'
+  payment_status: 'unpaid' | 'paid'
+  customer_name: string
+  customer_email: string
+  customer_phone: string
+  notes: string | null
+  items: OrderItem[]
+  total: number
+  created_at: string
+}
+
+function formatPrice(cents: number) {
+  return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(cents / 100)
+}
+
+const STATUS_LABEL: Record<ShopOrder['status'], string> = {
+  pending:   'In attesa',
   confirmed: 'Confermato',
-  shipped: 'Spedito',
+  ready:     'Pronto al ritiro',
   delivered: 'Consegnato',
   cancelled: 'Annullato',
 }
 
-const STATUS_STYLE: Record<Order['status'], string> = {
-  pending: 'bg-yellow-100 text-yellow-800',
-  confirmed: 'bg-blue-100 text-blue-800',
-  shipped: 'bg-purple-100 text-purple-800',
-  delivered: 'bg-green-100 text-green-800',
-  cancelled: 'bg-red-100 text-red-800',
+const STATUS_COLOR: Record<ShopOrder['status'], { bg: string; color: string }> = {
+  pending:   { bg: '#fff8e1', color: '#b45309' },
+  confirmed: { bg: '#e0f2fe', color: '#0369a1' },
+  ready:     { bg: '#d1fae5', color: '#065f46' },
+  delivered: { bg: '#f0fdf4', color: '#166534' },
+  cancelled: { bg: '#fee2e2', color: '#991b1b' },
 }
 
-export default async function AdminOrdersPage() {
-  const { userId } = await auth()
-  if (!userId) redirect('/login')
+export default function AdminOrdiniPage() {
+  const [orders, setOrders] = useState<ShopOrder[]>([])
+  const [loading, setLoading] = useState(true)
+  const [expanded, setExpanded] = useState<string | null>(null)
+  const [updating, setUpdating] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/api/shop/orders')
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setOrders(data) })
+      .finally(() => setLoading(false))
+  }, [])
+
+  async function updateStatus(orderId: string, status: ShopOrder['status']) {
+    setUpdating(orderId)
+    await fetch(`/api/shop/orders/${orderId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    })
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o))
+    setUpdating(null)
+  }
+
+  const pending = orders.filter(o => o.status === 'pending').length
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12">
-      <div className="mb-8 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-gray-900">Ordini</h1>
-        <a
-          href="/shop/admin"
-          className="text-sm text-gray-500 hover:text-gray-800"
-        >
-          ← Dashboard
-        </a>
+    <div style={{ fontFamily: 'Montserrat, sans-serif', minHeight: '100vh', background: '#f5f5f5' }}>
+
+      {/* Header */}
+      <div style={{ background: '#fff', borderBottom: '1px solid #e8e8e8', padding: '0 clamp(20px,4vw,48px)' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <Link href="/shop/admin" style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              fontSize: 13, fontWeight: 500, color: '#555',
+              textDecoration: 'none', padding: '6px 12px',
+              borderRadius: 8, border: '1px solid #e8e8e8', background: '#fff',
+            }}>
+              <ArrowLeft size={14} /> Admin
+            </Link>
+            <h1 style={{ fontSize: 18, fontWeight: 700, color: '#111', margin: 0 }}>
+              Ordini stampe
+            </h1>
+            {pending > 0 && (
+              <span style={{
+                background: '#ef4444', color: '#fff',
+                borderRadius: 20, padding: '2px 8px',
+                fontSize: 12, fontWeight: 700,
+              }}>
+                {pending} nuovi
+              </span>
+            )}
+          </div>
+          <span style={{ fontSize: 13, color: '#999' }}>{orders.length} ordini totali</span>
+        </div>
       </div>
 
-      {MOCK_ORDERS.length === 0 ? (
-        <div className="rounded-lg border border-gray-200 bg-gray-50 py-16 text-center">
-          <p className="text-gray-400">Nessun ordine ricevuto.</p>
-          <p className="mt-1 text-xs text-gray-400">
-            Gli ordini appariranno qui dopo l&apos;integrazione con Supabase.
-          </p>
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: 'clamp(24px,4vw,40px) clamp(20px,4vw,48px)' }}>
+
+        {loading && <p style={{ color: '#999', fontSize: 14 }}>Caricamento…</p>}
+
+        {!loading && orders.length === 0 && (
+          <div style={{
+            textAlign: 'center', padding: '60px 24px',
+            background: '#fff', borderRadius: 12, border: '1px solid #e8e8e8',
+          }}>
+            <p style={{ fontSize: 40, marginBottom: 12 }}>📭</p>
+            <p style={{ color: '#999', fontSize: 15 }}>Nessun ordine ricevuto.</p>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {orders.map(order => {
+            const sc = STATUS_COLOR[order.status]
+            const isOpen = expanded === order.id
+            return (
+              <div key={order.id} style={{
+                background: '#fff', border: '1px solid #e8e8e8',
+                borderRadius: 12, overflow: 'hidden',
+              }}>
+                {/* Riga principale */}
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 20px', cursor: 'pointer' }}
+                  onClick={() => setExpanded(isOpen ? null : order.id)}
+                >
+                  {/* Stato badge */}
+                  <span style={{
+                    padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
+                    background: sc.bg, color: sc.color, flexShrink: 0,
+                  }}>
+                    {STATUS_LABEL[order.status]}
+                  </span>
+
+                  {/* Cliente */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontWeight: 700, fontSize: 14, color: '#111', margin: 0 }}>
+                      {order.customer_name}
+                    </p>
+                    <p style={{ fontSize: 12, color: '#777', margin: '2px 0 0' }}>
+                      {order.customer_email} · {order.customer_phone}
+                    </p>
+                  </div>
+
+                  {/* Pagamento */}
+                  <div style={{ flexShrink: 0, textAlign: 'center' }}>
+                    <p style={{ fontSize: 11, color: '#999', margin: 0 }}>
+                      {order.payment_method === 'online' ? '💳 Online' : '🏠 Studio'}
+                    </p>
+                    <p style={{
+                      fontSize: 11, fontWeight: 700, margin: '2px 0 0',
+                      color: order.payment_status === 'paid' ? '#16a34a' : '#b45309',
+                    }}>
+                      {order.payment_status === 'paid' ? 'Pagato' : 'Non pagato'}
+                    </p>
+                  </div>
+
+                  {/* Totale */}
+                  <span style={{ fontWeight: 800, fontSize: 16, color: '#111', flexShrink: 0, minWidth: 80, textAlign: 'right' }}>
+                    {formatPrice(order.total)}
+                  </span>
+
+                  {/* Data */}
+                  <span style={{ fontSize: 12, color: '#999', flexShrink: 0 }}>
+                    {new Date(order.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: '2-digit' })}
+                  </span>
+
+                  <span style={{ color: '#ccc', fontSize: 14 }}>{isOpen ? '▲' : '▼'}</span>
+                </div>
+
+                {/* Dettaglio espanso */}
+                {isOpen && (
+                  <div style={{ borderTop: '1px solid #f0f0f0', padding: '20px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+
+                      {/* Articoli */}
+                      <div>
+                        <p style={{ fontSize: 11, fontWeight: 700, color: '#999', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 12 }}>
+                          Articoli
+                        </p>
+                        {order.items.map((item, i) => (
+                          <div key={i} style={{
+                            display: 'flex', justifyContent: 'space-between',
+                            padding: '8px 0', borderBottom: '1px solid #f5f5f5', fontSize: 13,
+                          }}>
+                            <span style={{ color: '#333' }}>
+                              {item.productName} — {item.variantLabel}
+                              <span style={{ color: '#999' }}> ×{item.quantity}</span>
+                            </span>
+                            <span style={{ fontWeight: 600, color: '#111' }}>
+                              {formatPrice(item.price * item.quantity)}
+                            </span>
+                          </div>
+                        ))}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 10, fontWeight: 800, fontSize: 15 }}>
+                          <span>Totale</span>
+                          <span>{formatPrice(order.total)}</span>
+                        </div>
+
+                        {order.notes && (
+                          <div style={{ marginTop: 16, padding: '10px 14px', background: '#fffbeb', borderRadius: 8, border: '1px solid #fde68a' }}>
+                            <p style={{ fontSize: 12, color: '#78350f', margin: 0 }}>📝 {order.notes}</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Gestione stato */}
+                      <div>
+                        <p style={{ fontSize: 11, fontWeight: 700, color: '#999', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 12 }}>
+                          Aggiorna stato
+                        </p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {(['pending', 'confirmed', 'ready', 'delivered', 'cancelled'] as const).map(s => {
+                            const c = STATUS_COLOR[s]
+                            const isActive = order.status === s
+                            return (
+                              <button
+                                key={s}
+                                disabled={isActive || updating === order.id}
+                                onClick={() => updateStatus(order.id, s)}
+                                style={{
+                                  padding: '9px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                                  cursor: isActive || updating === order.id ? 'default' : 'pointer',
+                                  border: isActive ? `2px solid ${c.color}` : '1px solid #e8e8e8',
+                                  background: isActive ? c.bg : '#fff',
+                                  color: isActive ? c.color : '#555',
+                                  textAlign: 'left',
+                                  transition: 'all .15s',
+                                }}
+                              >
+                                {isActive ? '✓ ' : ''}{STATUS_LABEL[s]}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
-      ) : (
-        <div className="overflow-hidden rounded-lg border border-gray-200">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                {['ID', 'Cliente', 'Totale', 'Stato', 'Data'].map((h) => (
-                  <th
-                    key={h}
-                    className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
-              {MOCK_ORDERS.map((order) => (
-                <tr key={order.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-xs text-gray-500">
-                    {order.id.slice(0, 8)}…
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{order.customer.name}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{formatPrice(order.total)}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[order.status]}`}
-                    >
-                      {STATUS_LABEL[order.status]}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-gray-500">
-                    {new Date(order.createdAt).toLocaleDateString('it-IT')}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      </div>
     </div>
   )
 }

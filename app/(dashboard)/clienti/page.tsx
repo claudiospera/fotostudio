@@ -52,18 +52,69 @@ const MATRIMONIO_TYPES: CategoriaCliente[] = ['Matrimonio', 'Promessa di Matrimo
 const CASA2_TYPES:      CategoriaCliente[] = ['Matrimonio', 'Promessa di Matrimonio']
 const GENITORI_TYPES:   CategoriaCliente[] = ['Battesimo', 'Comunione', '1 Anno', '18 Anni', 'Shooting Fotografico']
 const NO_PERSONA1_TYPES:CategoriaCliente[] = ['Battesimo', 'Comunione', '1 Anno']
-const PKG_TYPES:        CategoriaCliente[] = ['Promessa di Matrimonio', 'Battesimo', 'Comunione', '18 Anni', 'Anniversario', 'Altra Cerimonia']
+const PKG_TYPES:        CategoriaCliente[] = ['Matrimonio', 'Promessa di Matrimonio', 'Battesimo', 'Comunione', '1 Anno', '18 Anni', 'Anniversario', 'Altra Cerimonia', 'Shooting Fotografico']
 
-const PACCHETTI_DEFAULT = [
-  { nome: '📒 Fotolibro 30×30 (30 fogli)', prezzo: 600 },
-  { nome: '📒 Fotolibro 25×25 (30 fogli)', prezzo: 500 },
+const PACCHETTI_COMUNIONE = [
+  { nome: '📒 Fotolibro 30×30 (25 fogli)', prezzo: 450 },
+  { nome: '📒 Fotolibro 25×25 (25 fogli)', prezzo: 400 },
   { nome: '🖼️ Anteprima',                  prezzo: 50  },
   { nome: '📗 Album Classico 30×30',        prezzo: 400 },
   { nome: '🖼️ 40 Foto',                    prezzo: 350 },
   { nome: '💾 Solo File',                   prezzo: 0   },
   { nome: '🎨 Carta Hahnemühle',            prezzo: 100 },
   { nome: '🎬 Video',                       prezzo: 350 },
+  { nome: '🏠 Casa',                        prezzo: 50  },
 ]
+
+const PACCHETTI_BATTESIMO = [
+  { nome: '📒 Fotolibro 30×30 (25 fogli)', prezzo: 600 },
+  { nome: '📒 Fotolibro 25×25 (25 fogli)', prezzo: 500 },
+  { nome: '🖼️ Anteprima',                  prezzo: 50  },
+  { nome: '📗 Album Classico 30×30',        prezzo: 550 },
+  { nome: '🖼️ 60 Foto',                    prezzo: 500 },
+  { nome: '⛪ Solo Chiesa 20 foto',         prezzo: 250 },
+  { nome: '💾 Solo File',                   prezzo: 0   },
+  { nome: '🎨 Carta Hahnemühle',            prezzo: 100 },
+  { nome: '🎬 Video',                       prezzo: 350 },
+]
+
+const PACCHETTI_SHOOTING = [
+  { nome: '📷 Shooting studio Solo File',        prezzo: 100 },
+  { nome: '🌳 Shooting esterno',                 prezzo: 150 },
+  { nome: '🖼️ 10 stampe 15×20 Fine Art',        prezzo: 50  },
+  { nome: '📒 Fotolibro 20×30 (10 fogli)',       prezzo: 90  },
+  { nome: '📒 Fotolibro 15×20 (10 fogli)',       prezzo: 60  },
+]
+
+const PACCHETTI_1ANNO = [
+  { nome: '📒 Fotolibro 20×30 (10 fogli)',              prezzo: 250 },
+  { nome: '📒 Fotolibro 15×20 (10 fogli)',              prezzo: 210 },
+  { nome: '📒 Fotolibro 25×25 copertina tessuto',       prezzo: 350 },
+  { nome: '💾 Solo File',                               prezzo: 0   },
+  { nome: '🎂 Smash Cake',                              prezzo: 100 },
+]
+
+const PACCHETTI_18ANNI = PACCHETTI_BATTESIMO.filter(p => p.nome !== '⛪ Solo Chiesa 20 foto')
+
+const PACCHETTI_MATRIMONIO = [
+  { nome: '📒 Album 30×40 (Fotolibro o Tradizionale + Video)',           prezzo: 2200 },
+  { nome: '📒 Album 24×30 / 30×30 (Fotolibro o Tradizionale + Video)', prezzo: 2000 },
+  { nome: '📗 2 Mini Album genitori 50 facciate (copertina come sposi)', prezzo: 300  },
+  { nome: '📗 2 Mini Album 20 facciate (copertina carta fotografica)',   prezzo: 150  },
+  { nome: '📷 Albumino foto Parenti (13×18)',                            prezzo: 100  },
+  { nome: '💾 Solo File foto parenti',                                   prezzo: 0    },
+  { nome: '🎨 Carta Hahnemühle',                                        prezzo: 200  },
+  { nome: '🎬 Anteprima Video',                                         prezzo: 150  },
+  { nome: '🖼️ Anteprima Foto',                                         prezzo: 150  },
+  { nome: '📽️ Proiezione ristorante',                                   prezzo: 250  },
+  { nome: '💌 Cartelline Matrimonio (100 pz)',                          prezzo: 250  },
+  { nome: '📒 Promessa — Album 20×30',                                  prezzo: 400  },
+  { nome: '📒 Promessa — Album 24×30',                                  prezzo: 450  },
+  { nome: '📒 Promessa — Album 30×30',                                  prezzo: 500  },
+  { nome: '👥 Doppio staff casa sposo',                                 prezzo: 300  },
+]
+
+const PACCHETTI_DEFAULT = PACCHETTI_COMUNIONE
 
 const EMPTY_FORM: Omit<Cliente, 'id' | 'user_id' | 'created_at' | 'updated_at'> = {
   categoria: 'Matrimonio',
@@ -695,6 +746,12 @@ function ClienteForm({ initial, onSave, onClose }: {
   const showPersona2    = MATRIMONIO_TYPES.includes(form.categoria)
   const showGenitori    = GENITORI_TYPES.includes(form.categoria)
   const showPacchetti   = PKG_TYPES.includes(form.categoria)
+  const pacchetti       = form.categoria === 'Matrimonio' || form.categoria === 'Promessa di Matrimonio' || form.categoria === 'Anniversario' ? PACCHETTI_MATRIMONIO
+                        : form.categoria === 'Battesimo' ? PACCHETTI_BATTESIMO
+                        : form.categoria === '18 Anni' || form.categoria === 'Altra Cerimonia' ? PACCHETTI_18ANNI
+                        : form.categoria === 'Shooting Fotografico' ? PACCHETTI_SHOOTING
+                        : form.categoria === '1 Anno' ? PACCHETTI_1ANNO
+                        : PACCHETTI_COMUNIONE
   const residuo         = Number(form.importo_totale ?? 0) - Number(form.acconto ?? 0)
 
   return (
@@ -738,6 +795,9 @@ function ClienteForm({ initial, onSave, onClose }: {
               </Field>
               <Field label="Luogo evento">
                 <input value={form.luogo_evento ?? ''} onChange={e => set('luogo_evento', e.target.value)} placeholder="Es. Villa Reale, Milano" style={INP} />
+              </Field>
+              <Field label="🕐 Ora ricevimento">
+                <input type="time" value={ex('ora_ricevimento')} onChange={e => setEx('ora_ricevimento', e.target.value)} style={INP} />
               </Field>
             </div>
           </Section>
@@ -947,7 +1007,7 @@ function ClienteForm({ initial, onSave, onClose }: {
           {showPacchetti && (
             <Section title="📦 Pacchetti & Opzioni">
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                {PACCHETTI_DEFAULT.map(p => {
+                {pacchetti.map(p => {
                   const checked = form.pacchetti.some(pp => pp.nome === p.nome)
                   return (
                     <label

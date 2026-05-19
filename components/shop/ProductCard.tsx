@@ -35,7 +35,7 @@ export function ProductCard({ product }: ProductCardProps) {
         {/* Immagine */}
         <div style={{ position: 'relative', aspectRatio: '1', overflow: 'hidden', background: 'var(--n-surface)' }}>
           <Image
-            src={product.images[0]}
+            src={product.thumbnailImage ?? product.images[0]}
             alt={product.name}
             fill
             className="product-card-img"
