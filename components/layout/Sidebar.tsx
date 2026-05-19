@@ -185,7 +185,6 @@ export const Sidebar = () => {
               Shop online
             </p>
             <NavLink href="/shop/admin/ordini"   label="Ordini stampe"  icon={ShoppingCart} badge={newShopOrders} />
-            <NavLink href="/shop/admin/prodotti"  label="Prodotti"       icon={Package}      />
             <NavLink href="/shop/admin"           label="Vai allo shop"  icon={ShoppingBag}  />
           </div>
 
