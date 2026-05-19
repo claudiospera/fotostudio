@@ -194,9 +194,24 @@ export default function AdminOrdiniPage() {
 
                       {/* Articoli + foto cliente */}
                       <div>
-                        <p style={{ fontSize: 11, fontWeight: 700, color: '#999', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 12 }}>
-                          Articoli
-                        </p>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                          <p style={{ fontSize: 11, fontWeight: 700, color: '#999', letterSpacing: '.08em', textTransform: 'uppercase', margin: 0 }}>
+                            Articoli
+                          </p>
+                          {order.items.some(i => i.image?.startsWith('https://')) && (
+                            <a
+                              href={`/api/shop/orders/${order.id}/download-photos`}
+                              style={{
+                                fontSize: 12, fontWeight: 700, color: '#fff',
+                                background: '#6366f1', borderRadius: 8,
+                                padding: '5px 12px', textDecoration: 'none',
+                                display: 'flex', alignItems: 'center', gap: 5,
+                              }}
+                            >
+                              ⬇ Scarica tutte le foto
+                            </a>
+                          )}
+                        </div>
                         {order.items.map((item, i) => (
                           <div key={i} style={{
                             display: 'flex', alignItems: 'center', gap: 12,
