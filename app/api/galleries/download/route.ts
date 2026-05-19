@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     } catch { /* skip failed */ }
   }))
 
-  const zipBuffer = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' })
+  const zipBuffer = await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' })
   const safeName = gallery.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()
 
   return new NextResponse(zipBuffer, {
