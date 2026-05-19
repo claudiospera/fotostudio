@@ -735,8 +735,21 @@ export default function StampeClassichePage() {
                   {added ? <><Check size={17} strokeWidth={3} /> Aggiunto!</> : <><ShoppingCart size={17} /> Aggiungi al carrello</>}
                 </button>
 
+                {added && (
+                  <a href="/shop/carrello" style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    width: '100%', padding: '12px', borderRadius: 12,
+                    border: '2px solid #00c1de', color: '#00c1de',
+                    background: '#fff', fontFamily: 'Poppins, sans-serif',
+                    fontWeight: 700, fontSize: '13px', textDecoration: 'none',
+                    transition: 'all .15s',
+                  }}>
+                    🛒 Vai al carrello
+                  </a>
+                )}
+
                 <p style={{ fontSize: '11px', color: '#bbb', textAlign: 'center' }}>
-                  Spedizione calcolata al checkout · Carta fotografica premium
+                  Ritiro in studio · Carta fotografica premium
                 </p>
               </div>
 
