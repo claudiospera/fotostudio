@@ -33,7 +33,9 @@ const VARIANTS: Variant[] = [
 
 interface PhotoItem {
   id: string
-  url: string
+  url: string        // blob URL locale per la preview
+  uploadedUrl?: string // URL pubblico R2 (disponibile dopo l'upload)
+  uploading: boolean
   name: string
   natW: number; natH: number
   orientation: 'portrait' | 'landscape' | 'square'
@@ -197,6 +199,22 @@ export default function StampeClassichePage() {
 
   useEffect(() => { return () => photos.forEach(p => URL.revokeObjectURL(p.url)) }, []) // eslint-disable-line
 
+  const uploadToR2 = useCallback(async (id: string, file: File) => {
+    try {
+      const res = await fetch('/api/shop/presign-photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: file.name, contentType: file.type }),
+      })
+      if (!res.ok) throw new Error('Presign fallito')
+      const { uploadUrl, publicUrl } = await res.json()
+      await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
+      setPhotos(prev => prev.map(p => p.id === id ? { ...p, uploadedUrl: publicUrl, uploading: false } : p))
+    } catch {
+      setPhotos(prev => prev.map(p => p.id === id ? { ...p, uploading: false } : p))
+    }
+  }, [])
+
   const loadFiles = useCallback((files: FileList | File[]) => {
     Array.from(files).filter(f => f.type.startsWith('image/')).forEach(file => {
       const url = URL.createObjectURL(file)
@@ -204,22 +222,25 @@ export default function StampeClassichePage() {
       img.onload = () => {
         const nW = img.naturalWidth, nH = img.naturalHeight
         const orientation: PhotoItem['orientation'] = nW > nH ? 'landscape' : nW < nH ? 'portrait' : 'square'
+        const id = uid()
         const p: PhotoItem = {
-          id: uid(), url, name: file.name,
+          id, url, name: file.name,
           natW: nW, natH: nH, orientation,
           zoom: 1, offsetX: 0, offsetY: 0, copies: 1, fitMode: 'cover',
           variantId: variant.id,
           slotOrientation: nW >= nH ? 'landscape' : 'portrait',
+          uploading: true,
         }
         setPhotos(prev => {
           const next = [...prev, p]
           if (prev.length === 0) setActiveId(p.id)
           return next
         })
+        uploadToR2(id, file)
       }
       img.src = url
     })
-  }, [])
+  }, [uploadToR2])
 
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) loadFiles(e.target.files)
@@ -247,18 +268,21 @@ export default function StampeClassichePage() {
     })
   }
 
+  const isUploading = photos.some(p => p.uploading)
+
   function handleAddToCart() {
+    if (isUploading) return
     photos.forEach(p => {
       const pv = VARIANTS.find(v => v.id === p.variantId) ?? VARIANTS[0]
       const price = getPriceForQuantity(pv.price, pv.priceBreaks, p.copies)
       addItem({
         productId: 'stampe-classiche',
-        variantId: pv.id,
+        variantId: `${pv.id}--${p.id}`, // unique per foto
         quantity: p.copies,
         productName: 'Stampe Classiche',
         variantLabel: pv.label,
         price,
-        image: p.url,
+        image: p.uploadedUrl || p.url, // R2 URL se disponibile, fallback blob
       })
     })
     setAdded(true)
@@ -519,9 +543,14 @@ export default function StampeClassichePage() {
                         <div style={{ borderRadius: 4, overflow: 'hidden', boxShadow: '2px 3px 10px rgba(0,0,0,0.12)' }}>
                           <PhotoSlot photo={p} slotW={tW} slotH={tH} />
                         </div>
-                        {p.copies > 1 && (
+                        {p.copies > 1 && !p.uploading && (
                           <div style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: '#00c1de', color: '#fff', fontSize: '10px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             {p.copies}
+                          </div>
+                        )}
+                        {p.uploading && (
+                          <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.7)', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700, color: '#00c1de' }}>
+                            ↑
                           </div>
                         )}
                       </div>
@@ -724,15 +753,22 @@ export default function StampeClassichePage() {
 
                 <button
                   onClick={handleAddToCart}
+                  disabled={isUploading}
                   style={{
                     width: '100%', padding: '14px', borderRadius: 12, border: 'none',
-                    background: added ? '#22c55e' : '#00c1de',
+                    background: added ? '#22c55e' : isUploading ? '#b0e6f0' : '#00c1de',
                     color: '#fff', fontFamily: 'Poppins, sans-serif', fontWeight: 700,
-                    fontSize: '14px', cursor: 'pointer', transition: 'background .2s',
+                    fontSize: '14px', cursor: isUploading ? 'not-allowed' : 'pointer', transition: 'background .2s',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    opacity: isUploading ? 0.75 : 1,
                   }}
                 >
-                  {added ? <><Check size={17} strokeWidth={3} /> Aggiunto!</> : <><ShoppingCart size={17} /> Aggiungi al carrello</>}
+                  {added
+                    ? <><Check size={17} strokeWidth={3} /> Aggiunto!</>
+                    : isUploading
+                      ? <>Caricamento in corso…</>
+                      : <><ShoppingCart size={17} /> Aggiungi al carrello</>
+                  }
                 </button>
 
                 {added && (

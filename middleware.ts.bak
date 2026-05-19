@@ -4,22 +4,9 @@ const isPublicRoute = createRouteMatcher([
   '/',
   '/sign-in(.*)',
   '/sign-up(.*)',
-  '/p(.*)',
   '/cliente(.*)',
   '/api/public(.*)',
   '/api/preventivi-pubblici/(.*)',
-  '/api/preventivo-sessioni/(.*)',
-  '/api/shop/orders',
-  '/api/shop/stripe-webhook',
-  '/api/shop/presign-photo',
-  // Shop pubblico — /shop/admin resta protetto
-  '/shop',
-  '/shop/carrello',
-  '/shop/checkout',
-  '/shop/ordine-confermato',
-  '/shop/stampe(.*)',
-  '/shop/decorazioni(.*)',
-  '/shop/[categoria](.*)',
 ])
 
 export default clerkMiddleware(async (auth, request) => {

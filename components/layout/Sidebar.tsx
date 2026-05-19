@@ -9,76 +9,67 @@ import { useUIStore } from '@/store/ui'
 import { useClerk } from '@clerk/nextjs'
 import {
   LayoutGrid, Images, FileText, Upload, ShoppingCart, LogOut, Plus, Users, BarChart2,
-  CalendarCheck, ChevronDown, CalendarDays, ClipboardList, ShoppingBag,
+  CalendarCheck, ChevronDown, CalendarDays, ClipboardList, ShoppingBag, Package,
 } from 'lucide-react'
 
-const navItems = [
-  {
-    group: 'Principale',
-    items: [
-      { href: '/dashboard',   label: 'Dashboard',     icon: LayoutGrid  },
-      { href: '/gallerie',    label: 'Gallerie',       icon: Images      },
-      { href: '/clienti',     label: 'Clienti',        icon: Users       },
-      { href: '/statistiche', label: 'Statistiche',    icon: BarChart2   },
-    ],
-  },
-  {
-    group: 'Lavoro',
-    items: [
-      { href: '/preventivi',              label: 'Contratti',        icon: FileText    },
-      { href: '/preventivi?tab=proposte',  label: 'Calendario eventi', icon: CalendarDays },
-      { href: '/upload',                  label: 'Upload clienti',   icon: Upload      },
-      { href: '/ordini',                  label: 'Ordini stampe',    icon: ShoppingCart },
-      { href: '/shop/admin',              label: 'Shop online',      icon: ShoppingBag  },
-    ],
-  },
+// ─── CRM / Gestionale ────────────────────────────────────────────────────────
+const gestionaleItems = [
+  { href: '/dashboard',   label: 'Dashboard',    icon: LayoutGrid },
+  { href: '/gallerie',    label: 'Gallerie',      icon: Images     },
+  { href: '/clienti',     label: 'Clienti',       icon: Users      },
+  { href: '/preventivi',  label: 'Contratti',     icon: FileText   },
+  { href: '/statistiche', label: 'Statistiche',   icon: BarChart2  },
+]
+
+const lavoroItems = [
+  { href: '/upload', label: 'Upload clienti', icon: Upload },
+]
+
+// ─── Shop admin ───────────────────────────────────────────────────────────────
+const shopItems = [
+  { href: '/shop/admin/ordini',   label: 'Ordini stampe',  icon: ShoppingCart },
+  { href: '/shop/admin/prodotti', label: 'Prodotti',        icon: Package      },
+  { href: '/shop/admin',          label: 'Vai allo shop',   icon: ShoppingBag  },
 ]
 
 export const Sidebar = () => {
   const pathname = usePathname()
   const { signOut } = useClerk()
-  const [newOrders, setNewOrders] = useState(0)
+  const [newShopOrders, setNewShopOrders] = useState(0)
   const [appuntamentiOpen, setAppuntamentiOpen] = useState(
     () => pathname.startsWith('/appuntamenti')
   )
   const { isSidebarOpen, closeSidebar } = useUIStore()
 
-  // Close sidebar on route change (mobile nav)
   useEffect(() => { closeSidebar() }, [pathname, closeSidebar])
-
-  // Auto-expand appuntamenti when on those routes
   useEffect(() => {
     if (pathname.startsWith('/appuntamenti')) setAppuntamentiOpen(true)
   }, [pathname])
-
-  // Lock body scroll when sidebar open on mobile
   useEffect(() => {
-    if (isSidebarOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
+    if (isSidebarOpen) document.body.style.overflow = 'hidden'
+    else document.body.style.overflow = ''
     return () => { document.body.style.overflow = '' }
   }, [isSidebarOpen])
-
-  // Close on Escape
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeSidebar() }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [closeSidebar])
 
+  // Badge ordini shop nuovi
   useEffect(() => {
-    fetch('/api/orders')
+    fetch('/api/shop/orders')
       .then(r => r.ok ? r.json() : [])
       .then((orders: { status: string }[]) =>
-        setNewOrders(orders.filter(o => o.status === 'nuovo').length)
+        setNewShopOrders(orders.filter(o => o.status === 'pending').length)
       )
       .catch(() => {})
   }, [])
 
-  const isActive = (href: string) =>
-    pathname === href || pathname.startsWith(href + '/')
+  const isActive = (href: string) => {
+    if (href === '/shop/admin') return pathname === '/shop/admin'
+    return pathname === href || pathname.startsWith(href + '/')
+  }
 
   const NavLink = ({ href, label, icon: Icon, badge = 0 }: {
     href: string; label: string; icon: React.ElementType; badge?: number
@@ -116,10 +107,7 @@ export const Sidebar = () => {
 
   return (
     <>
-      {/* Mobile backdrop */}
-      {isSidebarOpen && (
-        <div className="sidebar-backdrop" onClick={closeSidebar} />
-      )}
+      {isSidebarOpen && <div className="sidebar-backdrop" onClick={closeSidebar} />}
 
       <aside
         style={{ width: 'var(--sw)' }}
@@ -128,25 +116,14 @@ export const Sidebar = () => {
           isSidebarOpen && 'is-open'
         )}
       >
-        {/* Accent line top */}
-        <div
-          className="h-[2px] w-full shrink-0"
-          style={{ background: 'linear-gradient(90deg, var(--ac) 0%, transparent 80%)', opacity: 0.45 }}
-        />
+        {/* Accent line */}
+        <div className="h-[2px] w-full shrink-0" style={{ background: 'linear-gradient(90deg, var(--ac) 0%, transparent 80%)', opacity: 0.45 }} />
 
         {/* Logo */}
         <div className="px-4 py-4 border-b border-[var(--b1)] flex items-center justify-between shrink-0">
           <div style={{ background: '#fff', borderRadius: 8, padding: '5px 10px' }}>
-            <Image
-              src="/logo.png"
-              alt="Storie da Raccontare"
-              width={140}
-              height={66}
-              style={{ objectFit: 'contain', display: 'block' }}
-              priority
-            />
+            <Image src="/logo.png" alt="Storie da Raccontare" width={140} height={66} style={{ objectFit: 'contain', display: 'block' }} priority />
           </div>
-          {/* Close button — mobile only */}
           <button
             onClick={closeSidebar}
             className="hamburger-btn w-8 h-8 rounded-[var(--r2)] bg-[var(--s2)] border border-[var(--b1)] place-items-center text-[var(--t3)] hover:text-[var(--tx)] transition-colors"
@@ -160,23 +137,19 @@ export const Sidebar = () => {
 
         {/* Nav */}
         <nav className="flex-1 min-h-0 overflow-y-auto py-2">
-          {navItems.map(({ group, items }) => (
-            <div key={group} className="px-4 pt-5 pb-1">
-              <p className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[var(--t3)] px-2 mb-2">
-                {group}
-              </p>
-              {items.map(({ href, label, icon }) => (
-                <NavLink key={href} href={href} label={label} icon={icon} badge={href === '/ordini' ? newOrders : 0} />
-              ))}
-            </div>
-          ))}
 
-          {/* Appuntamenti — collapsible */}
+          {/* ── GESTIONALE ─────────────────────────────── */}
           <div className="px-4 pt-5 pb-1">
             <p className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[var(--t3)] px-2 mb-2">
-              Agenda
+              Gestionale
             </p>
-            {/* Toggle button */}
+            {gestionaleItems.map(({ href, label, icon }) => (
+              <NavLink key={href} href={href} label={label} icon={icon} />
+            ))}
+          </div>
+
+          {/* ── AGENDA (collapsible) ────────────────────── */}
+          <div className="px-4 pt-2 pb-1">
             <button
               onClick={() => setAppuntamentiOpen(o => !o)}
               className={cn(
@@ -188,39 +161,44 @@ export const Sidebar = () => {
               style={{ minHeight: 52, ...(isAppuntamentiActive ? { background: 'var(--acd)' } : {}) }}
             >
               {isAppuntamentiActive && (
-                <span
-                  className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full"
-                  style={{ height: '60%', background: 'var(--ac)' }}
-                />
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full" style={{ height: '60%', background: 'var(--ac)' }} />
               )}
               <CalendarCheck size={17} className={cn('shrink-0', isAppuntamentiActive ? 'opacity-100' : 'opacity-50')} />
               <span className="flex-1 leading-none text-left">Appuntamenti</span>
-              <ChevronDown
-                size={14}
-                className={cn('shrink-0 transition-transform duration-200', appuntamentiOpen ? 'rotate-180' : '')}
-                style={{ opacity: 0.5 }}
-              />
+              <ChevronDown size={14} className={cn('shrink-0 transition-transform duration-200', appuntamentiOpen ? 'rotate-180' : '')} style={{ opacity: 0.5 }} />
             </button>
-
-            {/* Sub-items */}
             {appuntamentiOpen && (
               <div className="ml-4 pl-3 border-l border-[rgba(255,255,255,0.07)] mb-1">
-                <NavLink href="/appuntamenti/calendari"    label="Calendari"    icon={CalendarDays}   />
-                <NavLink href="/appuntamenti/prenotazioni" label="Prenotazioni" icon={ClipboardList}  />
+                <NavLink href="/appuntamenti/calendari"    label="Calendari"    icon={CalendarDays}  />
+                <NavLink href="/appuntamenti/prenotazioni" label="Prenotazioni" icon={ClipboardList} />
               </div>
             )}
+
+            {/* Upload clienti sotto agenda */}
+            {lavoroItems.map(({ href, label, icon }) => (
+              <NavLink key={href} href={href} label={label} icon={icon} />
+            ))}
           </div>
 
-          {/* Azioni rapide */}
+          {/* ── SHOP ───────────────────────────────────── */}
+          <div className="px-4 pt-4 pb-1 mx-4 mt-3 rounded-xl" style={{ background: 'var(--s2)', border: '1px solid var(--b1)' }}>
+            <p className="text-[10px] font-semibold tracking-[0.14em] uppercase px-2 mb-2" style={{ color: 'var(--ac)', opacity: 0.7 }}>
+              Shop online
+            </p>
+            <NavLink href="/shop/admin/ordini"   label="Ordini stampe"  icon={ShoppingCart} badge={newShopOrders} />
+            <NavLink href="/shop/admin/prodotti"  label="Prodotti"       icon={Package}      />
+            <NavLink href="/shop/admin"           label="Vai allo shop"  icon={ShoppingBag}  />
+          </div>
+
+          {/* ── AZIONI RAPIDE ──────────────────────────── */}
           <div className="px-4 pt-5 pb-1">
             <p className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[var(--t3)] px-2 mb-2">
               Azioni rapide
             </p>
             {[
-              { href: '/gallerie',   label: 'Nuova galleria',    icon: Images       },
-              { href: '/preventivi', label: 'Nuovo contratto',   icon: FileText     },
-              { href: '/upload',     label: 'Nuovo link upload', icon: Upload       },
-              { href: '/ordini',     label: 'Vedi ordini stampe',icon: ShoppingCart },
+              { href: '/gallerie',  label: 'Nuova galleria',   icon: Images    },
+              { href: '/preventivi',label: 'Nuovo contratto',  icon: FileText  },
+              { href: '/upload',    label: 'Nuovo link upload', icon: Upload   },
             ].map(({ href, label, icon: Icon }) => (
               <Link
                 key={href}
@@ -236,7 +214,7 @@ export const Sidebar = () => {
           </div>
         </nav>
 
-        {/* Bottom actions */}
+        {/* Bottom */}
         <div className="px-4 pb-2 shrink-0 border-t border-[var(--b1)] pt-3">
           <Link
             href="/"
@@ -275,12 +253,8 @@ export const Sidebar = () => {
               C
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-semibold text-[var(--tx)] truncate leading-none mb-1">
-                Claudio Spera
-              </p>
-              <p className="text-[11px] leading-none" style={{ color: 'var(--ac)', opacity: 0.65 }}>
-                Piano Pro
-              </p>
+              <p className="text-[13px] font-semibold text-[var(--tx)] truncate leading-none mb-1">Claudio Spera</p>
+              <p className="text-[11px] leading-none" style={{ color: 'var(--ac)', opacity: 0.65 }}>Piano Pro</p>
             </div>
             <LogOut size={14} className="text-[var(--t3)] opacity-0 group-hover:opacity-60 transition-opacity shrink-0" />
           </div>
