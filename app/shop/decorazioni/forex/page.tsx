@@ -66,6 +66,8 @@ export default function ForexPage() {
   const [qty,           setQty]           = useState(1)
   const [addedFeedback, setAddedFeedback] = useState(false)
   const [photoUrl,      setPhotoUrl]      = useState<string | null>(null)
+  const [uploadedUrl,   setUploadedUrl]   = useState<string | null>(null)
+  const [uploading,     setUploading]     = useState(false)
   const [zoom,          setZoom]          = useState(1)
 
   // Dimensioni effettive con rotazione
@@ -77,24 +79,41 @@ export default function ForexPage() {
     return () => { if (photoUrl) URL.revokeObjectURL(photoUrl) }
   }, [photoUrl])
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     if (photoUrl) URL.revokeObjectURL(photoUrl)
     setPhotoUrl(URL.createObjectURL(file))
+    setUploadedUrl(null)
+    setUploading(true)
     setZoom(1)
     e.target.value = ''
+    try {
+      const res = await fetch('/api/shop/presign-photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: file.name, contentType: file.type }),
+      })
+      if (res.ok) {
+        const { uploadUrl, publicUrl } = await res.json()
+        await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
+        setUploadedUrl(publicUrl)
+      }
+    } catch { /* usa blob url come fallback */ }
+    setUploading(false)
   }, [photoUrl])
 
   const handleRemovePhoto = useCallback(() => {
     if (photoUrl) URL.revokeObjectURL(photoUrl)
     setPhotoUrl(null)
+    setUploadedUrl(null)
     setZoom(1)
   }, [photoUrl])
 
   const total = variant.price * qty
 
   function handleAddToCart() {
+    if (uploading) return
     const orientLabel = isSquare ? '' : (rotated ? ' — Orizzontale' : ' — Verticale')
     addItem({
       productId:    'forex',
@@ -103,7 +122,7 @@ export default function ForexPage() {
       productName:  'Stampa su Forex',
       variantLabel: `${panelW}×${panelH} cm${orientLabel}`,
       price:        variant.price,
-      image:        photoUrl ?? '/images/shop/forex/ambientata.png',
+      image:        uploadedUrl ?? photoUrl ?? '/images/shop/forex/ambientata.png',
     })
     setAddedFeedback(true)
     setTimeout(() => setAddedFeedback(false), 2200)
@@ -374,16 +393,20 @@ export default function ForexPage() {
 
             <button
               onClick={handleAddToCart}
+              disabled={uploading}
               style={{
                 width: '100%', padding: '15px', borderRadius: 12, border: 'none',
-                background: addedFeedback ? '#22c55e' : '#00c1de',
+                background: addedFeedback ? '#22c55e' : uploading ? '#b0e6f0' : '#00c1de',
                 color: '#fff', fontFamily: 'Poppins, sans-serif', fontWeight: 700,
-                fontSize: '15px', cursor: 'pointer', transition: 'background .2s',
+                fontSize: '15px', cursor: uploading ? 'not-allowed' : 'pointer',
+                transition: 'background .2s', opacity: uploading ? 0.75 : 1,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
               }}
             >
               {addedFeedback ? (
                 <><Check size={18} strokeWidth={3} /> Aggiunto al carrello!</>
+              ) : uploading ? (
+                <>Caricamento foto…</>
               ) : (
                 <><ShoppingCart size={18} /> Aggiungi al carrello</>
               )}

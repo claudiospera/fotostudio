@@ -96,8 +96,10 @@ export default function CorniciPage() {
   }, [])
 
   // Upload foto
-  const [photoUrl, setPhotoUrl] = useState<string | null>(null)
-  const [zoom,     setZoom]     = useState(1)
+  const [photoUrl,    setPhotoUrl]    = useState<string | null>(null)
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null)
+  const [uploading,   setUploading]   = useState(false)
+  const [zoom,        setZoom]        = useState(1)
 
   // Cleanup object URL quando cambia o al unmount
   useEffect(() => {
@@ -106,19 +108,34 @@ export default function CorniciPage() {
     }
   }, [photoUrl])
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     if (photoUrl) URL.revokeObjectURL(photoUrl)
     setPhotoUrl(URL.createObjectURL(file))
+    setUploadedUrl(null)
+    setUploading(true)
     setZoom(1)
-    // Reset input per permettere di ricaricare lo stesso file
     e.target.value = ''
+    try {
+      const res = await fetch('/api/shop/presign-photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: file.name, contentType: file.type }),
+      })
+      if (res.ok) {
+        const { uploadUrl, publicUrl } = await res.json()
+        await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
+        setUploadedUrl(publicUrl)
+      }
+    } catch { /* usa blob url come fallback */ }
+    setUploading(false)
   }, [photoUrl])
 
   const handleRemovePhoto = useCallback(() => {
     if (photoUrl) URL.revokeObjectURL(photoUrl)
     setPhotoUrl(null)
+    setUploadedUrl(null)
     setZoom(1)
   }, [photoUrl])
 
@@ -137,6 +154,7 @@ export default function CorniciPage() {
   const photoH = Math.round(PHOTO_W * (variant.heightCm / variant.widthCm))
 
   function handleAddToCart() {
+    if (uploading) return
     const label = [
       variant.label,
       printType.label,
@@ -151,7 +169,7 @@ export default function CorniciPage() {
       productName:  'Foto in Cornice',
       variantLabel: label,
       price:        unitPrice,
-      image:        photoUrl ?? 'https://images.unsplash.com/photo-1416339306562-f3d12fefd36f?w=800&q=80',
+      image:        uploadedUrl ?? photoUrl ?? 'https://images.unsplash.com/photo-1416339306562-f3d12fefd36f?w=800&q=80',
     })
     setAddedFeedback(true)
     setTimeout(() => setAddedFeedback(false), 2200)
@@ -601,16 +619,20 @@ export default function CorniciPage() {
 
             <button
               onClick={handleAddToCart}
+              disabled={uploading}
               style={{
                 width: '100%', padding: '15px', borderRadius: 12, border: 'none',
-                background: addedFeedback ? '#22c55e' : '#00c1de',
+                background: addedFeedback ? '#22c55e' : uploading ? '#b0e6f0' : '#00c1de',
                 color: '#fff', fontFamily: 'Poppins, sans-serif', fontWeight: 700,
-                fontSize: '15px', cursor: 'pointer', transition: 'background .2s',
+                fontSize: '15px', cursor: uploading ? 'not-allowed' : 'pointer',
+                transition: 'background .2s', opacity: uploading ? 0.75 : 1,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
               }}
             >
               {addedFeedback ? (
                 <><Check size={18} strokeWidth={3} /> Aggiunto al carrello!</>
+              ) : uploading ? (
+                <>Caricamento foto…</>
               ) : (
                 <><ShoppingCart size={18} /> Aggiungi al carrello</>
               )}
