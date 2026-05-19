@@ -78,6 +78,7 @@ export interface CartItem {
   variantLabel: string
   price: number       // in centesimi
   image: string
+  filename?: string   // nome originale del file caricato dal cliente
 }
 
 export interface Cart {

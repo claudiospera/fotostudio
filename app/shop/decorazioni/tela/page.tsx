@@ -85,6 +85,7 @@ export default function TelaPage() {
   const [photoUrl,      setPhotoUrl]      = useState<string | null>(null)
   const [uploadedUrl,   setUploadedUrl]   = useState<string | null>(null)
   const [uploading,     setUploading]     = useState(false)
+  const [photoFilename, setPhotoFilename] = useState<string | undefined>(undefined)
   const [zoom,          setZoom]          = useState(1)
 
   // Dimensioni effettive con rotazione
@@ -102,6 +103,7 @@ export default function TelaPage() {
     if (photoUrl) URL.revokeObjectURL(photoUrl)
     setPhotoUrl(URL.createObjectURL(file))
     setUploadedUrl(null)
+    setPhotoFilename(file.name)
     setUploading(true)
     setZoom(1)
     e.target.value = ''
@@ -124,6 +126,7 @@ export default function TelaPage() {
     if (photoUrl) URL.revokeObjectURL(photoUrl)
     setPhotoUrl(null)
     setUploadedUrl(null)
+    setPhotoFilename(undefined)
     setZoom(1)
   }, [photoUrl])
 
@@ -140,6 +143,7 @@ export default function TelaPage() {
       variantLabel: `${canvasW}×${canvasH} cm${orientLabel} — Bordo ${borderType.label}`,
       price:        variant.price,
       image:        uploadedUrl ?? photoUrl ?? '/images/shop/tela/catalogo.jpg',
+      filename:     photoFilename,
     })
     setAddedFeedback(true)
     setTimeout(() => setAddedFeedback(false), 2200)

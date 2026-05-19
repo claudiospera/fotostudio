@@ -10,6 +10,7 @@ interface OrderItem {
   quantity: number
   price: number
   image?: string
+  filename?: string
 }
 
 interface ShopOrder {
@@ -222,7 +223,10 @@ export default function AdminOrdiniPage() {
                                 <span style={{ color: '#999' }}> ×{item.quantity}</span>
                               </p>
                               {item.image?.startsWith('https://') && (
-                                <a href={item.image} download target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#6366f1', textDecoration: 'none', fontWeight: 600 }}>
+                                <a
+                                  href={`/api/shop/download-photo?url=${encodeURIComponent(item.image)}&filename=${encodeURIComponent(item.filename || 'foto.jpg')}`}
+                                  style={{ fontSize: 11, color: '#6366f1', textDecoration: 'none', fontWeight: 600 }}
+                                >
                                   ↓ Scarica foto originale
                                 </a>
                               )}

@@ -96,9 +96,10 @@ export default function CorniciPage() {
   }, [])
 
   // Upload foto
-  const [photoUrl,    setPhotoUrl]    = useState<string | null>(null)
-  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null)
-  const [uploading,   setUploading]   = useState(false)
+  const [photoUrl,      setPhotoUrl]      = useState<string | null>(null)
+  const [uploadedUrl,   setUploadedUrl]   = useState<string | null>(null)
+  const [uploading,     setUploading]     = useState(false)
+  const [photoFilename, setPhotoFilename] = useState<string | undefined>(undefined)
   const [zoom,        setZoom]        = useState(1)
 
   // Cleanup object URL quando cambia o al unmount
@@ -114,6 +115,7 @@ export default function CorniciPage() {
     if (photoUrl) URL.revokeObjectURL(photoUrl)
     setPhotoUrl(URL.createObjectURL(file))
     setUploadedUrl(null)
+    setPhotoFilename(file.name)
     setUploading(true)
     setZoom(1)
     e.target.value = ''
@@ -136,6 +138,7 @@ export default function CorniciPage() {
     if (photoUrl) URL.revokeObjectURL(photoUrl)
     setPhotoUrl(null)
     setUploadedUrl(null)
+    setPhotoFilename(undefined)
     setZoom(1)
   }, [photoUrl])
 
@@ -170,6 +173,7 @@ export default function CorniciPage() {
       variantLabel: label,
       price:        unitPrice,
       image:        uploadedUrl ?? photoUrl ?? 'https://images.unsplash.com/photo-1416339306562-f3d12fefd36f?w=800&q=80',
+      filename:     photoFilename,
     })
     setAddedFeedback(true)
     setTimeout(() => setAddedFeedback(false), 2200)

@@ -282,7 +282,8 @@ export default function StampeClassichePage() {
         productName: 'Stampe Classiche',
         variantLabel: pv.label,
         price,
-        image: p.uploadedUrl || p.url, // R2 URL se disponibile, fallback blob
+        image: p.uploadedUrl || p.url,
+        filename: p.name,
       })
     })
     setAdded(true)
