@@ -9,7 +9,7 @@ import { useUIStore } from '@/store/ui'
 import { useClerk } from '@clerk/nextjs'
 import {
   LayoutGrid, Images, FileText, Upload, ShoppingCart, LogOut, Plus, Users, BarChart2,
-  CalendarCheck, ChevronDown, CalendarDays, ClipboardList, ShoppingBag, Package,
+  CalendarCheck, ChevronDown, CalendarDays, ClipboardList, ShoppingBag,
 } from 'lucide-react'
 
 // ─── CRM / Gestionale ────────────────────────────────────────────────────────
@@ -27,9 +27,8 @@ const lavoroItems = [
 
 // ─── Shop admin ───────────────────────────────────────────────────────────────
 const shopItems = [
-  { href: '/shop/admin/ordini',   label: 'Ordini stampe',  icon: ShoppingCart },
-  { href: '/shop/admin/prodotti', label: 'Prodotti',        icon: Package      },
-  { href: '/shop/admin',          label: 'Vai allo shop',   icon: ShoppingBag  },
+  { href: '/shop/admin/ordini', label: 'Ordini stampe', icon: ShoppingCart },
+  { href: '/shop/admin',        label: 'Vai allo shop',  icon: ShoppingBag  },
 ]
 
 export const Sidebar = () => {
