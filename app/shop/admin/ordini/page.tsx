@@ -9,6 +9,7 @@ interface OrderItem {
   variantLabel: string
   quantity: number
   price: number
+  image?: string
 }
 
 interface ShopOrder {
@@ -180,21 +181,43 @@ export default function AdminOrdiniPage() {
                   <div style={{ borderTop: '1px solid #f0f0f0', padding: '20px' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
 
-                      {/* Articoli */}
+                      {/* Articoli + foto cliente */}
                       <div>
                         <p style={{ fontSize: 11, fontWeight: 700, color: '#999', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 12 }}>
                           Articoli
                         </p>
                         {order.items.map((item, i) => (
                           <div key={i} style={{
-                            display: 'flex', justifyContent: 'space-between',
-                            padding: '8px 0', borderBottom: '1px solid #f5f5f5', fontSize: 13,
+                            display: 'flex', alignItems: 'center', gap: 12,
+                            padding: '8px 0', borderBottom: '1px solid #f5f5f5',
                           }}>
-                            <span style={{ color: '#333' }}>
-                              {item.productName} — {item.variantLabel}
-                              <span style={{ color: '#999' }}> ×{item.quantity}</span>
-                            </span>
-                            <span style={{ fontWeight: 600, color: '#111' }}>
+                            {/* Anteprima foto cliente */}
+                            {item.image?.startsWith('https://') ? (
+                              <a href={item.image} download target="_blank" rel="noreferrer" title="Scarica foto" style={{ flexShrink: 0 }}>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={item.image}
+                                  alt="foto cliente"
+                                  style={{ width: 52, height: 52, objectFit: 'cover', borderRadius: 6, border: '1px solid #e8e8e8', display: 'block' }}
+                                />
+                              </a>
+                            ) : (
+                              <div style={{ width: 52, height: 52, borderRadius: 6, background: '#f5f5f5', border: '1px solid #eee', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
+                                🖼️
+                              </div>
+                            )}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{ fontSize: 13, color: '#333', margin: 0 }}>
+                                {item.productName} — {item.variantLabel}
+                                <span style={{ color: '#999' }}> ×{item.quantity}</span>
+                              </p>
+                              {item.image?.startsWith('https://') && (
+                                <a href={item.image} download target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#6366f1', textDecoration: 'none', fontWeight: 600 }}>
+                                  ↓ Scarica foto originale
+                                </a>
+                              )}
+                            </div>
+                            <span style={{ fontWeight: 600, fontSize: 13, color: '#111', flexShrink: 0 }}>
                               {formatPrice(item.price * item.quantity)}
                             </span>
                           </div>
