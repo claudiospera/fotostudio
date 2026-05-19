@@ -137,6 +137,15 @@ export default function CartPage() {
           >
             Procedi all&apos;ordine →
           </button>
+          <Link href="/shop" style={{
+            background: '#fff', color: 'var(--n-t2)',
+            border: '1px solid var(--n-border)',
+            borderRadius: 'var(--n-r2)', padding: '14px 20px',
+            fontSize: '13px', fontWeight: 500, textDecoration: 'none',
+            display: 'flex', alignItems: 'center',
+          }}>
+            ← Continua gli acquisti
+          </Link>
           <button
             onClick={clearCart}
             style={{
