@@ -199,7 +199,7 @@ export interface Cliente {
     addr_casa_nome?: string; addr_casa?: string; ora_casa?: string
     addr_casa2_nome?: string; addr_casa2?: string; ora_casa2?: string
     addr_chiesa?: string; ora_chiesa?: string
-    addr_ristorante?: string; ora_ristorante?: string
+    addr_ristorante?: string; ora_ristorante?: string; ora_ricevimento?: string
     // Social persona 1 e 2
     social1?: string; facebook1?: string
     social2?: string; facebook2?: string
