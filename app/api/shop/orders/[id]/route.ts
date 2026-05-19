@@ -25,3 +25,15 @@ export async function PATCH(
 
   return NextResponse.json({ ok: true })
 }
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { userId } = await auth()
+  if (!userId) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
+
+  const { id } = await params
+  await sql`DELETE FROM shop_orders WHERE id = ${id}`
+  return NextResponse.json({ ok: true })
+}

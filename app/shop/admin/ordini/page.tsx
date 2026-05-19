@@ -51,6 +51,7 @@ export default function AdminOrdiniPage() {
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [updating, setUpdating] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/api/shop/orders')
@@ -58,6 +59,15 @@ export default function AdminOrdiniPage() {
       .then(data => { if (Array.isArray(data)) setOrders(data) })
       .finally(() => setLoading(false))
   }, [])
+
+  async function deleteOrder(orderId: string) {
+    if (!confirm('Eliminare questo ordine? L\'operazione non è reversibile.')) return
+    setDeleting(orderId)
+    await fetch(`/api/shop/orders/${orderId}`, { method: 'DELETE' })
+    setOrders(prev => prev.filter(o => o.id !== orderId))
+    setExpanded(null)
+    setDeleting(null)
+  }
 
   async function updateStatus(orderId: string, status: ShopOrder['status']) {
     setUpdating(orderId)
@@ -79,13 +89,13 @@ export default function AdminOrdiniPage() {
       <div style={{ background: '#fff', borderBottom: '1px solid #e8e8e8', padding: '0 clamp(20px,4vw,48px)' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <Link href="/shop/admin" style={{
+            <Link href="/dashboard" style={{
               display: 'flex', alignItems: 'center', gap: 6,
               fontSize: 13, fontWeight: 500, color: '#555',
               textDecoration: 'none', padding: '6px 12px',
               borderRadius: 8, border: '1px solid #e8e8e8', background: '#fff',
             }}>
-              <ArrowLeft size={14} /> Admin
+              <ArrowLeft size={14} /> Dashboard
             </Link>
             <h1 style={{ fontSize: 18, fontWeight: 700, color: '#111', margin: 0 }}>
               Ordini stampe
@@ -235,34 +245,52 @@ export default function AdminOrdiniPage() {
                       </div>
 
                       {/* Gestione stato */}
-                      <div>
-                        <p style={{ fontSize: 11, fontWeight: 700, color: '#999', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 12 }}>
-                          Aggiorna stato
-                        </p>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                          {(['pending', 'confirmed', 'ready', 'delivered', 'cancelled'] as const).map(s => {
-                            const c = STATUS_COLOR[s]
-                            const isActive = order.status === s
-                            return (
-                              <button
-                                key={s}
-                                disabled={isActive || updating === order.id}
-                                onClick={() => updateStatus(order.id, s)}
-                                style={{
-                                  padding: '9px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-                                  cursor: isActive || updating === order.id ? 'default' : 'pointer',
-                                  border: isActive ? `2px solid ${c.color}` : '1px solid #e8e8e8',
-                                  background: isActive ? c.bg : '#fff',
-                                  color: isActive ? c.color : '#555',
-                                  textAlign: 'left',
-                                  transition: 'all .15s',
-                                }}
-                              >
-                                {isActive ? '✓ ' : ''}{STATUS_LABEL[s]}
-                              </button>
-                            )
-                          })}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                        <div>
+                          <p style={{ fontSize: 11, fontWeight: 700, color: '#999', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 12 }}>
+                            Aggiorna stato
+                          </p>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            {(['pending', 'confirmed', 'ready', 'delivered', 'cancelled'] as const).map(s => {
+                              const c = STATUS_COLOR[s]
+                              const isActive = order.status === s
+                              return (
+                                <button
+                                  key={s}
+                                  disabled={isActive || updating === order.id}
+                                  onClick={() => updateStatus(order.id, s)}
+                                  style={{
+                                    padding: '9px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                                    cursor: isActive || updating === order.id ? 'default' : 'pointer',
+                                    border: isActive ? `2px solid ${c.color}` : '1px solid #e8e8e8',
+                                    background: isActive ? c.bg : '#fff',
+                                    color: isActive ? c.color : '#555',
+                                    textAlign: 'left',
+                                    transition: 'all .15s',
+                                  }}
+                                >
+                                  {isActive ? '✓ ' : ''}{STATUS_LABEL[s]}
+                                </button>
+                              )
+                            })}
+                          </div>
                         </div>
+
+                        <button
+                          disabled={deleting === order.id}
+                          onClick={() => deleteOrder(order.id)}
+                          style={{
+                            padding: '9px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                            cursor: deleting === order.id ? 'not-allowed' : 'pointer',
+                            border: '1px solid #fca5a5',
+                            background: '#fff', color: '#dc2626',
+                            textAlign: 'left', transition: 'all .15s',
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.background = '#fee2e2' }}
+                          onMouseLeave={e => { e.currentTarget.style.background = '#fff' }}
+                        >
+                          {deleting === order.id ? 'Eliminando…' : '🗑 Elimina ordine'}
+                        </button>
                       </div>
                     </div>
                   </div>
