@@ -69,8 +69,8 @@ function buildHtml(c: Cliente): string {
   const oggi    = new Date().toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })
 
   // ── Dati evento ────────────────────────────────────────────────────────────
+  // Data già presente nei badge dell'header — qui solo luogo e ora
   const datEvento = [
-    field('Data evento', formatDate(c.data_evento)),
     field('Luogo', c.luogo_evento),
     field('Ora ricevimento', ex.ora_ricevimento),
   ].filter(Boolean).join('')
@@ -103,8 +103,10 @@ function buildHtml(c: Cliente): string {
     gen2parts ? field('Genitore 2', gen2parts) : '',
   ].filter(Boolean).join('')
 
+  // Se c'è una sola persona non mostrare il sub-title, altrimenti usa il nome
+  const hasMultipleGroups = !!(cont2 || genitori)
   const contattiContent = [
-    cont1 ? `<div class="sub-group"><div class="sub-title">${c.nome2 ? esc(c.nome1) : 'Contatti'}</div>${cont1}</div>` : '',
+    cont1 ? (hasMultipleGroups ? `<div class="sub-group"><div class="sub-title">${esc(c.nome1)}</div>${cont1}</div>` : cont1) : '',
     cont2 ? `<div class="sub-group"><div class="sub-title">${esc(c.nome2 ?? '')}</div>${cont2}</div>` : '',
     genitori ? `<div class="sub-group"><div class="sub-title">Genitori</div>${genitori}</div>` : '',
   ].filter(Boolean).join('')
