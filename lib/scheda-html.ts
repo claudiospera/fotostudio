@@ -304,10 +304,18 @@ export function buildHtmlShare(c: Cliente, email: string, telefono: string): str
     <span class="toolbar-title">📄 Scheda di ${esc(nomi)}</span>
     <div class="toolbar-actions">
       <button class="btn-toolbar btn-print" onclick="window.print()">🖨️ Stampa / Salva PDF</button>
-      ${waNum ? `<a class="btn-toolbar btn-wa" href="https://wa.me/39${waNum}?text=${waMsg}" target="_blank">💬 WhatsApp</a>` : ''}
+      <button class="btn-toolbar btn-wa" id="btn-wa">💬 WhatsApp</button>
       ${email ? `<a class="btn-toolbar btn-email" href="mailto:${esc(email)}?subject=${mailSubject}&body=${mailBody}">✉️ Invia Email</a>` : ''}
     </div>
   </div>
   <div class="page">${buildBody(c, oggi)}</div>
+  <script>
+    document.getElementById('btn-wa').addEventListener('click', function() {
+      var num = '${waNum ? `39${waNum}` : ''}';
+      var msg = 'Ciao ${esc(c.nome1).replace(/'/g, "\\'")}! Ti invio la tua scheda riepilogativa: ' + location.href;
+      var url = num ? 'https://wa.me/' + num + '?text=' + encodeURIComponent(msg) : 'https://wa.me/?text=' + encodeURIComponent(msg);
+      window.open(url, '_blank');
+    });
+  </script>
   </body></html>`
 }
