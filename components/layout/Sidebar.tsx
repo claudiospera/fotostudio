@@ -17,7 +17,7 @@ const gestionaleItems = [
   { href: '/dashboard',                label: 'Dashboard',          icon: LayoutGrid  },
   { href: '/gallerie',                 label: 'Gallerie',            icon: Images      },
   { href: '/clienti',                  label: 'Clienti',             icon: Users       },
-  { href: '/appuntamenti/calendari',   label: 'Calendario clienti',  icon: CalendarDays },
+  { href: '/clienti/calendario',        label: 'Calendario clienti',  icon: CalendarDays },
   { href: '/preventivi',               label: 'Contratti',           icon: FileText    },
   { href: '/statistiche',              label: 'Statistiche',         icon: BarChart2   },
 ]
