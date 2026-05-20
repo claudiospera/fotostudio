@@ -3,12 +3,14 @@
 // components/shop/ShopNavbar.tsx
 
 import Link from 'next/link'
-import { ShoppingCart } from 'lucide-react'
+import { ShoppingCart, User } from 'lucide-react'
+import { useUser } from '@clerk/nextjs'
 import { useCart } from './CartProvider'
 import { CATEGORY_META } from '@/lib/shop/types'
 
 export function ShopNavbar() {
   const { itemCount } = useCart()
+  const { user, isLoaded } = useUser()
 
   return (
     <header style={{
@@ -66,6 +68,35 @@ export function ShopNavbar() {
           ))}
         </nav>
 
+        {/* Auth */}
+        {isLoaded && (
+          user ? (
+            <Link href="/shop/account" className="shop-auth-btn" style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              fontSize: '13px', fontWeight: 600, color: 'var(--n-tx)',
+              textDecoration: 'none',
+              background: 'var(--n-surface)', border: '1px solid var(--n-border)',
+              borderRadius: 'var(--n-r2)', padding: '8px 14px',
+              transition: 'all .15s', flexShrink: 0,
+            }}>
+              <User size={15} color="var(--n-t2)" />
+              <span className="shop-auth-label">{user.firstName || 'Account'}</span>
+            </Link>
+          ) : (
+            <Link href="/shop/accedi" className="shop-auth-btn" style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              fontSize: '13px', fontWeight: 600, color: '#00c1de',
+              textDecoration: 'none',
+              background: 'rgba(0,193,222,0.06)', border: '1.5px solid rgba(0,193,222,0.3)',
+              borderRadius: 'var(--n-r2)', padding: '8px 14px',
+              transition: 'all .15s', flexShrink: 0,
+            }}>
+              <User size={15} />
+              <span className="shop-auth-label">Accedi</span>
+            </Link>
+          )
+        )}
+
         {/* Carrello */}
         <Link href="/shop/carrello" style={{
           position: 'relative',
@@ -106,6 +137,7 @@ export function ShopNavbar() {
           .shop-home-link { display: none !important; }
           .shop-cart-label { display: none !important; }
           .shop-brand-name { font-size: 13px !important; }
+          .shop-auth-label { display: none !important; }
         }
       `}</style>
     </header>
