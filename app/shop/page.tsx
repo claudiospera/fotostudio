@@ -2,8 +2,6 @@
 
 import { getFeaturedProducts, PRODUCTS } from '@/lib/shop/products'
 import { ProductCard } from '@/components/shop/ProductCard'
-import { CATEGORY_META } from '@/lib/shop/types'
-import Link from 'next/link'
 
 
 export default function ShopHomePage() {
@@ -51,56 +49,18 @@ export default function ShopHomePage() {
           }}>
             Sfoglia il catalogo
           </a>
-          <a href="#categorie" style={{
+          <a href="#prodotti" style={{
             background: '#fff', color: 'var(--n-tx)',
             border: '1px solid var(--n-border)',
             borderRadius: 'var(--n-r2)', padding: '13px 28px',
             fontSize: '13px', fontWeight: 500, textDecoration: 'none',
           }}>
-            Vedi le categorie
+            Vedi tutti i prodotti
           </a>
         </div>
       </section>
 
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 clamp(24px, 5vw, 60px)' }}>
-
-        {/* ── CATEGORIE ── */}
-        <section id="categorie" style={{ padding: 'clamp(48px, 6vw, 80px) 0' }}>
-          <h2 style={{
-            fontFamily: 'Poppins, sans-serif', fontWeight: 700,
-            fontSize: 'clamp(20px, 2.5vw, 28px)', color: 'var(--n-tx)',
-            marginBottom: 28, letterSpacing: '-0.02em',
-          }}>
-            Categorie
-          </h2>
-          <div className="shop-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
-            {Object.values(CATEGORY_META).map((cat) => (
-              <Link
-                key={cat.slug}
-                href={`/shop/${cat.slug}`}
-                style={{ textDecoration: 'none' }}
-              >
-                <div style={{
-                  background: '#fff',
-                  border: '1px solid var(--n-border)',
-                  borderRadius: 'var(--n-r)',
-                  padding: '28px 20px',
-                  textAlign: 'center',
-                  transition: 'all .18s',
-                }}
-                  className="category-card"
-                >
-<p style={{ fontSize: '14px', fontWeight: 700, fontFamily: 'Poppins, sans-serif', color: 'var(--n-tx)', marginBottom: 6 }}>
-                    {cat.label}
-                  </p>
-                  <p style={{ fontSize: '11px', color: 'var(--n-t3)', lineHeight: 1.5 }}>
-                    {cat.description}
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
 
         {/* ── IN EVIDENZA ── */}
         {featured.length > 0 && (
