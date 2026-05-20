@@ -56,14 +56,26 @@ export default function CartPage() {
         Carrello
       </h1>
 
+      <style>{`
+        .cart-row { display: flex; align-items: center; gap: 16px; padding: 18px 0; }
+        .cart-info { flex: 1; min-width: 0; }
+        .cart-controls { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        .cart-price { width: 72px; text-align: right; font-weight: 700; font-size: 14px; color: var(--n-ac); flex-shrink: 0; }
+        @media (max-width: 480px) {
+          .cart-row { flex-wrap: wrap; gap: 10px; }
+          .cart-info { flex-basis: calc(100% - 88px); }
+          .cart-controls { margin-left: 88px; }
+          .cart-price { width: auto; margin-left: auto; }
+        }
+      `}</style>
+
       {/* Lista prodotti */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
         {cart.items.map((item, i) => (
           <div
             key={`${item.productId}-${item.variantId}`}
+            className="cart-row"
             style={{
-              display: 'flex', alignItems: 'center', gap: 16,
-              padding: '18px 0',
               borderTop: i === 0 ? '1px solid var(--n-border)' : undefined,
               borderBottom: '1px solid var(--n-border)',
             }}
@@ -76,7 +88,7 @@ export default function CartPage() {
             </div>
 
             {/* Info */}
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="cart-info">
               <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--n-tx)', marginBottom: 2, fontFamily: 'Poppins, sans-serif', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {item.productName}
               </p>
@@ -84,7 +96,7 @@ export default function CartPage() {
             </div>
 
             {/* Quantità */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div className="cart-controls">
               <button
                 onClick={() => updateQuantity(item.productId, item.variantId, item.quantity - 1)}
                 style={{ width: 30, height: 30, border: '1px solid var(--n-border)', borderRadius: 8, background: '#fff', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--n-tx)' }}
@@ -97,14 +109,14 @@ export default function CartPage() {
             </div>
 
             {/* Prezzo */}
-            <p style={{ width: 80, textAlign: 'right', fontWeight: 700, fontSize: '14px', color: 'var(--n-ac)', flexShrink: 0 }}>
+            <p className="cart-price">
               {formatPrice(item.price * item.quantity)}
             </p>
 
             {/* Rimuovi */}
             <button
               onClick={() => removeItem(item.productId, item.variantId)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'var(--n-t3)', transition: 'color .15s' }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'var(--n-t3)', transition: 'color .15s', flexShrink: 0 }}
               aria-label="Rimuovi prodotto"
               onMouseEnter={(e) => (e.currentTarget.style.color = '#e53e3e')}
               onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--n-t3)')}
