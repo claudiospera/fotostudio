@@ -97,7 +97,18 @@ export default function CheckoutPage() {
         Completa l&apos;ordine
       </h1>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 40, alignItems: 'start' }}>
+      <div className="checkout-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 40, alignItems: 'start' }}>
+        <style>{`
+          @media (max-width: 680px) {
+            .checkout-grid {
+              grid-template-columns: 1fr !important;
+            }
+            .checkout-summary {
+              order: -1;
+              position: static !important;
+            }
+          }
+        `}</style>
 
         {/* ── FORM SINISTRA ── */}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -217,7 +228,7 @@ export default function CheckoutPage() {
         </form>
 
         {/* ── RIEPILOGO DESTRA ── */}
-        <div style={{
+        <div className="checkout-summary" style={{
           background: 'var(--n-surface)', border: '1px solid var(--n-border)',
           borderRadius: 'var(--n-r)', padding: 24, position: 'sticky', top: 24,
         }}>
