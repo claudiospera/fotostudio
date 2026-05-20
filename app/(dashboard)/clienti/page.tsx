@@ -460,11 +460,48 @@ function ClienteCard({ cliente: c, onEdit, onDelete }: {
     if (emailAddress) window.open(`mailto:${emailAddress}`, '_blank')
   }
   const saveJpeg = async () => {
-    if (!cardRef.current) return
+    // Fetcha l'HTML della scheda botanica (autenticato), rimuove auto-print e toolbar
+    const res = await fetch(`/api/scheda-pdf/${c.id}`)
+    if (!res.ok) return
+    let html = await res.text()
+    // Rimuove script auto-print e toolbar (non servono per la cattura)
+    html = html.replace(/<script>window\.onload[^<]*<\/script>/g, '')
+               .replace(/<div class="toolbar"[\s\S]*?<\/div>\s*<\/div>/, '')
+
+    // Inietta in un iframe nascosto della larghezza della scheda
+    const iframe = document.createElement('iframe')
+    Object.assign(iframe.style, {
+      position: 'fixed', left: '-9999px', top: '0',
+      width: '800px', height: '1px', border: 'none', visibility: 'hidden',
+    })
+    document.body.appendChild(iframe)
+
+    await new Promise<void>(resolve => {
+      iframe.onload = () => resolve()
+      iframe.contentDocument!.open()
+      iframe.contentDocument!.write(html)
+      iframe.contentDocument!.close()
+    })
+
+    // Aspetta font e immagini
+    await new Promise(r => setTimeout(r, 1800))
+
+    // Imposta altezza reale del contenuto
+    const scrollH = iframe.contentDocument!.documentElement.scrollHeight
+    iframe.style.height = `${scrollH}px`
+
     const html2canvas = (await import('html2canvas')).default
-    const canvas = await html2canvas(cardRef.current, { backgroundColor: '#1a1c1a', scale: 2 })
+    const canvas = await html2canvas(iframe.contentDocument!.body, {
+      backgroundColor: '#F2EDE6',
+      scale: 2,
+      useCORS: true,
+      width: 800,
+      windowWidth: 800,
+    })
+    document.body.removeChild(iframe)
+
     const link = document.createElement('a')
-    link.download = `${c.nome1}${c.nome2 ? `-${c.nome2}` : ''}.jpg`
+    link.download = `scheda-${c.nome1}${c.nome2 ? `-${c.nome2}` : ''}.jpg`
     link.href = canvas.toDataURL('image/jpeg', 0.92)
     link.click()
   }
