@@ -447,7 +447,7 @@ export default function CorniciPage() {
         </div>
 
         {/* ── COLONNA DESTRA: Configuratore ───────────────────────────────── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+        <div className="shop-first-mobile" style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
 
           {/* Titolo */}
           <div>

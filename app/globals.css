@@ -246,6 +246,14 @@ body {
 
 @media (max-width: 767px) {
 
+  /* Hero con colonna decorativa → nasconde la preview su mobile */
+  .shop-hero-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .shop-hero-grid > *:last-child {
+    display: none !important;
+  }
+
   /* ── Layout a due colonne → colonna singola ── */
   .shop-cfg-grid {
     display: flex !important;

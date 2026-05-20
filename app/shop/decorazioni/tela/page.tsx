@@ -210,7 +210,7 @@ export default function TelaPage() {
 
       {/* ── HERO ─────────────────────────────────────────────────────────────── */}
       <div style={{ background: '#fff', borderBottom: '1px solid #e8e8e8', padding: 'clamp(40px, 6vw, 80px) clamp(20px, 5vw, 60px)' }}>
-        <div style={{ maxWidth: 1140, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr auto', gap: 40, alignItems: 'center' }}>
+        <div className="shop-hero-grid" style={{ maxWidth: 1140, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr auto', gap: 40, alignItems: 'center' }}>
           <div>
             <p style={{ fontSize: '11px', fontWeight: 700, color: '#00c1de', textTransform: 'uppercase', letterSpacing: '.18em', marginBottom: 12 }}>
               Decorazioni
@@ -374,7 +374,7 @@ export default function TelaPage() {
         </div>
 
         {/* ── DESTRA: Configuratore ───────────────────────────────────────── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+        <div className="shop-first-mobile" style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
 
           <div>
             <h2 style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 800, fontSize: 'clamp(22px, 3vw, 30px)', color: '#0a0a0a', letterSpacing: '-0.025em', marginBottom: 8 }}>
