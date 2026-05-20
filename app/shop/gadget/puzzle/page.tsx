@@ -37,6 +37,7 @@ export default function PuzzlePage() {
 
   const [tessera,       setTessera]       = useState<'tradizionale' | 'grande'>('tradizionale')
   const [variant,       setVariant]       = useState<PuzzleVariant>(VARIANTS[0])
+  const [rotated,       setRotated]       = useState(false)
   const [qty,           setQty]           = useState(1)
   const [addedFeedback, setAddedFeedback] = useState(false)
   const [photoUrl,      setPhotoUrl]      = useState<string | null>(null)
@@ -52,6 +53,10 @@ export default function PuzzlePage() {
   }, [tessera])
 
   const variantsForTessera = VARIANTS.filter(v => v.tessera === tessera)
+
+  // Dimensioni effettive con orientamento
+  const previewW = rotated ? variant.heightCm : variant.widthCm
+  const previewH = rotated ? variant.widthCm  : variant.heightCm
 
   const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -93,10 +98,10 @@ export default function PuzzlePage() {
     const imageUrl = uploadedUrl ?? photoUrl ?? '/images/shop/gadget/puzzle.png'
     addItem({
       productId:    'puzzle',
-      variantId:    variant.id,
+      variantId:    `${variant.id}${rotated ? '__h' : '__v'}`,
       quantity:     qty,
       productName:  'Puzzle Fotografico',
-      variantLabel: variant.label,
+      variantLabel: `${variant.label}${rotated ? ' — Orizzontale' : ' — Verticale'}`,
       price:        variant.price,
       image:        imageUrl,
       filename:     photoFilename,
@@ -141,7 +146,7 @@ export default function PuzzlePage() {
           <div style={{
             position: 'relative',
             width: '100%',
-            aspectRatio: `${variant.widthCm} / ${variant.heightCm}`,
+            aspectRatio: `${previewW} / ${previewH}`,
             borderRadius: 14,
             overflow: 'hidden',
             background: '#efefef',
@@ -194,7 +199,7 @@ export default function PuzzlePage() {
             {/* Overlay griglia puzzle — celle proporzionate ai pezzi reali */}
             {photoUrl && (() => {
               // calcola righe/colonne approssimative dalla radice quadrata dei pezzi
-              const cols = Math.round(Math.sqrt(variant.pieces * variant.widthCm / variant.heightCm))
+              const cols = Math.round(Math.sqrt(variant.pieces * previewW / previewH))
               const rows = Math.round(variant.pieces / cols)
               return (
                 <div style={{
@@ -257,7 +262,7 @@ export default function PuzzlePage() {
               {variant.tessera === 'tradizionale' ? 'Tessera Tradizionale' : 'Tessera Grande'}
             </span>
             <span style={{ fontSize: '11px', fontWeight: 600, color: '#666', background: '#ebebeb', borderRadius: 100, padding: '4px 10px' }}>
-              {variant.size}
+              {rotated ? `${variant.heightCm}×${variant.widthCm} cm` : variant.size}
             </span>
             <span style={{ fontSize: '11px', fontWeight: 600, color: '#666', background: '#ebebeb', borderRadius: 100, padding: '4px 10px' }}>
               {variant.pieces} pezzi
@@ -347,6 +352,57 @@ export default function PuzzlePage() {
                   </div>
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Orientamento */}
+          <div>
+            <p style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 12 }}>Orientamento</p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => setRotated(false)}
+                style={{
+                  flex: 1, padding: '12px 16px', borderRadius: 10,
+                  border: `2px solid ${!rotated ? '#00c1de' : '#e0e0e0'}`,
+                  background: !rotated ? 'rgba(0,193,222,0.06)' : '#fff',
+                  cursor: 'pointer', transition: 'all .15s',
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  fontFamily: 'Montserrat, sans-serif',
+                }}
+              >
+                <div style={{ width: 18, height: 24, border: `2px solid ${!rotated ? '#00c1de' : '#ccc'}`, borderRadius: 3, flexShrink: 0 }} />
+                <div style={{ textAlign: 'left' }}>
+                  <p style={{ fontSize: '13px', fontWeight: 700, color: !rotated ? '#00c1de' : '#0a0a0a', marginBottom: 2 }}>Verticale</p>
+                  <p style={{ fontSize: '11px', color: '#888' }}>{variant.widthCm}×{variant.heightCm} cm</p>
+                </div>
+                {!rotated && (
+                  <div style={{ marginLeft: 'auto', width: 20, height: 20, borderRadius: '50%', background: '#00c1de', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Check size={11} color="#fff" strokeWidth={3} />
+                  </div>
+                )}
+              </button>
+              <button
+                onClick={() => setRotated(true)}
+                style={{
+                  flex: 1, padding: '12px 16px', borderRadius: 10,
+                  border: `2px solid ${rotated ? '#00c1de' : '#e0e0e0'}`,
+                  background: rotated ? 'rgba(0,193,222,0.06)' : '#fff',
+                  cursor: 'pointer', transition: 'all .15s',
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  fontFamily: 'Montserrat, sans-serif',
+                }}
+              >
+                <div style={{ width: 24, height: 18, border: `2px solid ${rotated ? '#00c1de' : '#ccc'}`, borderRadius: 3, flexShrink: 0 }} />
+                <div style={{ textAlign: 'left' }}>
+                  <p style={{ fontSize: '13px', fontWeight: 700, color: rotated ? '#00c1de' : '#0a0a0a', marginBottom: 2 }}>Orizzontale</p>
+                  <p style={{ fontSize: '11px', color: '#888' }}>{variant.heightCm}×{variant.widthCm} cm</p>
+                </div>
+                {rotated && (
+                  <div style={{ marginLeft: 'auto', width: 20, height: 20, borderRadius: '50%', background: '#00c1de', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Check size={11} color="#fff" strokeWidth={3} />
+                  </div>
+                )}
+              </button>
             </div>
           </div>
 
