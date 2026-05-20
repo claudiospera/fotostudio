@@ -147,7 +147,20 @@ function buildHtml(c: Cliente): string {
     : ''
 
   // ── Pagamenti ──────────────────────────────────────────────────────────────
-  const residuoColor = residuo > 0 ? '#9a6200' : residuo < 0 ? '#b94040' : '#4A6B44'
+  const accontiList = ex.acconti ?? (Number(c.acconto) > 0 ? [{ importo: Number(c.acconto), data: c.data_acconto ?? '', nota: '' }] : [])
+  const totAcconti  = accontiList.reduce((s, a) => s + Number(a.importo), 0)
+  const residuoCalc = Number(c.importo_totale ?? 0) - totAcconti
+  const residuoColor = residuoCalc > 0 ? '#9a6200' : residuoCalc < 0 ? '#b94040' : '#4A6B44'
+
+  const accontiRows = accontiList.length > 0
+    ? accontiList.map(a =>
+        `<div class="field">
+          <span class="field-label">${a.data ? esc(formatDate(a.data)) : 'Data n.d.'}</span>
+          <span class="field-value" style="font-weight:600">€ ${Number(a.importo).toLocaleString('it-IT')}${a.nota ? `<span style="font-weight:400;color:#8a7e6e;margin-left:8px">${esc(a.nota)}</span>` : ''}</span>
+        </div>`
+      ).join('')
+    : ''
+
   const pagamentiContent = `
     <div class="pay-grid">
       <div class="pay-box">
@@ -156,15 +169,16 @@ function buildHtml(c: Cliente): string {
         ${c.data_saldo ? `<div class="pay-date">Saldo previsto: ${esc(formatDate(c.data_saldo))}</div>` : ''}
       </div>
       <div class="pay-box">
-        <div class="pay-label">Acconto ricevuto</div>
-        <div class="pay-val">${Number(c.acconto ?? 0) > 0 ? `€ ${Number(c.acconto).toLocaleString('it-IT')}` : '—'}</div>
-        ${c.data_acconto ? `<div class="pay-date">${esc(formatDate(c.data_acconto))}</div>` : ''}
+        <div class="pay-label">Totale acconti</div>
+        <div class="pay-val">${totAcconti > 0 ? `€ ${totAcconti.toLocaleString('it-IT')}` : '—'}</div>
+        <div class="pay-date">${accontiList.length} versamento${accontiList.length !== 1 ? 'i' : ''}</div>
       </div>
       <div class="pay-box">
         <div class="pay-label">Saldo residuo</div>
-        <div class="pay-val" style="color:${residuoColor}">${residuo !== 0 ? `€ ${Math.abs(residuo).toLocaleString('it-IT')}${residuo < 0 ? ' (eccedenza)' : ''}` : 'Saldato ✓'}</div>
+        <div class="pay-val" style="color:${residuoColor}">${residuoCalc !== 0 ? `€ ${Math.abs(residuoCalc).toLocaleString('it-IT')}${residuoCalc < 0 ? ' (eccedenza)' : ''}` : 'Saldato ✓'}</div>
       </div>
-    </div>`
+    </div>
+    ${accontiRows ? `<div style="margin-top:10px;border-top:1px solid #C8BFB0;padding-top:8px"><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#8a7e6e;margin-bottom:6px">Dettaglio versamenti</div>${accontiRows}</div>` : ''}`
 
   // ── Note ───────────────────────────────────────────────────────────────────
   const noteContent = c.note ? `<p class="note-text">${esc(c.note)}</p>` : ''

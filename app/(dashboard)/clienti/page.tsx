@@ -704,7 +704,8 @@ function ClienteCard({ cliente: c, onEdit, onDelete }: {
 // ── FORM ────────────────────────────────────────────────────────────────────
 
 type FormData = Omit<Cliente, 'id' | 'user_id' | 'created_at' | 'updated_at'>
-type ExtraKey = keyof NonNullable<Cliente['extra']>
+// Solo i campi stringa di extra (esclude acconti che è un array)
+type ExtraKey = keyof Omit<NonNullable<Cliente['extra']>, 'acconti'>
 
 const INP: React.CSSProperties = {
   width: '100%', background: 'var(--s3)', border: '1px solid rgba(255,255,255,0.08)',
@@ -737,9 +738,15 @@ function ClienteForm({ initial, onSave, onClose }: {
   onSave: (data: FormData) => void
   onClose: () => void
 }) {
-  const [form, setForm] = useState<FormData>(() =>
-    initial ? { ...initial, extra: initial.extra ?? {} } : { ...EMPTY_FORM }
-  )
+  const [form, setForm] = useState<FormData>(() => {
+    if (!initial) return { ...EMPTY_FORM }
+    const extra = initial.extra ?? {}
+    // Migrazione: se c'è un acconto singolo ma nessuna lista, inizializza la lista
+    if (!extra.acconti && Number(initial.acconto) > 0) {
+      extra.acconti = [{ importo: Number(initial.acconto), data: initial.data_acconto ?? '', nota: '' }]
+    }
+    return { ...initial, extra }
+  })
 
   const set = (k: keyof FormData, v: unknown) =>
     setForm(f => ({ ...f, [k]: v, colore: k === 'categoria' ? (CAT_COLORS[v as CategoriaCliente] ?? f.colore) : f.colore }))
@@ -1061,35 +1068,100 @@ function ClienteForm({ initial, onSave, onClose }: {
 
           {/* ── 💶 PAGAMENTI ── */}
           <Section title="💶 Pagamenti">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 10 }}>
+            {/* Totale + data saldo */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
               <Field label="Totale preventivo">
                 <div style={{ position: 'relative' }}>
                   <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: 'var(--t3)' }}>€</span>
                   <input type="number" min={0} value={form.importo_totale || ''} onChange={e => set('importo_totale', Number(e.target.value))} placeholder="0" style={{ ...INP, paddingLeft: 24 }} />
                 </div>
               </Field>
-              <Field label="Acconto ricevuto">
-                <div style={{ position: 'relative' }}>
-                  <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: 'var(--t3)' }}>€</span>
-                  <input type="number" min={0} value={form.acconto || ''} onChange={e => set('acconto', Number(e.target.value))} placeholder="0" style={{ ...INP, paddingLeft: 24 }} />
-                </div>
-              </Field>
-              <Field label="Saldo residuo">
-                <div style={{ ...INP, background: 'var(--s2)', color: residuo > 0 ? 'var(--amber)' : residuo < 0 ? 'var(--red)' : 'var(--ac)', fontWeight: 700 }}>
-                  {(form.importo_totale > 0 || form.acconto > 0)
-                    ? (residuo === 0 ? 'Saldato ✓' : `${residuo.toLocaleString('it-IT')} €`)
-                    : '—'}
-                </div>
-              </Field>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <Field label="Data pagamento acconto">
-                <input type="date" value={form.data_acconto ?? ''} onChange={e => set('data_acconto', e.target.value || undefined)} style={INP} />
-              </Field>
               <Field label="Data saldo prevista">
                 <input type="date" value={form.data_saldo ?? ''} onChange={e => set('data_saldo', e.target.value || undefined)} style={INP} />
               </Field>
             </div>
+
+            {/* Lista acconti */}
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ ...LBL, marginBottom: 8, display: 'block' }}>Acconti ricevuti</label>
+              {(form.extra?.acconti ?? []).map((acc, i) => (
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '120px 130px 1fr 28px', gap: 6, marginBottom: 6, alignItems: 'center' }}>
+                  <div style={{ position: 'relative' }}>
+                    <span style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: 'var(--t3)' }}>€</span>
+                    <input
+                      type="number" min={0}
+                      value={acc.importo || ''}
+                      onChange={e => {
+                        const list = [...(form.extra?.acconti ?? [])]
+                        list[i] = { ...list[i], importo: Number(e.target.value) }
+                        setForm(f => ({ ...f, extra: { ...(f.extra ?? {}), acconti: list } }))
+                      }}
+                      placeholder="0"
+                      style={{ ...INP, paddingLeft: 22, fontSize: 12 }}
+                    />
+                  </div>
+                  <input
+                    type="date"
+                    value={acc.data ?? ''}
+                    onChange={e => {
+                      const list = [...(form.extra?.acconti ?? [])]
+                      list[i] = { ...list[i], data: e.target.value }
+                      setForm(f => ({ ...f, extra: { ...(f.extra ?? {}), acconti: list } }))
+                    }}
+                    style={{ ...INP, fontSize: 12 }}
+                  />
+                  <input
+                    type="text"
+                    value={acc.nota ?? ''}
+                    onChange={e => {
+                      const list = [...(form.extra?.acconti ?? [])]
+                      list[i] = { ...list[i], nota: e.target.value }
+                      setForm(f => ({ ...f, extra: { ...(f.extra ?? {}), acconti: list } }))
+                    }}
+                    placeholder="Nota (opzionale)"
+                    style={{ ...INP, fontSize: 12 }}
+                  />
+                  <button
+                    onClick={() => {
+                      const list = (form.extra?.acconti ?? []).filter((_, j) => j !== i)
+                      setForm(f => ({ ...f, extra: { ...(f.extra ?? {}), acconti: list } }))
+                    }}
+                    style={{ width: 28, height: 34, borderRadius: 'var(--r2)', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: 'var(--red)', cursor: 'pointer', fontSize: 14, display: 'grid', placeItems: 'center' }}
+                  >×</button>
+                </div>
+              ))}
+              <button
+                onClick={() => {
+                  const list = [...(form.extra?.acconti ?? []), { importo: 0, data: '', nota: '' }]
+                  setForm(f => ({ ...f, extra: { ...(f.extra ?? {}), acconti: list } }))
+                }}
+                style={{ fontSize: 12, color: 'var(--ac)', background: 'transparent', border: '1px dashed rgba(142,201,176,0.4)', borderRadius: 'var(--r2)', padding: '6px 14px', cursor: 'pointer', marginTop: 2 }}
+              >
+                + Aggiungi acconto
+              </button>
+            </div>
+
+            {/* Riepilogo */}
+            {(() => {
+              const totAcconti = (form.extra?.acconti ?? []).reduce((s, a) => s + Number(a.importo), 0)
+              const sal = Number(form.importo_totale ?? 0) - totAcconti
+              return (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  <div style={{ background: 'var(--s2)', borderRadius: 'var(--r2)', padding: '10px 12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <p style={{ margin: 0, fontSize: 10, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Totale acconti</p>
+                    <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: totAcconti > 0 ? 'var(--ac)' : 'var(--t3)' }}>
+                      {totAcconti > 0 ? `${totAcconti.toLocaleString('it-IT')} €` : '—'}
+                    </p>
+                  </div>
+                  <div style={{ background: 'var(--s2)', borderRadius: 'var(--r2)', padding: '10px 12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <p style={{ margin: 0, fontSize: 10, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Saldo residuo</p>
+                    <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: sal > 0 ? 'var(--amber)' : sal < 0 ? 'var(--red)' : 'var(--ac)' }}>
+                      {(form.importo_totale > 0 || totAcconti > 0) ? (sal === 0 ? 'Saldato ✓' : `${sal.toLocaleString('it-IT')} €`) : '—'}
+                    </p>
+                  </div>
+                </div>
+              )
+            })()}
           </Section>
 
           {/* ── 📝 NOTE ── */}
@@ -1110,7 +1182,13 @@ function ClienteForm({ initial, onSave, onClose }: {
             Annulla
           </button>
           <button
-            onClick={() => { if (form.nome1.trim()) onSave(form) }}
+            onClick={() => {
+              if (!form.nome1.trim()) return
+              const acconti = form.extra?.acconti ?? []
+              const totAcconti = acconti.reduce((s, a) => s + Number(a.importo), 0)
+              const lastData   = [...acconti].reverse().find(a => a.data)?.data
+              onSave({ ...form, acconto: totAcconti, data_acconto: lastData })
+            }}
             style={{ padding: '9px 20px', borderRadius: 'var(--r2)', border: 'none', background: 'var(--ac)', color: '#111', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
           >
             💾 {initial ? 'Salva modifiche' : 'Salva Cliente'}

@@ -211,6 +211,8 @@ export interface Cliente {
     // Video
     video_durata?: string; video_formato_consegna?: string
     video_musica?: string; video_note?: string
+    // Acconti multipli (source of truth — acconto nel DB è la somma)
+    acconti?: { importo: number; data: string; nota?: string }[]
   }
   gallery_id?: string
   note?: string
