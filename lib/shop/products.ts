@@ -337,32 +337,20 @@ export const PRODUCTS: Product[] = [
     id: 'puzzle',
     slug: 'puzzle',
     name: 'Puzzle Fotografico',
-    shortDescription: 'Puzzle personalizzato con la tua foto, vari formati',
-    description: 'Puzzle fotografico personalizzato su cartone rigido. Disponibile in tre formati.',
+    shortDescription: 'Puzzle personalizzato con la tua foto — tessera tradizionale o grande',
+    description:
+      'Puzzle fotografico personalizzato su cartone rigido. ' +
+      'Scegli tra tessera tradizionale (più piccola) e tessera grande (pezzi grandi, ideale per bambini). ' +
+      'Disponibile in tre formati con numero di pezzi variabile.',
     category: 'gadget',
     status: 'available',
-    images: ['https://images.unsplash.com/photo-1585373683920-671438c82bfa?w=800&q=80'],
+    images: ['/images/shop/gadget/puzzle.png'],
     variants: [
-      { id: 'puz-13x18', label: '13×18 cm', price: 1200 },
-      { id: 'puz-20x30', label: '20×30 cm', price: 2000 },
-      { id: 'puz-30x40', label: '30×40 cm', price: 2800 },
-    ],
-    featured: false,
-    createdAt: '2026-01-01T00:00:00Z',
-  },
-
-  {
-    id: 'puzzle-bimbo',
-    slug: 'puzzle-bimbo',
-    name: 'Puzzle Bimbo (pezzi grandi)',
-    shortDescription: 'Puzzle con pezzi grandi, ideale per i più piccoli',
-    description: 'Puzzle fotografico con pezzi grandi, pensato per bambini. Cartone rigido, facile da maneggiare.',
-    category: 'gadget',
-    status: 'available',
-    images: ['https://images.unsplash.com/photo-1585373683920-671438c82bfa?w=800&q=80'],
-    variants: [
-      { id: 'puzb-20x30', label: '20×30 cm', price: 2000 },
-      { id: 'puzb-30x40', label: '30×40 cm', price: 2800 },
+      { id: 'puz-trad-13x18', label: 'Tradizionale 13×18 cm — 48 pezzi',  price: 1200 },
+      { id: 'puz-trad-20x30', label: 'Tradizionale 20×30 cm — 192 pezzi', price: 2000 },
+      { id: 'puz-trad-30x40', label: 'Tradizionale 30×40 cm — 384 pezzi', price: 2800 },
+      { id: 'puz-gran-20x30', label: 'Grande 20×30 cm — 48 pezzi',        price: 2000 },
+      { id: 'puz-gran-30x40', label: 'Grande 30×40 cm — 96 pezzi',        price: 2800 },
     ],
     featured: false,
     createdAt: '2026-01-01T00:00:00Z',
