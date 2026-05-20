@@ -171,6 +171,199 @@ function clamp(v: number, min: number, max: number) {
   return Math.max(min, Math.min(max, v))
 }
 
+// ─── Canvas rendering helpers ─────────────────────────────────────────────────
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = reject
+    img.src = src
+  })
+}
+
+function drawCSSBackground(
+  ctx: CanvasRenderingContext2D,
+  frame: FrameDesign,
+  x: number, y: number, w: number, h: number
+): void {
+  // bgImg case (polka dots etc.) — use bgColor fallback
+  if (frame.bgImg) {
+    ctx.fillStyle = frame.bgColor ?? '#ffffff'
+    ctx.fillRect(x, y, w, h)
+    return
+  }
+
+  const bg = frame.bg
+
+  // Solid color
+  if (bg.startsWith('#') || bg.startsWith('rgb')) {
+    ctx.fillStyle = bg
+    ctx.fillRect(x, y, w, h)
+    return
+  }
+
+  // Linear or repeating-linear gradient
+  const gradMatch = bg.match(/(?:repeating-)?linear-gradient\(\s*(\d+)deg\s*,\s*(.+)\)$/i)
+  if (!gradMatch) {
+    ctx.fillStyle = '#f0f0f0'
+    ctx.fillRect(x, y, w, h)
+    return
+  }
+
+  const angleDeg = parseInt(gradMatch[1])
+  const stopsStr = gradMatch[2]
+
+  // Parse color stops: "#hex position%|px"
+  const stopRe = /(#[0-9a-fA-F]{3,8}|rgba?\([^)]+\))\s+([\d.]+)(px|%)/g
+  const rawStops: Array<{ color: string; pos: number; unit: 'px' | '%' }> = []
+  let sm: RegExpExecArray | null
+  while ((sm = stopRe.exec(stopsStr)) !== null) {
+    rawStops.push({ color: sm[1], pos: parseFloat(sm[2]), unit: sm[3] as 'px' | '%' })
+  }
+
+  if (rawStops.length < 2) {
+    ctx.fillStyle = '#888'
+    ctx.fillRect(x, y, w, h)
+    return
+  }
+
+  // Normalize stop positions to [0, 1]
+  const stops: Array<{ color: string; pos: number }> = []
+  if (rawStops[0].unit === '%') {
+    rawStops.forEach(s => stops.push({ color: s.color, pos: s.pos / 100 }))
+  } else {
+    // px units (repeating-linear-gradient) — stretch single cycle across full width
+    const maxPx = rawStops[rawStops.length - 1].pos
+    rawStops.forEach(s => stops.push({ color: s.color, pos: maxPx > 0 ? s.pos / maxPx : 0 }))
+  }
+
+  // Compute gradient line in canvas coordinates (CSS angle convention)
+  const angleRad = angleDeg * Math.PI / 180
+  const cx = x + w / 2, cy = y + h / 2
+  const dx = Math.sin(angleRad)
+  const dy = -Math.cos(angleRad)
+  const halfLen = (Math.abs(w * Math.sin(angleRad)) + Math.abs(h * Math.cos(angleRad))) / 2
+
+  const grad = ctx.createLinearGradient(
+    cx - dx * halfLen, cy - dy * halfLen,
+    cx + dx * halfLen, cy + dy * halfLen
+  )
+  stops.forEach(s => {
+    try { grad.addColorStop(Math.max(0, Math.min(1, s.pos)), s.color) } catch {}
+  })
+
+  ctx.fillStyle = grad
+  ctx.fillRect(x, y, w, h)
+}
+
+async function renderInstaxComposite(
+  photo: UploadedPhoto,
+  format: InstaxFormat,
+  frame: FrameDesign,
+): Promise<Blob | null> {
+  // 100px/cm → Mini card = 620×1010px, good resolution for composite preview
+  const PX = 100
+  const canvasW = Math.round(format.outerW * PX)
+  const canvasH = Math.round(format.outerH * PX)
+  const aX = Math.round(format.pad[3] * PX)   // photo area left
+  const aY = Math.round(format.pad[0] * PX)   // photo area top
+  const aW = Math.round(format.photoW * PX)   // photo area width
+  const aH = Math.round(format.photoH * PX)   // photo area height
+
+  const canvas = document.createElement('canvas')
+  canvas.width  = canvasW
+  canvas.height = canvasH
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return null
+
+  // ── 1. Frame background ────────────────────────────────────────────────────
+  drawCSSBackground(ctx, frame, 0, 0, canvasW, canvasH)
+
+  // ── 2. Photo ───────────────────────────────────────────────────────────────
+  let img: HTMLImageElement
+  try { img = await loadImage(photo.url) } catch { return null }
+
+  ctx.save()
+  ctx.beginPath()
+  ctx.rect(aX, aY, aW, aH)
+  ctx.clip()
+
+  if (photo.fitMode === 'contain') {
+    // White background, photo letterboxed to fit
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(aX, aY, aW, aH)
+    const scale = Math.min(aW / photo.natW, aH / photo.natH)
+    const dw = photo.natW * scale
+    const dh = photo.natH * scale
+    ctx.drawImage(img, aX + (aW - dw) / 2, aY + (aH - dh) / 2, dw, dh)
+  } else {
+    // Cover mode — match the interactive editor (cardW=220)
+    const EDITOR_W = 220
+    const EDITOR_H = Math.round(EDITOR_W * (format.outerH / format.outerW))
+    const screenPW = Math.round(format.photoW * (EDITOR_W / format.outerW))
+    const screenPH = Math.round(format.photoH * (EDITOR_H / format.outerH))
+
+    const coverScale = Math.max(aW / photo.natW, aH / photo.natH)
+    const imgW = photo.natW * coverScale * photo.zoom
+    const imgH = photo.natH * coverScale * photo.zoom
+
+    // Scale screen-space offset to canvas-space
+    const offX = photo.offsetX * (aW / screenPW)
+    const offY = photo.offsetY * (aH / screenPH)
+
+    ctx.drawImage(img, aX + (aW - imgW) / 2 + offX, aY + (aH - imgH) / 2 + offY, imgW, imgH)
+  }
+
+  ctx.restore()
+
+  // ── 3. Text label in bottom border area ───────────────────────────────────
+  if (photo.label) {
+    const EDITOR_W = 220
+    const EDITOR_H = Math.round(EDITOR_W * (format.outerH / format.outerW))
+    const screenScaleX = EDITOR_W / format.outerW
+    const screenScaleY = EDITOR_H / format.outerH
+
+    const labelX = aX
+    const labelY = aY + aH
+    const labelW = aW
+    const labelH = Math.round(format.pad[2] * PX)
+
+    // Font size scaled from screen px to canvas px
+    const fontSizePx = Math.round(photo.labelSize * (PX / screenScaleY))
+    const fontStyle   = photo.labelItalic ? 'italic' : 'normal'
+    const fontWeight  = photo.labelBold   ? 700      : 400
+
+    // Ensure web font is loaded before drawing
+    try { await document.fonts.load(`${fontStyle} ${fontWeight} ${fontSizePx}px ${photo.labelFont}`) } catch {}
+
+    // Label offset scaled to canvas
+    const offX = photo.labelOffsetX * (PX / screenScaleX)
+    const offY = photo.labelOffsetY * (PX / screenScaleY)
+
+    ctx.save()
+    ctx.beginPath()
+    ctx.rect(labelX, labelY, labelW, labelH)
+    ctx.clip()
+
+    ctx.fillStyle    = photo.labelColor
+    ctx.textAlign    = photo.labelAlign
+    ctx.textBaseline = 'middle'
+    ctx.font         = `${fontStyle} ${fontWeight} ${fontSizePx}px ${photo.labelFont}`
+
+    let textX: number
+    if (photo.labelAlign === 'left')       textX = labelX + 8
+    else if (photo.labelAlign === 'right') textX = labelX + labelW - 8
+    else                                   textX = labelX + labelW / 2
+    textX += offX
+
+    ctx.fillText(photo.label, textX, labelY + labelH / 2 + offY)
+    ctx.restore()
+  }
+
+  return new Promise(resolve => canvas.toBlob(b => resolve(b), 'image/jpeg', 0.93))
+}
+
 // ─── Instax card renderer ─────────────────────────────────────────────────────
 
 function InstaxCard({
@@ -265,7 +458,10 @@ function InstaxCard({
     }
 
     const mm = (e: MouseEvent) => onMove(e.clientX, e.clientY)
-    const tm = (e: TouchEvent) => { e.preventDefault(); onMove(e.touches[0].clientX, e.touches[0].clientY) }
+    const tm = (e: TouchEvent) => {
+      if (dragRef.current || textDragRef.current) e.preventDefault()
+      if (e.touches[0]) onMove(e.touches[0].clientX, e.touches[0].clientY)
+    }
 
     window.addEventListener('mousemove', mm)
     window.addEventListener('mouseup', onEnd)
@@ -452,6 +648,7 @@ export default function InstaxPage() {
   const [activeId,      setActiveId]      = useState<string | null>(null)
   const [isDragOver,    setIsDragOver]    = useState(false)
   const [addedFeedback, setAddedFeedback] = useState(false)
+  const [isRendering,   setIsRendering]   = useState(false)
 
   const activePhoto = photos.find(p => p.id === activeId) ?? null
   const totalPrints = photos.reduce((s, p) => s + p.copies, 0)
@@ -551,22 +748,47 @@ export default function InstaxPage() {
 
   const isUploading = photos.some(p => p.uploading)
 
-  function handleAddToCart() {
-    if (isUploading) return
-    photos.forEach(p => {
-      addItem({
-        productId:    'stampe-instax',
-        variantId:    `${format.id}__${frame.id}--${p.id}`,
-        quantity:     p.copies,
-        productName:  'Stampa Instax',
-        variantLabel: `${format.label} — ${frame.label}`,
-        price:        unitPrice,
-        image:        p.uploadedUrl || p.url,
-        filename:     p.name,
-      })
-    })
-    setAddedFeedback(true)
-    setTimeout(() => setAddedFeedback(false), 2500)
+  async function handleAddToCart() {
+    if (isUploading || isRendering) return
+    setIsRendering(true)
+    try {
+      for (const p of photos) {
+        // Render the full polaroid composite (frame + photo crop + label)
+        let imageUrl = p.uploadedUrl || p.url
+        let filename = `instax-${format.id}-${frame.id}-${p.name}`
+
+        try {
+          const blob = await renderInstaxComposite(p, format, frame)
+          if (blob) {
+            const res = await fetch('/api/shop/presign-photo', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ filename, contentType: 'image/jpeg' }),
+            })
+            if (res.ok) {
+              const { uploadUrl, publicUrl } = await res.json()
+              await fetch(uploadUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': 'image/jpeg' } })
+              imageUrl = publicUrl
+            }
+          }
+        } catch { /* fall back to raw upload URL */ }
+
+        addItem({
+          productId:    'stampe-instax',
+          variantId:    `${format.id}__${frame.id}--${p.id}`,
+          quantity:     p.copies,
+          productName:  'Stampa Instax',
+          variantLabel: `${format.label} — ${frame.label}`,
+          price:        unitPrice,
+          image:        imageUrl,
+          filename,
+        })
+      }
+      setAddedFeedback(true)
+      setTimeout(() => setAddedFeedback(false), 2500)
+    } finally {
+      setIsRendering(false)
+    }
   }
 
   // Stile bottone controllo testo
@@ -1141,13 +1363,13 @@ export default function InstaxPage() {
 
                 <button
                   onClick={handleAddToCart}
-                  disabled={isUploading}
+                  disabled={isUploading || isRendering}
                   style={{
                     width: '100%', padding: '14px', borderRadius: 12, border: 'none',
-                    background: addedFeedback ? '#22c55e' : isUploading ? '#b0e6f0' : '#00c1de',
+                    background: addedFeedback ? '#22c55e' : (isUploading || isRendering) ? '#b0e6f0' : '#00c1de',
                     color: '#fff', fontFamily: 'Poppins, sans-serif', fontWeight: 700,
-                    fontSize: '14px', cursor: isUploading ? 'not-allowed' : 'pointer',
-                    transition: 'background .2s', opacity: isUploading ? 0.75 : 1,
+                    fontSize: '14px', cursor: (isUploading || isRendering) ? 'not-allowed' : 'pointer',
+                    transition: 'background .2s', opacity: (isUploading || isRendering) ? 0.75 : 1,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   }}
                 >
@@ -1155,6 +1377,8 @@ export default function InstaxPage() {
                     <><Check size={17} strokeWidth={3} /> Aggiunto al carrello!</>
                   ) : isUploading ? (
                     <>Caricamento foto…</>
+                  ) : isRendering ? (
+                    <>Composizione immagini…</>
                   ) : (
                     <><ShoppingCart size={17} /> Aggiungi al carrello</>
                   )}
