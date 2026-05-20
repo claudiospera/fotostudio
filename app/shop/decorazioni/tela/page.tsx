@@ -466,7 +466,7 @@ export default function TelaPage() {
           )}
 
           {/* Tipo di bordo */}
-          <Section title="Tipo di bordo">
+          <Section title="Tipo di bordo" note="Spessore telaio: 2,5 cm">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {BORDER_TYPES.map((bt) => {
                 const active = borderType.id === bt.id
@@ -872,10 +872,13 @@ function BorderSwatch({ type, active }: { type: string; active: boolean }) {
 
 // ─── UI helpers ───────────────────────────────────────────────────────────────
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
   return (
     <div>
-      <p style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 12 }}>{title}</p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+        <p style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '.12em' }}>{title}</p>
+        {note && <span style={{ fontSize: '11px', color: '#00c1de', fontWeight: 600, background: 'rgba(0,193,222,0.08)', borderRadius: 100, padding: '2px 8px' }}>{note}</span>}
+      </div>
       {children}
     </div>
   )

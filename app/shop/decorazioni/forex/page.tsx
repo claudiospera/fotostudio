@@ -309,7 +309,7 @@ export default function ForexPage() {
             </h1>
             <p style={{ fontSize: '14px', color: '#666', lineHeight: 1.65 }}>
               Pannello in PVC espanso da 5mm con stampa fotografica diretta UV.<br />
-              Effetto moderno e minimalista, leggerissimo e pronto da appendere.
+              Bordo perimetrale 1 cm · Effetto moderno e minimalista, leggerissimo e pronto da appendere.
             </p>
           </div>
 
@@ -318,7 +318,7 @@ export default function ForexPage() {
             {[
               ['Pannello 5mm',        'PVC espanso rigido'],
               ['Stampa UV diretta',   'Alta risoluzione'],
-              ['Bordi netti',         'Finitura professionale'],
+              ['Bordi netti 1 cm',    'Finitura professionale'],
               ['Pronto da appendere', 'Leggerissimo'],
             ].map(([title, sub]) => (
               <div key={title} style={{ background: '#fff', border: '1px solid #ebebeb', borderRadius: 10, padding: '12px 14px' }}>
