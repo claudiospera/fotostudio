@@ -133,6 +133,7 @@ const SHARE_TOOLBAR_CSS = `
 .btn-print { background:#D8E8D6; color:#2a4a2a; }
 .btn-wa { background:#25D366; color:#fff; }
 .btn-email { background:#D4C9B8; color:#2a2520; }
+.btn-jpeg { background:#e8d8c4; color:#2a2520; }
 `
 
 const STUDIO_STRIP = `
@@ -306,15 +307,30 @@ export function buildHtmlShare(c: Cliente, email: string, telefono: string): str
       <button class="btn-toolbar btn-print" onclick="window.print()">🖨️ Stampa / Salva PDF</button>
       <button class="btn-toolbar btn-wa" id="btn-wa">💬 WhatsApp</button>
       ${email ? `<a class="btn-toolbar btn-email" href="mailto:${esc(email)}?subject=${mailSubject}&body=${mailBody}">✉️ Invia Email</a>` : ''}
+      <button class="btn-toolbar btn-jpeg" id="btn-jpeg">🖼️ Salva JPEG</button>
     </div>
   </div>
-  <div class="page">${buildBody(c, oggi)}</div>
+  <div class="page" id="scheda-page">${buildBody(c, oggi)}</div>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script>
     document.getElementById('btn-wa').addEventListener('click', function() {
       var num = '${waNum ? `39${waNum}` : ''}';
       var msg = 'Ciao ${esc(c.nome1).replace(/'/g, "\\'")}! Ti invio la tua scheda riepilogativa: ' + location.href;
       var url = num ? 'https://wa.me/' + num + '?text=' + encodeURIComponent(msg) : 'https://wa.me/?text=' + encodeURIComponent(msg);
       window.open(url, '_blank');
+    });
+    document.getElementById('btn-jpeg').addEventListener('click', function() {
+      var btn = this;
+      btn.textContent = '⏳ Generazione…';
+      btn.disabled = true;
+      html2canvas(document.getElementById('scheda-page'), { scale: 2, useCORS: true, backgroundColor: '#F2EDE6' }).then(function(canvas) {
+        var a = document.createElement('a');
+        a.download = 'scheda-${esc(nomi).replace(/[^a-z0-9]/gi, '-').toLowerCase()}.jpg';
+        a.href = canvas.toDataURL('image/jpeg', 0.92);
+        a.click();
+        btn.textContent = '🖼️ Salva JPEG';
+        btn.disabled = false;
+      });
     });
   </script>
   </body></html>`
