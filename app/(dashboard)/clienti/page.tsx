@@ -677,6 +677,25 @@ function ClienteCard({ cliente: c, onEdit, onDelete }: {
             {label}
           </button>
         ))}
+        {/* Genera Scheda — full width */}
+        <button
+          onClick={() => window.open(`/api/scheda-pdf/${c.id}`, '_blank')}
+          style={{
+            gridColumn: '1 / -1',
+            padding: '10px 0',
+            fontSize: 12, fontWeight: 600,
+            background: 'transparent',
+            color: 'var(--ac)',
+            border: 'none',
+            borderTop: '1px solid rgba(255,255,255,0.06)',
+            cursor: 'pointer',
+            transition: 'background 0.12s',
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(142,201,176,0.08)' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+        >
+          📄 Genera Scheda
+        </button>
       </div>
     </div>
   )
