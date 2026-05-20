@@ -59,6 +59,75 @@ function getCoverBounds(natW: number, natH: number, cW: number, cH: number, zoom
 }
 function clamp(v: number, min: number, max: number) { return Math.max(min, Math.min(max, v)) }
 
+// ─── Canvas rendering ─────────────────────────────────────────────────────────
+
+function loadImageSC(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = reject
+    img.src = src
+  })
+}
+
+async function renderClassicComposite(
+  photo: PhotoItem,
+  variant: Variant,
+  editorMaxPx: number = 260,
+): Promise<Blob | null> {
+  const PX = 100
+  // Slot dimensions in canvas space (cm → px)
+  let wCm = variant.wCm, hCm = variant.hCm
+  if (photo.slotOrientation === 'landscape' && wCm < hCm) { const t = wCm; wCm = hCm; hCm = t }
+  if (photo.slotOrientation === 'portrait'  && wCm > hCm) { const t = wCm; wCm = hCm; hCm = t }
+  const canvasW = Math.round(wCm * PX)
+  const canvasH = Math.round(hCm * PX)
+
+  const canvas = document.createElement('canvas')
+  canvas.width  = canvasW
+  canvas.height = canvasH
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return null
+
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, canvasW, canvasH)
+
+  let img: HTMLImageElement
+  try { img = await loadImageSC(photo.url) } catch { return null }
+
+  if (photo.fitMode === 'contain') {
+    const scale = Math.min(canvasW / photo.natW, canvasH / photo.natH)
+    const dw = photo.natW * scale
+    const dh = photo.natH * scale
+    ctx.drawImage(img, (canvasW - dw) / 2, (canvasH - dh) / 2, dw, dh)
+  } else {
+    // Cover mode — match the interactive editor slot dimensions
+    const { w: editorSlotW, h: editorSlotH } = (() => {
+      const maxPx = editorMaxPx
+      const w = wCm >= hCm ? maxPx : Math.round(maxPx * wCm / hCm)
+      const h = hCm >= wCm ? maxPx : Math.round(maxPx * hCm / wCm)
+      return { w, h }
+    })()
+
+    const coverScale = Math.max(canvasW / photo.natW, canvasH / photo.natH)
+    const imgW = photo.natW * coverScale * photo.zoom
+    const imgH = photo.natH * coverScale * photo.zoom
+
+    // Scale offset from screen slot space to canvas space
+    const offX = photo.offsetX * (canvasW / editorSlotW)
+    const offY = photo.offsetY * (canvasH / editorSlotH)
+
+    ctx.save()
+    ctx.beginPath()
+    ctx.rect(0, 0, canvasW, canvasH)
+    ctx.clip()
+    ctx.drawImage(img, (canvasW - imgW) / 2 + offX, (canvasH - imgH) / 2 + offY, imgW, imgH)
+    ctx.restore()
+  }
+
+  return new Promise(resolve => canvas.toBlob(b => resolve(b), 'image/jpeg', 0.93))
+}
+
 // Calcola dimensioni slot proporzionali al formato, con orientamento scelto dall'utente
 function getSlotDims(variant: Variant, maxPx: number, slotOrientation?: 'portrait' | 'landscape') {
   let wCm = variant.wCm, hCm = variant.hCm
@@ -185,7 +254,8 @@ export default function StampeClassichePage() {
   const [photos,  setPhotos]  = useState<PhotoItem[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
   const [isDragOver, setIsDragOver] = useState(false)
-  const [added, setAdded] = useState(false)
+  const [added,       setAdded]       = useState(false)
+  const [isRendering, setIsRendering] = useState(false)
 
   const activePhoto = photos.find(p => p.id === activeId) ?? null
   const totalPrints = photos.reduce((s, p) => s + p.copies, 0)
@@ -270,24 +340,49 @@ export default function StampeClassichePage() {
 
   const isUploading = photos.some(p => p.uploading)
 
-  function handleAddToCart() {
-    if (isUploading) return
-    photos.forEach(p => {
-      const pv = VARIANTS.find(v => v.id === p.variantId) ?? VARIANTS[0]
-      const price = getPriceForQuantity(pv.price, pv.priceBreaks, p.copies)
-      addItem({
-        productId: 'stampe-classiche',
-        variantId: `${pv.id}--${p.id}`, // unique per foto
-        quantity: p.copies,
-        productName: 'Stampe Classiche',
-        variantLabel: pv.label,
-        price,
-        image: p.uploadedUrl || p.url,
-        filename: p.name,
-      })
-    })
-    setAdded(true)
-    setTimeout(() => setAdded(false), 2500)
+  async function handleAddToCart() {
+    if (isUploading || isRendering) return
+    setIsRendering(true)
+    try {
+      for (const p of photos) {
+        const pv = VARIANTS.find(v => v.id === p.variantId) ?? VARIANTS[0]
+        const price = getPriceForQuantity(pv.price, pv.priceBreaks, p.copies)
+
+        let imageUrl = p.uploadedUrl || p.url
+        const filename = p.name
+
+        try {
+          const blob = await renderClassicComposite(p, pv)
+          if (blob) {
+            const res = await fetch('/api/shop/presign-photo', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ filename, contentType: 'image/jpeg' }),
+            })
+            if (res.ok) {
+              const { uploadUrl, publicUrl } = await res.json()
+              await fetch(uploadUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': 'image/jpeg' } })
+              imageUrl = publicUrl
+            }
+          }
+        } catch { /* fall back to raw upload URL */ }
+
+        addItem({
+          productId:    'stampe-classiche',
+          variantId:    `${pv.id}--${p.id}`,
+          quantity:     p.copies,
+          productName:  'Stampe Classiche',
+          variantLabel: pv.label,
+          price,
+          image:        imageUrl,
+          filename,
+        })
+      }
+      setAdded(true)
+      setTimeout(() => setAdded(false), 2500)
+    } finally {
+      setIsRendering(false)
+    }
   }
 
   // ─── Render ────────────────────────────────────────────────────────────────
@@ -754,36 +849,36 @@ export default function StampeClassichePage() {
 
                 <button
                   onClick={handleAddToCart}
-                  disabled={isUploading}
+                  disabled={isUploading || isRendering}
                   style={{
                     width: '100%', padding: '14px', borderRadius: 12, border: 'none',
-                    background: added ? '#22c55e' : isUploading ? '#b0e6f0' : '#00c1de',
+                    background: added ? '#22c55e' : (isUploading || isRendering) ? '#b0e6f0' : '#00c1de',
                     color: '#fff', fontFamily: 'Poppins, sans-serif', fontWeight: 700,
-                    fontSize: '14px', cursor: isUploading ? 'not-allowed' : 'pointer', transition: 'background .2s',
+                    fontSize: '14px', cursor: (isUploading || isRendering) ? 'not-allowed' : 'pointer', transition: 'background .2s',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                    opacity: isUploading ? 0.75 : 1,
+                    opacity: (isUploading || isRendering) ? 0.75 : 1,
                   }}
                 >
                   {added
                     ? <><Check size={17} strokeWidth={3} /> Aggiunto!</>
                     : isUploading
                       ? <>Caricamento in corso…</>
-                      : <><ShoppingCart size={17} /> Aggiungi al carrello</>
+                      : isRendering
+                        ? <>Composizione immagini…</>
+                        : <><ShoppingCart size={17} /> Aggiungi al carrello</>
                   }
                 </button>
 
-                {added && (
-                  <a href="/shop/carrello" style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                    width: '100%', padding: '12px', borderRadius: 12,
-                    border: '2px solid #00c1de', color: '#00c1de',
-                    background: '#fff', fontFamily: 'Poppins, sans-serif',
-                    fontWeight: 700, fontSize: '13px', textDecoration: 'none',
-                    transition: 'all .15s',
-                  }}>
-                    🛒 Vai al carrello
-                  </a>
-                )}
+                <Link href="/shop/carrello" style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  width: '100%', padding: '12px', borderRadius: 12,
+                  border: '2px solid #00c1de', color: '#00c1de',
+                  background: '#fff', fontFamily: 'Poppins, sans-serif',
+                  fontWeight: 700, fontSize: '13px', textDecoration: 'none',
+                  transition: 'all .15s',
+                }}>
+                  🛒 Vai al carrello
+                </Link>
 
                 <p style={{ fontSize: '11px', color: '#bbb', textAlign: 'center' }}>
                   Ritiro in studio · Carta fotografica premium

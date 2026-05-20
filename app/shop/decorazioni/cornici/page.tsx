@@ -69,6 +69,28 @@ function formatPrice(cents: number): string {
   return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(cents / 100)
 }
 
+function loadImgCornici(src: string): Promise<HTMLImageElement> {
+  return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src })
+}
+async function renderSingleCanvasCornici(
+  photoUrl: string, natW: number, natH: number, zoom: number,
+  offsetXNorm: number, offsetYNorm: number,
+  canvasW: number, canvasH: number,
+): Promise<Blob | null> {
+  const canvas = document.createElement('canvas'); canvas.width = canvasW; canvas.height = canvasH
+  const ctx = canvas.getContext('2d'); if (!ctx) return null
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvasW, canvasH)
+  let img: HTMLImageElement
+  try { img = await loadImgCornici(photoUrl) } catch { return null }
+  const cs = Math.max(canvasW / natW, canvasH / natH)
+  const iW = natW * cs * zoom, iH = natH * cs * zoom
+  const offX = offsetXNorm * canvasW, offY = offsetYNorm * canvasH
+  ctx.save(); ctx.beginPath(); ctx.rect(0, 0, canvasW, canvasH); ctx.clip()
+  ctx.drawImage(img, (canvasW - iW) / 2 + offX, (canvasH - iH) / 2 + offY, iW, iH)
+  ctx.restore()
+  return new Promise(resolve => canvas.toBlob(b => resolve(b), 'image/jpeg', 0.93))
+}
+
 const FRAME_PX = 20  // spessore cornice in px
 const PASSE_PX = 28  // spessore passepartout in px
 const PHOTO_W  = 180 // larghezza foto nell'anteprima in px
@@ -100,7 +122,10 @@ export default function CorniciPage() {
   const [uploadedUrl,   setUploadedUrl]   = useState<string | null>(null)
   const [uploading,     setUploading]     = useState(false)
   const [photoFilename, setPhotoFilename] = useState<string | undefined>(undefined)
-  const [zoom,        setZoom]        = useState(1)
+  const [zoom,          setZoom]          = useState(1)
+  const [photoOffset,   setPhotoOffset]   = useState({ x: 0, y: 0 })
+  const [photoNatSize,  setPhotoNatSize]  = useState<{ w: number; h: number } | null>(null)
+  const [isRendering,   setIsRendering]   = useState(false)
 
   // Cleanup object URL quando cambia o al unmount
   useEffect(() => {
@@ -140,6 +165,8 @@ export default function CorniciPage() {
     setUploadedUrl(null)
     setPhotoFilename(undefined)
     setZoom(1)
+    setPhotoOffset({ x: 0, y: 0 })
+    setPhotoNatSize(null)
   }, [photoUrl])
 
   // Prezzi
@@ -156,14 +183,38 @@ export default function CorniciPage() {
   // Dimensioni anteprima (portrait)
   const photoH = Math.round(PHOTO_W * (variant.heightCm / variant.widthCm))
 
-  function handleAddToCart() {
-    if (uploading) return
+  async function handleAddToCart() {
+    if (uploading || isRendering) return
     const label = [
       variant.label,
       printType.label,
       `Cornice ${frame.label}`,
       passeEnabled ? `Passepartout ${passe.label}` : null,
     ].filter(Boolean).join(' — ')
+
+    let imageUrl = uploadedUrl ?? photoUrl ?? 'https://images.unsplash.com/photo-1416339306562-f3d12fefd36f?w=800&q=80'
+    const filename = photoFilename
+
+    if (photoUrl && photoNatSize) {
+      setIsRendering(true)
+      try {
+        const cW = Math.round(variant.widthCm * 100), cH = Math.round(variant.heightCm * 100)
+        const blob = await renderSingleCanvasCornici(photoUrl, photoNatSize.w, photoNatSize.h, zoom, photoOffset.x, photoOffset.y, cW, cH)
+        if (blob) {
+          const res = await fetch('/api/shop/presign-photo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename: filename ?? 'cornice.jpg', contentType: 'image/jpeg' }),
+          })
+          if (res.ok) {
+            const { uploadUrl, publicUrl } = await res.json()
+            await fetch(uploadUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': 'image/jpeg' } })
+            imageUrl = publicUrl
+          }
+        }
+      } catch { /* fallback */ }
+      setIsRendering(false)
+    }
 
     addItem({
       productId:    'cornici',
@@ -172,8 +223,8 @@ export default function CorniciPage() {
       productName:  'Foto in Cornice',
       variantLabel: label,
       price:        unitPrice,
-      image:        uploadedUrl ?? photoUrl ?? 'https://images.unsplash.com/photo-1416339306562-f3d12fefd36f?w=800&q=80',
-      filename:     photoFilename,
+      image:        imageUrl,
+      filename,
     })
     setAddedFeedback(true)
     setTimeout(() => setAddedFeedback(false), 2200)
@@ -294,6 +345,8 @@ export default function CorniciPage() {
                       w={PHOTO_W} h={photoH}
                       photoUrl={photoUrl} zoom={zoom}
                       onUploadClick={() => fileInputRef.current?.click()}
+                      onOffsetChange={(xNorm, yNorm) => setPhotoOffset({ x: xNorm, y: yNorm })}
+                      onNatSize={(nw, nh) => setPhotoNatSize({ w: nw, h: nh })}
                     />
                   </div>
                 ) : (
@@ -301,6 +354,8 @@ export default function CorniciPage() {
                     w={PHOTO_W} h={photoH}
                     photoUrl={photoUrl} zoom={zoom}
                     onUploadClick={() => fileInputRef.current?.click()}
+                    onOffsetChange={(xNorm, yNorm) => setPhotoOffset({ x: xNorm, y: yNorm })}
+                    onNatSize={(nw, nh) => setPhotoNatSize({ w: nw, h: nh })}
                   />
                 )}
               </div>
@@ -623,13 +678,13 @@ export default function CorniciPage() {
 
             <button
               onClick={handleAddToCart}
-              disabled={uploading}
+              disabled={uploading || isRendering}
               style={{
                 width: '100%', padding: '15px', borderRadius: 12, border: 'none',
-                background: addedFeedback ? '#22c55e' : uploading ? '#b0e6f0' : '#00c1de',
+                background: addedFeedback ? '#22c55e' : (uploading || isRendering) ? '#b0e6f0' : '#00c1de',
                 color: '#fff', fontFamily: 'Poppins, sans-serif', fontWeight: 700,
-                fontSize: '15px', cursor: uploading ? 'not-allowed' : 'pointer',
-                transition: 'background .2s', opacity: uploading ? 0.75 : 1,
+                fontSize: '15px', cursor: (uploading || isRendering) ? 'not-allowed' : 'pointer',
+                transition: 'background .2s', opacity: (uploading || isRendering) ? 0.75 : 1,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
               }}
             >
@@ -637,10 +692,23 @@ export default function CorniciPage() {
                 <><Check size={18} strokeWidth={3} /> Aggiunto al carrello!</>
               ) : uploading ? (
                 <>Caricamento foto…</>
+              ) : isRendering ? (
+                <>Composizione immagine…</>
               ) : (
                 <><ShoppingCart size={18} /> Aggiungi al carrello</>
               )}
             </button>
+
+            <Link href="/shop/carrello" style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              width: '100%', padding: '12px', borderRadius: 12,
+              border: '2px solid #00c1de', color: '#00c1de',
+              background: '#fff', fontFamily: 'Poppins, sans-serif',
+              fontWeight: 700, fontSize: '13px', textDecoration: 'none',
+              transition: 'all .15s',
+            }}>
+              🛒 Vai al carrello
+            </Link>
 
             <p style={{ fontSize: '11px', color: '#bbb', textAlign: 'center' }}>
               Spedizione calcolata al checkout · Produzione artigianale
@@ -676,12 +744,14 @@ function clampOffset(ox: number, oy: number, maxX: number, maxY: number) {
 
 /** Foto nella cornice: se caricata mostra l'immagine con zoom + drag, altrimenti placeholder cliccabile */
 function PhotoSlot({
-  w, h, photoUrl, zoom, onUploadClick,
+  w, h, photoUrl, zoom, onUploadClick, onOffsetChange, onNatSize,
 }: {
   w: number; h: number
   photoUrl: string | null
   zoom: number
   onUploadClick: () => void
+  onOffsetChange?: (xNorm: number, yNorm: number) => void
+  onNatSize?: (nw: number, nh: number) => void
 }) {
   const [offset, setOffset] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
@@ -730,11 +800,9 @@ function PhotoSlot({
       const { maxX, maxY } = getCoverBounds(natW, natH, cw, ch, cz)
       const dx = clientX - dragRef.current.startMouseX
       const dy = clientY - dragRef.current.startMouseY
-      setOffset(clampOffset(
-        dragRef.current.startOffsetX + dx,
-        dragRef.current.startOffsetY + dy,
-        maxX, maxY,
-      ))
+      const clamped = clampOffset(dragRef.current.startOffsetX + dx, dragRef.current.startOffsetY + dy, maxX, maxY)
+      setOffset(clamped)
+      onOffsetChange?.(clamped.x / w, clamped.y / h)
     }
     const onEnd = () => {
       if (!dragRef.current) return
@@ -807,6 +875,7 @@ function PhotoSlot({
           onLoad={e => {
             const img = e.currentTarget
             setNaturalSize({ w: img.naturalWidth, h: img.naturalHeight })
+            onNatSize?.(img.naturalWidth, img.naturalHeight)
           }}
         />
       </div>

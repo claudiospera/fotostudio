@@ -67,6 +67,36 @@ function getCoverBounds(natW: number, natH: number, cW: number, cH: number, zoom
 }
 function clamp(v: number, min: number, max: number) { return Math.max(min, Math.min(max, v)) }
 
+function loadImgPoster(src: string): Promise<HTMLImageElement> {
+  return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src })
+}
+async function renderPosterComposite(photo: PhotoItem, variant: Variant, editorMaxPx = 260): Promise<Blob | null> {
+  const PX = 100
+  let wCm = variant.wCm, hCm = variant.hCm
+  if (photo.slotOrientation === 'landscape' && wCm < hCm) { const t = wCm; wCm = hCm; hCm = t }
+  if (photo.slotOrientation === 'portrait'  && wCm > hCm) { const t = wCm; wCm = hCm; hCm = t }
+  const cW = Math.round(wCm * PX), cH = Math.round(hCm * PX)
+  const canvas = document.createElement('canvas'); canvas.width = cW; canvas.height = cH
+  const ctx = canvas.getContext('2d'); if (!ctx) return null
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, cW, cH)
+  let img: HTMLImageElement
+  try { img = await loadImgPoster(photo.url) } catch { return null }
+  if (photo.fitMode === 'contain') {
+    const s = Math.min(cW / photo.natW, cH / photo.natH)
+    ctx.drawImage(img, (cW - photo.natW * s) / 2, (cH - photo.natH * s) / 2, photo.natW * s, photo.natH * s)
+  } else {
+    const eW = wCm >= hCm ? editorMaxPx : Math.round(editorMaxPx * wCm / hCm)
+    const eH = hCm >= wCm ? editorMaxPx : Math.round(editorMaxPx * hCm / wCm)
+    const cs = Math.max(cW / photo.natW, cH / photo.natH)
+    const iW = photo.natW * cs * photo.zoom, iH = photo.natH * cs * photo.zoom
+    const offX = photo.offsetX * (cW / eW), offY = photo.offsetY * (cH / eH)
+    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, cW, cH); ctx.clip()
+    ctx.drawImage(img, (cW - iW) / 2 + offX, (cH - iH) / 2 + offY, iW, iH)
+    ctx.restore()
+  }
+  return new Promise(resolve => canvas.toBlob(b => resolve(b), 'image/jpeg', 0.93))
+}
+
 function getSlotDims(variant: Variant, maxPx: number, slotOrientation?: 'portrait' | 'landscape') {
   let wCm = variant.wCm, hCm = variant.hCm
   if (slotOrientation === 'landscape' && wCm < hCm) { const t = wCm; wCm = hCm; hCm = t }
@@ -187,7 +217,8 @@ export default function PosterPage() {
   const [photos,  setPhotos]  = useState<PhotoItem[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
   const [isDragOver, setIsDragOver] = useState(false)
-  const [added, setAdded] = useState(false)
+  const [added,       setAdded]       = useState(false)
+  const [isRendering, setIsRendering] = useState(false)
 
   const activePhoto = photos.find(p => p.id === activeId) ?? null
   const totalPrints = photos.reduce((s, p) => s + p.copies, 0)
@@ -274,23 +305,45 @@ export default function PosterPage() {
 
   const isUploading = photos.some(p => p.uploading)
 
-  function handleAddToCart() {
-    if (isUploading) return
-    photos.forEach(p => {
-      const pv = VARIANTS.find(v => v.id === p.variantId) ?? VARIANTS[0]
-      addItem({
-        productId: 'poster',
-        variantId: `${pv.id}__satinata--${p.id}`,
-        quantity: p.copies,
-        productName: 'Poster',
-        variantLabel: `${pv.label} · ${FINISH_LABEL}`,
-        price: pv.price,
-        image: p.uploadedUrl || p.url,
-        filename: p.name,
-      })
-    })
-    setAdded(true)
-    setTimeout(() => setAdded(false), 2500)
+  async function handleAddToCart() {
+    if (isUploading || isRendering) return
+    setIsRendering(true)
+    try {
+      for (const p of photos) {
+        const pv = VARIANTS.find(v => v.id === p.variantId) ?? VARIANTS[0]
+        let imageUrl = p.uploadedUrl || p.url
+        const filename = p.name
+        try {
+          const blob = await renderPosterComposite(p, pv)
+          if (blob) {
+            const res = await fetch('/api/shop/presign-photo', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ filename, contentType: 'image/jpeg' }),
+            })
+            if (res.ok) {
+              const { uploadUrl, publicUrl } = await res.json()
+              await fetch(uploadUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': 'image/jpeg' } })
+              imageUrl = publicUrl
+            }
+          }
+        } catch { /* fallback */ }
+        addItem({
+          productId:    'poster',
+          variantId:    `${pv.id}__satinata--${p.id}`,
+          quantity:     p.copies,
+          productName:  'Poster',
+          variantLabel: `${pv.label} · ${FINISH_LABEL}`,
+          price:        pv.price,
+          image:        imageUrl,
+          filename,
+        })
+      }
+      setAdded(true)
+      setTimeout(() => setAdded(false), 2500)
+    } finally {
+      setIsRendering(false)
+    }
   }
 
   return (
@@ -712,18 +765,29 @@ export default function PosterPage() {
                   {FINISH_LABEL} · {totalPrints} stampe
                 </div>
 
-                <button onClick={handleAddToCart} disabled={isUploading}
+                <button onClick={handleAddToCart} disabled={isUploading || isRendering}
                   style={{
                     width: '100%', padding: '14px', borderRadius: 12, border: 'none',
-                    background: added ? '#22c55e' : isUploading ? '#b0e6f0' : '#00c1de',
+                    background: added ? '#22c55e' : (isUploading || isRendering) ? '#b0e6f0' : '#00c1de',
                     color: '#fff', fontFamily: 'Poppins, sans-serif', fontWeight: 700,
-                    fontSize: '14px', cursor: isUploading ? 'not-allowed' : 'pointer',
-                    transition: 'background .2s', opacity: isUploading ? 0.75 : 1,
+                    fontSize: '14px', cursor: (isUploading || isRendering) ? 'not-allowed' : 'pointer',
+                    transition: 'background .2s', opacity: (isUploading || isRendering) ? 0.75 : 1,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   }}
                 >
-                  {added ? <><Check size={17} strokeWidth={3} /> Aggiunto!</> : isUploading ? <>Caricamento foto…</> : <><ShoppingCart size={17} /> Aggiungi al carrello</>}
+                  {added ? <><Check size={17} strokeWidth={3} /> Aggiunto!</> : isUploading ? <>Caricamento foto…</> : isRendering ? <>Composizione immagini…</> : <><ShoppingCart size={17} /> Aggiungi al carrello</>}
                 </button>
+
+                <Link href="/shop/carrello" style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  width: '100%', padding: '12px', borderRadius: 12,
+                  border: '2px solid #00c1de', color: '#00c1de',
+                  background: '#fff', fontFamily: 'Poppins, sans-serif',
+                  fontWeight: 700, fontSize: '13px', textDecoration: 'none',
+                  transition: 'all .15s',
+                }}>
+                  🛒 Vai al carrello
+                </Link>
 
                 <p style={{ fontSize: '11px', color: '#bbb', textAlign: 'center' }}>
                   Spedizione calcolata al checkout · Stampa professionale

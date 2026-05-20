@@ -29,22 +29,22 @@ export function ShopNavbar() {
         gap: 24,
       }}>
         {/* Brand */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <a href="https://storiedaraccontare.it" style={{ fontSize: '12px', color: 'var(--n-t3)', textDecoration: 'none', fontWeight: 500 }}>
+        <div className="shop-brand" style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+          <a href="https://storiedaraccontare.it" className="shop-home-link" style={{ fontSize: '12px', color: 'var(--n-t3)', textDecoration: 'none', fontWeight: 500, whiteSpace: 'nowrap' }}>
             ← Home
           </a>
           <Link href="/shop" style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
             <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.18em', textTransform: 'uppercase', color: 'var(--n-ac)' }}>
               Shop
             </span>
-            <span style={{ fontSize: '15px', fontWeight: 700, fontFamily: 'Poppins, sans-serif', color: 'var(--n-tx)' }}>
+            <span className="shop-brand-name" style={{ fontSize: '15px', fontWeight: 700, fontFamily: 'Poppins, sans-serif', color: 'var(--n-tx)', whiteSpace: 'nowrap' }}>
               Storie da Raccontare
             </span>
           </Link>
         </div>
 
         {/* Categorie */}
-        <nav style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <nav className="shop-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 4, overflow: 'hidden' }}>
           {Object.values(CATEGORY_META).map((cat) => (
             <Link
               key={cat.slug}
@@ -57,6 +57,7 @@ export function ShopNavbar() {
                 padding: '6px 14px',
                 borderRadius: 'var(--n-r2)',
                 transition: 'all .15s',
+                whiteSpace: 'nowrap',
               }}
               className="shop-nav-link"
             >
@@ -80,12 +81,13 @@ export function ShopNavbar() {
           borderRadius: 'var(--n-r2)',
           padding: '8px 16px',
           transition: 'all .15s',
+          flexShrink: 0,
         }}>
           <ShoppingCart size={16} color={itemCount > 0 ? 'var(--n-ac)' : 'var(--n-t2)'} />
           {itemCount > 0 ? (
             <span style={{ color: 'var(--n-ac)' }}>{itemCount}</span>
           ) : (
-            <span style={{ color: 'var(--n-t2)' }}>Carrello</span>
+            <span className="shop-cart-label" style={{ color: 'var(--n-t2)' }}>Carrello</span>
           )}
         </Link>
       </div>
@@ -98,6 +100,12 @@ export function ShopNavbar() {
         .shop-admin-link:hover {
           color: var(--n-ac) !important;
           border-color: var(--n-ac) !important;
+        }
+        @media (max-width: 600px) {
+          .shop-nav-links { display: none !important; }
+          .shop-home-link { display: none !important; }
+          .shop-cart-label { display: none !important; }
+          .shop-brand-name { font-size: 13px !important; }
         }
       `}</style>
     </header>

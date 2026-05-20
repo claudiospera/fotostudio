@@ -119,10 +119,33 @@ function clampVal(v: number, min: number, max: number) {
   return Math.max(min, Math.min(max, v))
 }
 
+function loadImgHahne(src: string): Promise<HTMLImageElement> {
+  return new Promise((res, rej) => { const i = new window.Image(); i.onload = () => res(i); i.onerror = rej; i.src = src })
+}
+async function renderSingleCanvasHahne(
+  photoUrl: string, natW: number, natH: number, zoom: number,
+  offsetXNorm: number, offsetYNorm: number,
+  canvasW: number, canvasH: number,
+): Promise<Blob | null> {
+  const canvas = document.createElement('canvas'); canvas.width = canvasW; canvas.height = canvasH
+  const ctx = canvas.getContext('2d'); if (!ctx) return null
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvasW, canvasH)
+  let img: HTMLImageElement
+  try { img = await loadImgHahne(photoUrl) } catch { return null }
+  const cs = Math.max(canvasW / natW, canvasH / natH)
+  const iW = natW * cs * zoom, iH = natH * cs * zoom
+  const offX = offsetXNorm * canvasW, offY = offsetYNorm * canvasH
+  ctx.save(); ctx.beginPath(); ctx.rect(0, 0, canvasW, canvasH); ctx.clip()
+  ctx.drawImage(img, (canvasW - iW) / 2 + offX, (canvasH - iH) / 2 + offY, iW, iH)
+  ctx.restore()
+  return new Promise(resolve => canvas.toBlob(b => resolve(b), 'image/jpeg', 0.93))
+}
+
 // ─── PhotoSlot ───────────────────────────────────────────────────────────────
 
 function PhotoSlot({
   photoUrl, zoom, slotW, slotH, onUploadClick, accentColor, marginPxX = 0, marginPxY = 0,
+  onOffsetChange, onNatSize,
 }: {
   photoUrl: string | null
   zoom: number
@@ -130,8 +153,10 @@ function PhotoSlot({
   slotH: number
   onUploadClick: () => void
   accentColor: string
-  marginPxX?: number  // pixel margine sinistra/destra
-  marginPxY?: number  // pixel margine sopra/sotto
+  marginPxX?: number
+  marginPxY?: number
+  onOffsetChange?: (xNorm: number, yNorm: number) => void
+  onNatSize?: (nw: number, nh: number) => void
 }) {
   // Area foto effettiva (ridotta dei margini fisicamente corretti per lato)
   const photoAreaW = slotW - marginPxX * 2
@@ -169,6 +194,10 @@ function PhotoSlot({
         x: clampVal(dragRef.current.ox + cx - dragRef.current.sx, -maxX, maxX),
         y: clampVal(dragRef.current.oy + cy - dragRef.current.sy, -maxY, maxY),
       })
+      onOffsetChange?.(
+        clampVal(dragRef.current.ox + cx - dragRef.current.sx, -maxX, maxX) / photoAreaW,
+        clampVal(dragRef.current.oy + cy - dragRef.current.sy, -maxY, maxY) / photoAreaH,
+      )
     }
     const onEnd = () => { dragRef.current = null; setIsDragging(false) }
     const mm = (e: MouseEvent) => onMove(e.clientX, e.clientY)
@@ -258,6 +287,7 @@ function PhotoSlot({
           onLoad={e => {
             const img = e.currentTarget
             setNaturalSize({ w: img.naturalWidth, h: img.naturalHeight })
+            onNatSize?.(img.naturalWidth, img.naturalHeight)
           }}
         />
       </div>
@@ -281,6 +311,9 @@ export default function HahnemuhlePage() {
   const [uploading,     setUploading]     = useState(false)
   const [photoFilename, setPhotoFilename] = useState<string | undefined>(undefined)
   const [zoom,          setZoom]          = useState(1)
+  const [photoOffset,   setPhotoOffset]   = useState({ x: 0, y: 0 })
+  const [photoNatSize,  setPhotoNatSize]  = useState<{ w: number; h: number } | null>(null)
+  const [isRendering,   setIsRendering]   = useState(false)
   const [whiteBorder, setWhiteBorder] = useState(false)
   const [borderCm,    setBorderCm]    = useState<2.5 | 5>(2.5)
   const [rotated,     setRotated]     = useState(false)
@@ -308,6 +341,8 @@ export default function HahnemuhlePage() {
     setPhotoFilename(file.name)
     setUploading(true)
     setZoom(1)
+    setPhotoOffset({ x: 0, y: 0 })
+    setPhotoNatSize(null)
     e.target.value = ''
     try {
       const res = await fetch('/api/shop/presign-photo', {
@@ -324,8 +359,32 @@ export default function HahnemuhlePage() {
     setUploading(false)
   }, [photoUrl])
 
-  function handleAddToCart() {
-    if (!format || !price || uploading) return
+  async function handleAddToCart() {
+    if (!format || !price || uploading || isRendering) return
+    let imageUrl = uploadedUrl ?? photoUrl ?? '/images/shop/hahnemuhle/catalogo.jpg'
+    const filename = photoFilename
+
+    if (photoUrl && photoNatSize && fmtW && fmtH) {
+      setIsRendering(true)
+      try {
+        const cW = Math.round(fmtW * 100), cH = Math.round(fmtH * 100)
+        const blob = await renderSingleCanvasHahne(photoUrl, photoNatSize.w, photoNatSize.h, zoom, photoOffset.x, photoOffset.y, cW, cH)
+        if (blob) {
+          const res = await fetch('/api/shop/presign-photo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename: filename ?? 'hahne.jpg', contentType: 'image/jpeg' }),
+          })
+          if (res.ok) {
+            const { uploadUrl, publicUrl } = await res.json()
+            await fetch(uploadUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': 'image/jpeg' } })
+            imageUrl = publicUrl
+          }
+        }
+      } catch { /* fallback */ }
+      setIsRendering(false)
+    }
+
     addItem({
       productId:    'hahnemuhle',
       variantId:    `${paper.id}__${format.fmt.replace('×', 'x')}`,
@@ -333,8 +392,8 @@ export default function HahnemuhlePage() {
       productName:  'Stampa Fine Art Hahnemühle',
       variantLabel: `${paper.label} — ${fmtW}×${fmtH} cm${isSquare ? '' : rotated ? ' (orizzontale)' : ' (verticale)'}`,
       price,
-      image:        uploadedUrl ?? photoUrl ?? '/images/shop/hahnemuhle/catalogo.jpg',
-      filename:     photoFilename,
+      image:        imageUrl,
+      filename,
     })
     setAdded(true)
     setTimeout(() => setAdded(false), 2500)
@@ -404,6 +463,8 @@ export default function HahnemuhlePage() {
                     accentColor={paper.color}
                     marginPxX={marginPxX}
                     marginPxY={marginPxY}
+                    onOffsetChange={(xNorm, yNorm) => setPhotoOffset({ x: xNorm, y: yNorm })}
+                    onNatSize={(nw, nh) => setPhotoNatSize({ w: nw, h: nh })}
                   />
                 </div>
               </div>
@@ -793,13 +854,13 @@ export default function HahnemuhlePage() {
 
                 <button
                   onClick={handleAddToCart}
-                  disabled={!format}
+                  disabled={!format || uploading || isRendering}
                   style={{
                     width: '100%', padding: '14px', borderRadius: 12, border: 'none',
-                    background: !format || uploading ? '#d0d0d0' : added ? '#22c55e' : paper.color,
+                    background: !format || uploading || isRendering ? '#d0d0d0' : added ? '#22c55e' : paper.color,
                     color: '#fff', fontFamily: 'Poppins, sans-serif', fontWeight: 700,
-                    fontSize: '14px', cursor: (!format || uploading) ? 'not-allowed' : 'pointer',
-                    transition: 'background .2s', opacity: uploading ? 0.75 : 1,
+                    fontSize: '14px', cursor: (!format || uploading || isRendering) ? 'not-allowed' : 'pointer',
+                    transition: 'background .2s', opacity: (uploading || isRendering) ? 0.75 : 1,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   }}
                 >
@@ -807,11 +868,24 @@ export default function HahnemuhlePage() {
                     <><Check size={17} strokeWidth={3} /> Aggiunto al carrello!</>
                   ) : uploading ? (
                     <>Caricamento foto…</>
+                  ) : isRendering ? (
+                    <>Composizione immagine…</>
                   ) : (
                     <><ShoppingCart size={17} /> {!format ? 'Seleziona un formato' : 'Aggiungi al carrello'}</>
                   )}
                 </button>
               </div>
+
+              <Link href="/shop/carrello" style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                width: '100%', padding: '12px', borderRadius: 12,
+                border: '2px solid #00c1de', color: '#00c1de',
+                background: '#fff', fontFamily: 'Poppins, sans-serif',
+                fontWeight: 700, fontSize: '13px', textDecoration: 'none',
+                transition: 'all .15s',
+              }}>
+                🛒 Vai al carrello
+              </Link>
 
               <p style={{ fontSize: '11px', color: '#bbb', textAlign: 'center' }}>
                 IVA inclusa · Spedizione calcolata al checkout · Carta 100% cotone certificata archival
