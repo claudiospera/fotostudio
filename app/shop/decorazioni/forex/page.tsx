@@ -532,13 +532,15 @@ function RoomScene({
   const CM_SCALE_BASE = (containerW / 420) * 3.6
   const minSidePx     = Math.round(containerW * 0.20)  // 20% del container = ~80px a 400px
   const shortSideCm   = Math.min(widthCm, heightCm)
-  const CM_SCALE      = Math.max(CM_SCALE_BASE, minSidePx / shortSideCm)
+  const maxCmScale    = Math.min((ROOM_W * 0.88) / widthCm, (WALL_H * 0.80) / heightCm)
+  const CM_SCALE      = Math.min(Math.max(CM_SCALE_BASE, minSidePx / shortSideCm), maxCmScale)
   const panelW    = Math.round(widthCm  * CM_SCALE)
   const panelH    = Math.round(heightCm * CM_SCALE)
 
   // Posizione pannello: centrato orizzontalmente, a 42% dall'alto del muro
-  const panelLeft = Math.round((ROOM_W - panelW) / 2)
-  const panelTop  = Math.round(WALL_H * 0.42 - panelH / 2)
+  const panelLeft    = Math.round((ROOM_W - panelW) / 2)
+  const panelTopRaw  = Math.round(WALL_H * 0.42 - panelH / 2)
+  const panelTop     = Math.max(4, Math.min(panelTopRaw, WALL_H - panelH - 4))
 
   // Chiodo
   const nailTop  = Math.max(4, panelTop - 5)

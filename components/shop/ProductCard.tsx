@@ -16,7 +16,11 @@ function formatPrice(cents: number): string {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-  const minPrice = Math.min(...product.variants.map((v) => v.price))
+  const minPrice = Math.min(...product.variants.flatMap((v) =>
+    v.priceBreaks && v.priceBreaks.length > 0
+      ? v.priceBreaks.map((b) => b.price)
+      : [v.price]
+  ))
   const href = `/shop/${product.category}/${product.slug}`
 
   return (
