@@ -279,7 +279,6 @@ export default function CalendarioClientiPage() {
                   return (
                     <div
                       key={c.id}
-                      onClick={() => router.push(`/clienti?apri=${c.id}`)}
                       style={{
                         background: 'var(--s1)',
                         border: `1px solid ${col}44`,
@@ -289,6 +288,7 @@ export default function CalendarioClientiPage() {
                         cursor: 'pointer',
                         transition: 'background 0.12s',
                       }}
+                      onClick={() => router.push(`/clienti?apri=${c.id}`)}
                       onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--s2)' }}
                       onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--s1)' }}
                     >
@@ -322,6 +322,17 @@ export default function CalendarioClientiPage() {
                           )}
                         </div>
                       )}
+                      <button
+                        onClick={e => { e.stopPropagation(); window.open(`/api/scheda-pub/${c.id}`, '_blank') }}
+                        style={{
+                          marginTop: 8, width: '100%', padding: '5px 0',
+                          borderRadius: 'var(--r2)', border: '1px solid rgba(142,201,176,0.2)',
+                          background: 'transparent', color: 'var(--ac)',
+                          fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                        }}
+                      >
+                        📄 Scheda cliente
+                      </button>
                     </div>
                   )
                 })}

@@ -1234,6 +1234,14 @@ function ClienteForm({ initial, onSave, onClose }: {
 
         {/* Footer */}
         <div style={{ padding: '14px 24px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'flex-end', gap: 8, flexShrink: 0 }}>
+          {initial?.id && (
+            <button
+              onClick={() => window.open(`/api/scheda-pub/${initial.id}`, '_blank')}
+              style={{ padding: '9px 14px', borderRadius: 'var(--r2)', border: '1px solid rgba(142,201,176,0.25)', background: 'transparent', color: 'var(--ac)', cursor: 'pointer', fontSize: 13, marginRight: 'auto' }}
+            >
+              📄 Scheda cliente
+            </button>
+          )}
           <button onClick={onClose} style={{ padding: '9px 18px', borderRadius: 'var(--r2)', border: '1px solid var(--b1)', background: 'transparent', color: 'var(--t2)', cursor: 'pointer', fontSize: 13 }}>
             Annulla
           </button>
