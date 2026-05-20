@@ -17,16 +17,18 @@ interface PuzzleVariant {
   label: string
   tessera: 'tradizionale' | 'grande'
   size: string
+  widthCm: number
+  heightCm: number
   pieces: number
   price: number
 }
 
 const VARIANTS: PuzzleVariant[] = [
-  { id: 'puz-trad-13x18', tessera: 'tradizionale', size: '13×18 cm', pieces: 48,  label: 'Tradizionale 13×18 cm — 48 pezzi',  price: 1200 },
-  { id: 'puz-trad-20x30', tessera: 'tradizionale', size: '20×30 cm', pieces: 192, label: 'Tradizionale 20×30 cm — 192 pezzi', price: 2000 },
-  { id: 'puz-trad-30x40', tessera: 'tradizionale', size: '30×40 cm', pieces: 384, label: 'Tradizionale 30×40 cm — 384 pezzi', price: 2800 },
-  { id: 'puz-gran-20x30', tessera: 'grande',       size: '20×30 cm', pieces: 48,  label: 'Grande 20×30 cm — 48 pezzi',        price: 2000 },
-  { id: 'puz-gran-30x40', tessera: 'grande',       size: '30×40 cm', pieces: 96,  label: 'Grande 30×40 cm — 96 pezzi',        price: 2800 },
+  { id: 'puz-trad-13x18', tessera: 'tradizionale', size: '13×18 cm', widthCm: 13, heightCm: 18, pieces: 48,  label: 'Tradizionale 13×18 cm — 48 pezzi',  price: 1200 },
+  { id: 'puz-trad-20x30', tessera: 'tradizionale', size: '20×30 cm', widthCm: 20, heightCm: 30, pieces: 192, label: 'Tradizionale 20×30 cm — 192 pezzi', price: 2000 },
+  { id: 'puz-trad-30x40', tessera: 'tradizionale', size: '30×40 cm', widthCm: 30, heightCm: 40, pieces: 384, label: 'Tradizionale 30×40 cm — 384 pezzi', price: 2800 },
+  { id: 'puz-gran-20x30', tessera: 'grande',       size: '20×30 cm', widthCm: 20, heightCm: 30, pieces: 48,  label: 'Grande 20×30 cm — 48 pezzi',        price: 2000 },
+  { id: 'puz-gran-30x40', tessera: 'grande',       size: '30×40 cm', widthCm: 30, heightCm: 40, pieces: 96,  label: 'Grande 30×40 cm — 96 pezzi',        price: 2800 },
 ]
 
 export default function PuzzlePage() {
@@ -135,15 +137,16 @@ export default function PuzzlePage() {
             Anteprima foto
           </p>
 
-          {/* Preview puzzle */}
+          {/* Preview puzzle — proporzioni reali del formato selezionato */}
           <div style={{
             position: 'relative',
             width: '100%',
-            aspectRatio: '4/3',
+            aspectRatio: `${variant.widthCm} / ${variant.heightCm}`,
             borderRadius: 14,
             overflow: 'hidden',
             background: '#efefef',
             border: '1px solid #e0e0e0',
+            transition: 'aspect-ratio .3s ease',
           }}>
             {photoUrl ? (
               <img
@@ -188,16 +191,21 @@ export default function PuzzlePage() {
               </button>
             )}
 
-            {/* Overlay griglia puzzle */}
-            {photoUrl && (
-              <div style={{
-                position: 'absolute', inset: 0, pointerEvents: 'none',
-                backgroundImage: `
-                  repeating-linear-gradient(0deg, transparent, transparent calc(100%/6 - 1px), rgba(255,255,255,0.35) calc(100%/6 - 1px), rgba(255,255,255,0.35) calc(100%/6)),
-                  repeating-linear-gradient(90deg, transparent, transparent calc(100%/8 - 1px), rgba(255,255,255,0.35) calc(100%/8 - 1px), rgba(255,255,255,0.35) calc(100%/8))
-                `,
-              }} />
-            )}
+            {/* Overlay griglia puzzle — celle proporzionate ai pezzi reali */}
+            {photoUrl && (() => {
+              // calcola righe/colonne approssimative dalla radice quadrata dei pezzi
+              const cols = Math.round(Math.sqrt(variant.pieces * variant.widthCm / variant.heightCm))
+              const rows = Math.round(variant.pieces / cols)
+              return (
+                <div style={{
+                  position: 'absolute', inset: 0, pointerEvents: 'none',
+                  backgroundImage: `
+                    repeating-linear-gradient(0deg, transparent, transparent calc(100%/${rows} - 1px), rgba(255,255,255,0.35) calc(100%/${rows} - 1px), rgba(255,255,255,0.35) calc(100%/${rows})),
+                    repeating-linear-gradient(90deg, transparent, transparent calc(100%/${cols} - 1px), rgba(255,255,255,0.35) calc(100%/${cols} - 1px), rgba(255,255,255,0.35) calc(100%/${cols}))
+                  `,
+                }} />
+              )
+            })()}
           </div>
 
           {/* Controlli foto */}
