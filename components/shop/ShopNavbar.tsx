@@ -47,6 +47,23 @@ export function ShopNavbar() {
 
         {/* Categorie */}
         <nav className="shop-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 4, overflow: 'hidden' }}>
+          <Link
+            href="/shop/composizioni"
+            style={{
+              fontSize: '13px',
+              fontWeight: 700,
+              color: '#7d9b76',
+              textDecoration: 'none',
+              padding: '6px 14px',
+              borderRadius: 'var(--n-r2)',
+              background: 'rgba(125,155,118,0.1)',
+              whiteSpace: 'nowrap',
+              transition: 'all .15s',
+            }}
+            className="shop-nav-link"
+          >
+            ✦ Composizioni
+          </Link>
           {Object.values(CATEGORY_META).map((cat) => (
             <Link
               key={cat.slug}
