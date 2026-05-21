@@ -109,7 +109,8 @@ export default function CorniciPage() {
   const [passe,         setPasse]         = useState(PASSEPARTOUT_OPTIONS[0])
   const [qty,           setQty]           = useState(1)
   const [addedFeedback, setAddedFeedback] = useState(false)
-  const [galleryIdx, setGalleryIdx] = useState(0)
+  const [galleryIdx,    setGalleryIdx]    = useState(0)
+  const [rotated,       setRotated]       = useState(false)
 
   // Reset gallery index quando cambia la cornice
   const handleFrameChange = useCallback((f: typeof FRAMES[number]) => {
@@ -180,13 +181,18 @@ export default function CorniciPage() {
   )
   const total = unitPrice * qty
 
-  // Dimensioni anteprima (portrait)
-  const photoH = Math.round(PHOTO_W * (variant.heightCm / variant.widthCm))
+  // Reset orientamento quando cambia il formato
+  useEffect(() => { setRotated(false) }, [variant.id])
+
+  // Dimensioni effettive con orientamento
+  const effW = rotated ? variant.heightCm : variant.widthCm
+  const effH = rotated ? variant.widthCm  : variant.heightCm
+  const photoH = Math.round(PHOTO_W * (effH / effW))
 
   async function handleAddToCart() {
     if (uploading || isRendering) return
     const label = [
-      variant.label,
+      variant.label + (rotated ? ' — Orizzontale' : ''),
       printType.label,
       `Cornice ${frame.label}`,
       passeEnabled ? `Passepartout ${passe.label}` : null,
@@ -198,7 +204,7 @@ export default function CorniciPage() {
     if (photoUrl && photoNatSize) {
       setIsRendering(true)
       try {
-        const cW = Math.round(variant.widthCm * 100), cH = Math.round(variant.heightCm * 100)
+        const cW = Math.round(effW * 100), cH = Math.round(effH * 100)
         const blob = await renderSingleCanvasCornici(photoUrl, photoNatSize.w, photoNatSize.h, zoom, photoOffset.x, photoOffset.y, cW, cH)
         if (blob) {
           const res = await fetch('/api/shop/presign-photo', {
@@ -459,6 +465,83 @@ export default function CorniciPage() {
               Scegli la cornice, il tipo di carta e il passepartout.
             </p>
           </div>
+
+          {/* Upload foto */}
+          <Section title="La tua foto">
+            {!photoUrl ? (
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  width: '100%', padding: '20px',
+                  border: '2px dashed #c0c0c0', borderRadius: 12,
+                  background: 'transparent', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                  fontSize: '13px', fontWeight: 600, color: '#888', transition: 'all .15s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = '#00c1de'; e.currentTarget.style.color = '#00c1de' }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = '#c0c0c0'; e.currentTarget.style.color = '#888' }}
+              >
+                <Upload size={16} /> Carica la tua foto
+              </button>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'rgba(0,193,222,0.07)', borderRadius: 10, border: '1px solid rgba(0,193,222,0.2)' }}>
+                <Check size={16} color="#00c1de" />
+                <span style={{ fontSize: '12px', color: '#444', flex: 1 }}>
+                  {uploading ? 'Caricamento in corso…' : (photoFilename ?? 'Foto caricata')}
+                </span>
+                <button onClick={() => fileInputRef.current?.click()} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#00c1de', fontSize: '11px', fontWeight: 600, padding: 4 }}>
+                  Cambia
+                </button>
+                <button onClick={handleRemovePhoto} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', padding: 4 }}>
+                  <RotateCcw size={13} />
+                </button>
+              </div>
+            )}
+          </Section>
+
+          {/* Orientamento — visibile solo quando c'è una foto */}
+          {photoUrl && (
+            <Section title="Orientamento">
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button
+                  onClick={() => setRotated(false)}
+                  style={{
+                    flex: 1, padding: '12px 16px', borderRadius: 10,
+                    border: `2px solid ${!rotated ? '#00c1de' : '#e0e0e0'}`,
+                    background: !rotated ? 'rgba(0,193,222,0.06)' : '#fff',
+                    cursor: 'pointer', transition: 'all .15s',
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    fontFamily: 'Montserrat, sans-serif',
+                  }}
+                >
+                  <div style={{ width: 14, height: 20, border: `2px solid ${!rotated ? '#00c1de' : '#ccc'}`, borderRadius: 2, flexShrink: 0 }} />
+                  <div style={{ textAlign: 'left' }}>
+                    <p style={{ fontSize: '13px', fontWeight: 700, color: !rotated ? '#00c1de' : '#0a0a0a', marginBottom: 1 }}>Verticale</p>
+                    <p style={{ fontSize: '11px', color: '#888' }}>{variant.widthCm}×{variant.heightCm} cm</p>
+                  </div>
+                  {!rotated && <div style={{ marginLeft: 'auto', width: 18, height: 18, borderRadius: '50%', background: '#00c1de', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Check size={10} color="#fff" strokeWidth={3} /></div>}
+                </button>
+                <button
+                  onClick={() => setRotated(true)}
+                  style={{
+                    flex: 1, padding: '12px 16px', borderRadius: 10,
+                    border: `2px solid ${rotated ? '#00c1de' : '#e0e0e0'}`,
+                    background: rotated ? 'rgba(0,193,222,0.06)' : '#fff',
+                    cursor: 'pointer', transition: 'all .15s',
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    fontFamily: 'Montserrat, sans-serif',
+                  }}
+                >
+                  <div style={{ width: 20, height: 14, border: `2px solid ${rotated ? '#00c1de' : '#ccc'}`, borderRadius: 2, flexShrink: 0 }} />
+                  <div style={{ textAlign: 'left' }}>
+                    <p style={{ fontSize: '13px', fontWeight: 700, color: rotated ? '#00c1de' : '#0a0a0a', marginBottom: 1 }}>Orizzontale</p>
+                    <p style={{ fontSize: '11px', color: '#888' }}>{variant.heightCm}×{variant.widthCm} cm</p>
+                  </div>
+                  {rotated && <div style={{ marginLeft: 'auto', width: 18, height: 18, borderRadius: '50%', background: '#00c1de', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Check size={10} color="#fff" strokeWidth={3} /></div>}
+                </button>
+              </div>
+            </Section>
+          )}
 
           {/* Formato */}
           <Section title="Formato">
@@ -810,7 +893,11 @@ function PhotoSlot({
       setIsDragging(false)
     }
     const onMouseMove = (e: MouseEvent) => onMove(e.clientX, e.clientY)
-    const onTouchMove = (e: TouchEvent) => { e.preventDefault(); onMove(e.touches[0].clientX, e.touches[0].clientY) }
+    const onTouchMove = (e: TouchEvent) => {
+      if (!dragRef.current) return  // non bloccare lo scroll se non si sta trascinando
+      e.preventDefault()
+      onMove(e.touches[0].clientX, e.touches[0].clientY)
+    }
 
     window.addEventListener('mousemove', onMouseMove)
     window.addEventListener('mouseup',   onEnd)
@@ -857,7 +944,7 @@ function PhotoSlot({
           position: 'relative',
           cursor: !canDrag ? 'default' : isDragging ? 'grabbing' : 'grab',
           userSelect: 'none',
-          touchAction: canDrag ? 'none' : 'auto',
+          touchAction: 'none',
           backgroundImage: `url(${photoUrl})`,
           backgroundRepeat: 'no-repeat',
           backgroundSize: naturalSize ? `${imgW}px ${imgH}px` : 'cover',

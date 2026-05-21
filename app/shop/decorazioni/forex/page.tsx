@@ -730,7 +730,7 @@ function PhotoSlot({
     }
     const onEnd = () => { if (!dragRef.current) return; dragRef.current = null; setIsDragging(false) }
     const onMouseMove = (e: MouseEvent) => onMove(e.clientX, e.clientY)
-    const onTouchMove = (e: TouchEvent) => { e.preventDefault(); onMove(e.touches[0].clientX, e.touches[0].clientY) }
+    const onTouchMove = (e: TouchEvent) => { if (!dragRef.current) return; e.preventDefault(); onMove(e.touches[0].clientX, e.touches[0].clientY) }
     window.addEventListener('mousemove',  onMouseMove)
     window.addEventListener('mouseup',    onEnd)
     window.addEventListener('touchmove',  onTouchMove, { passive: false })
@@ -771,7 +771,7 @@ function PhotoSlot({
           overflow: 'hidden', position: 'relative',
           cursor: !canDrag ? 'default' : isDragging ? 'grabbing' : 'grab',
           userSelect: 'none',
-          touchAction: canDrag ? 'none' : 'auto',
+          touchAction: 'none',
           backgroundImage: `url(${photoUrl})`,
           backgroundRepeat: 'no-repeat',
           backgroundSize: naturalSize ? `${imgW}px ${imgH}px` : 'cover',
