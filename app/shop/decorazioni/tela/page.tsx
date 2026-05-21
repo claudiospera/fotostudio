@@ -633,23 +633,20 @@ function RoomScene({
     return () => ro.disconnect()
   }, [])
 
-  const ROOM_W  = containerW
-  const ROOM_H  = Math.round(containerW * (360 / 420))
-  const FLOOR_H = Math.round(ROOM_H * 0.22)
-  const WALL_H  = ROOM_H - FLOOR_H
+  const containerH = Math.round(containerW * 864 / 1184)
 
   const CM_SCALE_BASE = (containerW / 420) * 3.6
   const minSidePx     = Math.round(containerW * 0.20)
   const shortSideCm   = Math.min(widthCm, heightCm)
-  const maxCmScale    = Math.min((ROOM_W * 0.88) / widthCm, (WALL_H * 0.80) / heightCm)
+  const maxCmScale    = Math.min((containerW * 0.62) / widthCm, (containerH * 0.44) / heightCm)
   const CM_SCALE      = Math.min(Math.max(CM_SCALE_BASE, minSidePx / shortSideCm), maxCmScale)
   const panelW = Math.round(widthCm  * CM_SCALE)
   const panelH = Math.round(heightCm * CM_SCALE)
 
-  const panelLeft    = Math.round((ROOM_W - panelW) / 2)
-  const panelTopRaw  = Math.round(WALL_H * 0.42 - panelH / 2)
-  const panelTop     = Math.max(4, Math.min(panelTopRaw, WALL_H - panelH - 4))
-  const nailTop      = Math.max(4, panelTop - 5)
+  const panelLeft   = Math.round(containerW * 0.40 - panelW / 2)
+  const panelTopRaw = Math.round(containerH * 0.24 - panelH / 2)
+  const panelTop    = Math.max(6, Math.min(panelTopRaw, containerH * 0.47 - panelH))
+  const nailTop     = Math.max(4, panelTop - 5)
 
   // Bordo tela: spessore laterale simulato
   const TELA_BORDER = Math.max(6, Math.round(panelW * 0.04))
@@ -659,82 +656,19 @@ function RoomScene({
   return (
     <div
       ref={containerRef}
-      style={{ width: '100%', height: ROOM_H, position: 'relative', borderRadius: 16, overflow: 'hidden', userSelect: 'none' }}
+      style={{ width: '100%', height: containerH, position: 'relative', borderRadius: 16, overflow: 'hidden', userSelect: 'none' }}
     >
-      {/* Muro */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: WALL_H, background: 'linear-gradient(180deg, #ede5d8 0%, #e4dcd0 50%, #dbd2c5 100%)' }} />
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: WALL_H, backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 47px, rgba(0,0,0,0.018) 47px, rgba(0,0,0,0.018) 48px)', pointerEvents: 'none' }} />
-
-      {/* Pavimento */}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: FLOOR_H, background: 'linear-gradient(180deg, #c4a07a 0%, #b08866 100%)' }} />
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: FLOOR_H, backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 27px, rgba(0,0,0,0.04) 27px, rgba(0,0,0,0.04) 29px)', pointerEvents: 'none' }} />
-
-      {/* Battiscopa */}
-      <div style={{ position: 'absolute', bottom: FLOOR_H, left: 0, right: 0, height: Math.max(8, Math.round(containerW * 0.022)), background: 'linear-gradient(180deg, #f5ede0 0%, #e8dfd2 100%)', boxShadow: '0 2px 4px rgba(0,0,0,0.12)' }} />
-
-      {/* Ombre pavimento */}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, width: '30%', height: FLOOR_H, background: 'linear-gradient(90deg, rgba(0,0,0,0.12) 0%, transparent 100%)', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', bottom: 0, right: 0, width: '30%', height: FLOOR_H, background: 'linear-gradient(270deg, rgba(0,0,0,0.10) 0%, transparent 100%)', pointerEvents: 'none' }} />
-
-      {/* ── Divano moderno ── */}
-      {(() => {
-        const SW = Math.round(ROOM_W * 0.52)
-        const SX = Math.round((ROOM_W - SW) / 2)
-        const BH = Math.round(FLOOR_H * 0.65)
-        const RDX = Math.round(BH * 0.22)
-        return (
-          <div style={{ position:'absolute', left:SX, top:WALL_H - BH, width:SW, height:BH + FLOOR_H, background:'#35353e', borderRadius:`${RDX}px ${RDX}px 0 0`, boxShadow:'0 -6px 24px rgba(0,0,0,0.22)', pointerEvents:'none', zIndex:1 }}>
-            <div style={{ position:'absolute', top:0, left:'33%', width:2, height:Math.round(BH*0.6), background:'rgba(0,0,0,0.3)' }} />
-            <div style={{ position:'absolute', top:0, left:'67%', width:2, height:Math.round(BH*0.6), background:'rgba(0,0,0,0.3)' }} />
-            <div style={{ position:'absolute', top:4, left:'5%', width:'90%', height:2, background:'rgba(255,255,255,0.06)', borderRadius:2 }} />
-          </div>
-        )
-      })()}
-
-      {/* ── Piante esotiche ── */}
-      {[
-        { isLeft: true,  px: Math.round(ROOM_W * 0.06) },
-        { isLeft: false, px: Math.round(ROOM_W * 0.94) },
-      ].map(({ isLeft, px }) => {
-        const ph = Math.round(FLOOR_H * 0.58)
-        const pw = Math.round(ph * 0.85)
-        const maxLH = Math.round(WALL_H * 0.46)
-        const leafDefs = [
-          { rot: isLeft ? -38 :  38, ratio: 0.90, wr: 0.38 },
-          { rot: isLeft ?  12 : -12, ratio: 1.00, wr: 0.40 },
-          { rot: isLeft ? -18 :  18, ratio: 0.78, wr: 0.35 },
-          { rot: isLeft ?  55 : -55, ratio: 0.65, wr: 0.32 },
-        ]
-        return (
-          <div key={isLeft ? 'l' : 'r'} style={{ position:'absolute', top:0, left:0, right:0, bottom:0, pointerEvents:'none' }}>
-            {leafDefs.map(({ rot, ratio, wr }, i) => {
-              const lh = Math.round(maxLH * ratio)
-              const lw = Math.round(lh * wr)
-              return (
-                <div key={i} style={{
-                  position:'absolute', width:lw, height:lh,
-                  bottom: FLOOR_H + ph - 6,
-                  left: px - Math.round(lw / 2),
-                  background: i % 2 === 0 ? 'linear-gradient(160deg,#3a8c6a,#1b4332)' : 'linear-gradient(160deg,#2d6a4f,#0d2b1f)',
-                  borderRadius: isLeft ? '50% 5% 50% 50%' : '5% 50% 50% 50%',
-                  transform: `rotate(${rot}deg)`,
-                  transformOrigin: 'bottom center',
-                }} />
-              )
-            })}
-            <div style={{
-              position:'absolute', width:pw, height:ph,
-              bottom: FLOOR_H - Math.round(FLOOR_H * 0.12),
-              left: px - Math.round(pw / 2),
-              background: 'linear-gradient(135deg,#9b7e5a,#6b5535)',
-              clipPath: 'polygon(12% 0%,88% 0%,100% 100%,0% 100%)',
-            }} />
-          </div>
-        )
-      })}
+      {/* Foto ambiente reale */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/images/shop/scene-ambiente.png"
+        alt=""
+        draggable={false}
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', pointerEvents: 'none' }}
+      />
 
       {/* Chiodo */}
-      <div style={{ position: 'absolute', top: nailTop, left: Math.round(ROOM_W / 2), transform: 'translateX(-50%)', width: 5, height: 5, borderRadius: '50%', background: '#8a7060', boxShadow: '0 1px 2px rgba(0,0,0,0.35)', zIndex: 3 }} />
+      <div style={{ position: 'absolute', top: nailTop, left: Math.round(containerW * 0.40), transform: 'translateX(-50%)', width: 5, height: 5, borderRadius: '50%', background: '#8a7060', boxShadow: '0 1px 2px rgba(0,0,0,0.35)', zIndex: 3 }} />
 
       {/* Tela con bordo laterale simulato */}
       <div
@@ -791,10 +725,8 @@ function RoomScene({
         </div>
       </div>
 
-      {/* Luce ambiente */}
-      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 35% 15%, rgba(255,240,200,0.14) 0%, transparent 65%)', pointerEvents: 'none', zIndex: 1 }} />
-      {/* Vignetta */}
-      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 0% 50%, rgba(0,0,0,0.10) 0%, transparent 50%), radial-gradient(ellipse at 100% 50%, rgba(0,0,0,0.10) 0%, transparent 50%)', pointerEvents: 'none', zIndex: 1 }} />
+      {/* Vignetta laterale */}
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 0% 50%, rgba(0,0,0,0.08) 0%, transparent 45%), radial-gradient(ellipse at 100% 50%, rgba(0,0,0,0.08) 0%, transparent 45%)', pointerEvents: 'none', zIndex: 1 }} />
     </div>
   )
 }

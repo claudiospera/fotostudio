@@ -9,14 +9,6 @@ import { Upload, Download, RefreshCw } from 'lucide-react'
 
 const AC = '#7d9b76'
 
-const WALL_COLORS = [
-  { id: 'bianco',        label: 'Bianco',       hex: '#ffffff' },
-  { id: 'crema',         label: 'Crema',        hex: '#f5f0e8' },
-  { id: 'grigio-chiaro', label: 'Grigio chiaro',hex: '#e0ddd8' },
-  { id: 'grigio-scuro',  label: 'Grigio scuro', hex: '#2d2d2d' },
-  { id: 'verde-salvia',  label: 'Verde salvia',  hex: '#c8d5c0' },
-]
-
 // ─── Canvas rendering ─────────────────────────────────────────────────────────
 
 function renderSlotCover(
@@ -68,60 +60,56 @@ function drawCanvas(
   canvas: HTMLCanvasElement,
   img: HTMLImageElement,
   composizione: Composizione,
-  wallColor: string,
+  roomImg: HTMLImageElement | null,
 ) {
   const CW = canvas.width
   const CH = canvas.height
   const ctx = canvas.getContext('2d')
   if (!ctx) return
 
-  // Wall background
-  ctx.fillStyle = wallColor
-  ctx.fillRect(0, 0, CW, CH)
-
-  // Subtle wall texture
-  ctx.fillStyle = 'rgba(0,0,0,0.015)'
-  for (let y = 0; y < CH; y += 40) {
-    ctx.fillRect(0, y, CW, 1)
+  // Draw room photo background (cover, align top)
+  if (roomImg) {
+    const coverScale = CW / roomImg.naturalWidth
+    const drawH = roomImg.naturalHeight * coverScale
+    ctx.drawImage(roomImg, 0, 0, CW, drawH)
+    // Fill any remaining bottom gap if photo is shorter than canvas
+    if (drawH < CH) {
+      ctx.fillStyle = '#e4ddd4'
+      ctx.fillRect(0, drawH, CW, CH - drawH)
+    }
+  } else {
+    ctx.fillStyle = '#e8e3db'
+    ctx.fillRect(0, 0, CW, CH)
   }
 
   const slots = composizione.slots
 
-  // Compute bounding box of all slots (in %, viewBox 100×70)
-  const minX = Math.min(...slots.map(s => s.x))
-  const minY = Math.min(...slots.map(s => s.y))
-  const maxX = Math.max(...slots.map(s => s.x + s.w))
-  const maxY = Math.max(...slots.map(s => s.y + s.h))
+  // Wall zone: upper 56% of canvas (above sofa in photo)
+  const WALL_ZONE_H = Math.round(CH * 0.56)
+  const MARGIN_X = 0.08
+  const MARGIN_Y = 0.06
+  const availW = CW * (1 - MARGIN_X * 2)
+  const availH = WALL_ZONE_H * (1 - MARGIN_Y * 2)
 
-  const bbW = maxX - minX  // in viewBox %
-  const bbH = maxY - minY
-
-  // Scale bounding box to fit canvas with margin
-  const MARGIN = 0.1 // 10% margin each side
-  const availW = CW * (1 - MARGIN * 2)
-  const availH = CH * (1 - MARGIN * 2)
-
-  // Scale from viewBox (0–100 x 0–70) to canvas
-  const scaleW = availW / (bbW * CW / 100)
-  const scaleH = availH / (bbH * CH / 100)
-  // Actually simpler: just map viewBox coords to canvas with margins
   const vbW = 100, vbH = 70
   const scale = Math.min(availW / vbW, availH / vbH)
-  const offsetX = (CW - vbW * scale) / 2
-  const offsetY = (CH - vbH * scale) / 2
+  // Center horizontally at 40% of canvas (matches room photo focal point)
+  const centerX = CW * 0.42
+  const offsetX = centerX - (vbW * scale) / 2
+  const offsetY = MARGIN_Y * WALL_ZONE_H + (availH - vbH * scale) / 2
 
   // Ombra proiettata sotto ogni pannello
   ctx.save()
-  ctx.shadowColor = 'rgba(0,0,0,0.28)'
-  ctx.shadowBlur   = scale * 1.5
+  ctx.shadowColor = 'rgba(0,0,0,0.32)'
+  ctx.shadowBlur   = scale * 1.8
   ctx.shadowOffsetX = scale * 0.2
-  ctx.shadowOffsetY = scale * 0.8
+  ctx.shadowOffsetY = scale * 1.0
   slots.forEach(slot => {
     const x = offsetX + slot.x * scale
     const y = offsetY + slot.y * scale
     const w = slot.w * scale
     const h = slot.h * scale
-    ctx.fillStyle = '#ddd'
+    ctx.fillStyle = '#bbb'
     ctx.fillRect(x, y, w, h)
   })
   ctx.restore()
@@ -145,7 +133,7 @@ function drawCanvas(
   // Watermark
   ctx.save()
   ctx.globalAlpha = 0.18
-  ctx.fillStyle = wallColor === '#2d2d2d' ? '#ffffff' : '#000000'
+  ctx.fillStyle = '#000000'
   ctx.font = `${Math.round(CW * 0.016)}px Montserrat, sans-serif`
   ctx.textAlign = 'right'
   ctx.fillText('storiedaraccontare.it', CW - 12, CH - 10)
@@ -156,20 +144,27 @@ function drawCanvas(
 
 export function WallPreviewTool() {
   const [selectedId, setSelectedId]   = useState(COMPOSIZIONI[0].id)
-  const [wallColor,  setWallColor]    = useState(WALL_COLORS[1].hex)
   const [photoImg,   setPhotoImg]     = useState<HTMLImageElement | null>(null)
   const [photoName,  setPhotoName]    = useState<string>('')
   const [isLoading,  setIsLoading]    = useState(false)
-  const canvasRef  = useRef<HTMLCanvasElement>(null)
+  const canvasRef    = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const roomImgRef   = useRef<HTMLImageElement | null>(null)
 
   const composizione = COMPOSIZIONI.find(c => c.id === selectedId) ?? COMPOSIZIONI[0]
+
+  // Preload room photo
+  useEffect(() => {
+    const img = new window.Image()
+    img.onload = () => { roomImgRef.current = img }
+    img.src = '/images/shop/scene-ambiente.png'
+  }, [])
 
   const redraw = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas || !photoImg) return
-    drawCanvas(canvas, photoImg, composizione, wallColor)
-  }, [photoImg, composizione, wallColor])
+    drawCanvas(canvas, photoImg, composizione, roomImgRef.current)
+  }, [photoImg, composizione])
 
   useEffect(() => { redraw() }, [redraw])
 
@@ -315,30 +310,6 @@ export function WallPreviewTool() {
               </p>
             </div>
 
-            {/* Colore parete */}
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#888', marginBottom: 10 }}>
-                Colore parete
-              </label>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {WALL_COLORS.map(wc => (
-                  <button
-                    key={wc.id}
-                    title={wc.label}
-                    onClick={() => setWallColor(wc.hex)}
-                    style={{
-                      width: 32, height: 32, borderRadius: '50%',
-                      background: wc.hex,
-                      border: wallColor === wc.hex ? `3px solid ${AC}` : '2px solid #d0c8c0',
-                      cursor: 'pointer',
-                      transition: 'border .15s',
-                      boxShadow: wallColor === wc.hex ? `0 0 0 2px white, 0 0 0 4px ${AC}` : 'none',
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-
             {/* Azioni */}
             {photoImg && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -395,7 +366,7 @@ export function WallPreviewTool() {
                 height: 'auto',
                 borderRadius: 16,
                 display: 'block',
-                background: wallColor,
+                background: '#e8e3db',
                 boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
               }}
             />
@@ -405,14 +376,11 @@ export function WallPreviewTool() {
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center',
                 borderRadius: 16,
-                background: `${wallColor}ee`,
+                background: 'rgba(232,227,219,0.82)',
                 gap: 12,
               }}>
-                <Upload size={40} color={wallColor === '#2d2d2d' ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.2)'} />
-                <p style={{
-                  fontSize: '15px', fontWeight: 600, margin: 0,
-                  color: wallColor === '#2d2d2d' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.3)',
-                }}>
+                <Upload size={40} color="rgba(0,0,0,0.2)" />
+                <p style={{ fontSize: '15px', fontWeight: 600, margin: 0, color: 'rgba(0,0,0,0.35)' }}>
                   Carica una foto per vedere l'anteprima
                 </p>
               </div>
