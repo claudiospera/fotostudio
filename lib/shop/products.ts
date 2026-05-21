@@ -320,12 +320,12 @@ export const PRODUCTS: Product[] = [
   {
     id: 'cuscino',
     slug: 'cuscino',
-    name: 'Cuscino Personalizzato',
-    shortDescription: 'Cuscino 40×40 cm con la tua foto',
-    description: 'Cuscino in pile 40×40 cm con stampa fotografica personalizzata. Include imbottitura.',
+    name: 'Cuscino 40×40',
+    shortDescription: 'Federa quadrata in raso opaco con la tua foto — colori Rosso, Celeste, Rosa',
+    description: 'Federa quadrata con lato stampabile in raso opaco e retro in cotone colorato. Colori disponibili: Rosso, Celeste, Rosa. Specificare nelle note il colore desiderato.',
     category: 'gadget',
     status: 'available',
-    images: ['https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?w=800&q=80'],
+    images: ['/images/shop/gadget/cuscino.png'],
     variants: [
       { id: 'cus-40x40', label: '40×40 cm', price: 2500 },
     ],
@@ -364,7 +364,7 @@ export const PRODUCTS: Product[] = [
     description: 'Tazza in ceramica bianca da 325ml con stampa fotografica personalizzata. Lavabile in lavastoviglie.',
     category: 'gadget',
     status: 'available',
-    images: ['https://images.unsplash.com/photo-1572119865084-43c285814d63?w=800&q=80'],
+    images: ['/images/shop/gadget/tazza.png'],
     variants: [
       { id: 'taz-bianca', label: 'Tazza bianca', price: 1500 },
     ],
@@ -380,7 +380,7 @@ export const PRODUCTS: Product[] = [
     description: 'Salvadanaio in ceramica con stampa fotografica personalizzata. Originale idea regalo.',
     category: 'gadget',
     status: 'available',
-    images: ['https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800&q=80'],
+    images: ['/images/shop/gadget/salvadanaio.png'],
     variants: [
       { id: 'sal-std', label: 'Standard', price: 1500 },
     ],
@@ -398,7 +398,7 @@ export const PRODUCTS: Product[] = [
       'Mantiene le bevande fredde fino a 24h e calde fino a 12h.',
     category: 'gadget',
     status: 'available',
-    images: ['https://images.unsplash.com/photo-1589365278144-c9e705f843ba?w=800&q=80'],
+    images: ['/images/shop/gadget/borraccia-inox.png'],
     variants: [
       { id: 'bor-inox-600', label: '600ml', price: 1500 },
     ],
@@ -407,16 +407,50 @@ export const PRODUCTS: Product[] = [
   },
 
   {
-    id: 'portachiavi',
-    slug: 'portachiavi',
-    name: 'Portachiavi Plexilite',
-    shortDescription: 'Portachiavi in plexilite con la tua foto',
-    description: 'Portachiavi in plexilite trasparente con stampa fotografica. Robusto e leggero, ottimo come ricordino.',
+    id: 'borraccia-alluminio',
+    slug: 'borraccia-alluminio',
+    name: 'Borraccia Classica Alluminio',
+    shortDescription: 'Borraccia in alluminio con moschettone e la tua foto',
+    description:
+      'Borraccia classica in alluminio con moschettone e stampa fotografica personalizzata. ' +
+      'Leggera e robusta, ideale per escursioni, sport e uso quotidiano.',
     category: 'gadget',
     status: 'available',
-    images: ['https://images.unsplash.com/photo-1582139329536-e7284fece509?w=800&q=80'],
+    images: ['/images/shop/gadget/borraccia-alluminio.png'],
     variants: [
-      { id: 'por-plexi', label: 'Plexilite', price: 1000 },
+      { id: 'bor-alu-std', label: 'Standard', price: 1200 },
+    ],
+    featured: false,
+    createdAt: '2026-01-01T00:00:00Z',
+  },
+
+  {
+    id: 'portachiavi',
+    slug: 'portachiavi',
+    name: 'Portachiavi in Plexilite',
+    shortDescription: 'Portachiavi in plexiglass quadrato 5×5 cm con la tua foto',
+    description: 'Portachiavi in plexiglass quadrato 5×5 cm con stampa fotografica personalizzata. Robusto e leggero, ottimo come ricordino o idea regalo.',
+    category: 'gadget',
+    status: 'available',
+    images: ['/images/shop/gadget/portachiavi.jpg'],
+    variants: [
+      { id: 'por-plexi', label: 'Plexilite 5×5 cm', price: 1000 },
+    ],
+    featured: false,
+    createdAt: '2026-01-01T00:00:00Z',
+  },
+
+  {
+    id: 'portachiavi-ecopelle',
+    slug: 'portachiavi-ecopelle',
+    name: 'Portachiavi in Ecopelle',
+    shortDescription: 'Portachiavi in ecopelle 5×5 cm — stampa fronte e retro',
+    description: 'Portachiavi in ecopelle di alta qualità. Morbido al tatto con anello in acciaio inox. Stampa fronte retro. Misura 5×5 cm.',
+    category: 'gadget',
+    status: 'available',
+    images: ['/images/shop/gadget/portachiavi-ecopelle.jpg'],
+    variants: [
+      { id: 'por-eco', label: 'Ecopelle 5×5 cm', price: 1000 },
     ],
     featured: false,
     createdAt: '2026-01-01T00:00:00Z',
@@ -430,7 +464,7 @@ export const PRODUCTS: Product[] = [
     description: 'Tappetino mouse rettangolare con base in gomma antiscivolo e superficie in tessuto. Stampa fotografica ad alta risoluzione.',
     category: 'gadget',
     status: 'available',
-    images: ['https://images.unsplash.com/photo-1616788494707-ec28f08d05a1?w=800&q=80'],
+    images: ['/images/shop/gadget/tappetino-mouse.png'],
     variants: [
       { id: 'tap-rett', label: 'Rettangolare', price: 1300 },
     ],

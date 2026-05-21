@@ -79,6 +79,7 @@ export interface CartItem {
   price: number       // in centesimi
   image: string
   filename?: string   // nome originale del file caricato dal cliente
+  notes?: string      // info aggiuntive libere (es. URL retro portachiavi, colore scelto)
 }
 
 export interface Cart {
