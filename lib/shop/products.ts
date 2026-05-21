@@ -472,21 +472,6 @@ export const PRODUCTS: Product[] = [
     createdAt: '2026-01-01T00:00:00Z',
   },
 
-  {
-    id: 'pannello',
-    slug: 'pannello',
-    name: 'Pannello 30×40',
-    shortDescription: 'Pannello fotografico rigido 30×40 cm',
-    description: 'Pannello fotografico rigido 30×40 cm. Stampa ad alta qualità su supporto rigido, ideale come decorazione da appoggiare o appendere.',
-    category: 'gadget',
-    status: 'available',
-    images: ['https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800&q=80'],
-    variants: [
-      { id: 'pan-30x40', label: '30×40 cm', price: 3000 },
-    ],
-    featured: false,
-    createdAt: '2026-01-01T00:00:00Z',
-  },
 ]
 
 // ─── Helper ───────────────────────────────────────────────────────────────
