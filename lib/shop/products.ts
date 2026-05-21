@@ -459,14 +459,14 @@ export const PRODUCTS: Product[] = [
   {
     id: 'tappetino-mouse',
     slug: 'tappetino-mouse',
-    name: 'Tappetino Mouse Personalizzato',
-    shortDescription: 'Tappetino mouse rettangolare con la tua foto',
-    description: 'Tappetino mouse rettangolare con base in gomma antiscivolo e superficie in tessuto. Stampa fotografica ad alta risoluzione.',
+    name: 'Tappetino Mouse Rettangolare',
+    shortDescription: 'Mousepad rettangolare 19×23 cm con la tua foto',
+    description: 'Mousepad rettangolare con superficie in poliestere e supporto in gomma. Dimensioni 19×23 cm, spessore 3 mm.',
     category: 'gadget',
     status: 'available',
     images: ['/images/shop/gadget/tappetino-mouse.png'],
     variants: [
-      { id: 'tap-rett', label: 'Rettangolare', price: 1300 },
+      { id: 'tap-rett', label: '19×23 cm', price: 1300, widthCm: 19, heightCm: 23 },
     ],
     featured: false,
     createdAt: '2026-01-01T00:00:00Z',
