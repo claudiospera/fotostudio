@@ -87,7 +87,7 @@ function Hero() {
         flexWrap: 'wrap', marginTop: 48,
       }}>
         {[
-          { val: '10',  label: 'composizioni disponibili' },
+          { val: '30',  label: 'composizioni disponibili' },
           { val: '3',   label: 'materiali a scelta' },
           { val: '48h', label: 'preventivo personalizzato' },
           { val: '100%', label: 'handmade in Italia' },
@@ -121,7 +121,7 @@ function GalleriaHeader() {
       }}
     >
       <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: AC, marginBottom: 10 }}>
-        10 idee di composizione
+        30 composizioni disponibili
       </p>
       <h2 style={{
         fontFamily: 'Playfair Display, Georgia, serif',
@@ -132,7 +132,7 @@ function GalleriaHeader() {
         Scegli il tuo layout preferito
       </h2>
       <p style={{ fontSize: '15px', color: '#6b6660', maxWidth: 500, margin: '0 auto', lineHeight: 1.65 }}>
-        Ogni composizione include misure reali, materiali consigliati e un'anteprima proporzionata.
+        30 layout divisi in 6 gruppi tematici, dalle composizioni speciali 30×60 fino ai gallery wall da 6 pannelli.
         Clicca su "Visualizza con la tua foto" per provarla in live.
       </p>
     </div>

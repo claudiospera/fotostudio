@@ -6,15 +6,14 @@ import { COMPOSIZIONI, type Composizione, type Slot } from '@/lib/composizioni-d
 
 // ─── Colori ──────────────────────────────────────────────────────────────────
 
-const AC = '#7d9b76'           // sage green accent
-const WALL_BG  = '#ede8e0'    // parete beige
-const PANEL_BG = '#c8c0b4'    // tela grigio caldo
-const PANEL_LIGHT = '#d4ccc0' // tela chiaro (highlight)
+const AC = '#7d9b76'
+const WALL_BG    = '#ede8e0'
+const PANEL_BG   = '#c8c0b4'
+const PANEL_LIGHT = '#d4ccc0'
 
 // ─── SVG preview di una composizione ────────────────────────────────────────
 
 function CompositionSvg({ slots, panoramica }: { slots: Slot[]; panoramica?: boolean }) {
-  // viewBox: 100 × 70
   const VW = 100, VH = 70
 
   return (
@@ -23,18 +22,14 @@ function CompositionSvg({ slots, panoramica }: { slots: Slot[]; panoramica?: boo
       style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 10 }}
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Sfondo muro */}
       <rect width={VW} height={VH} fill={WALL_BG} />
-      {/* Texture muro sottile */}
       {Array.from({ length: 7 }).map((_, i) => (
         <line key={i} x1={0} y1={i * 10} x2={VW} y2={i * 10} stroke="rgba(0,0,0,0.03)" strokeWidth={0.4} />
       ))}
 
-      {/* Pavimento */}
       <rect x={0} y={VH * 0.82} width={VW} height={VH * 0.18} fill="#c4a07a" />
       <line x1={0} y1={VH * 0.82} x2={VW} y2={VH * 0.82} stroke="#b89060" strokeWidth={0.5} />
 
-      {/* Pannelli */}
       <defs>
         <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
           <feDropShadow dx="0.4" dy="1.2" stdDeviation="1" floodColor="rgba(0,0,0,0.22)" />
@@ -57,7 +52,6 @@ function CompositionSvg({ slots, panoramica }: { slots: Slot[]; panoramica?: boo
         const y  = slot.y  * VH / 100
         const sw = slot.w  * VW / 100
         const sh = slot.h  * VH / 100
-
         return (
           <g key={i} filter="url(#shadow)">
             <rect
@@ -65,13 +59,11 @@ function CompositionSvg({ slots, panoramica }: { slots: Slot[]; panoramica?: boo
               fill={panoramica ? 'url(#pano-grad)' : 'url(#panel-grad)'}
               rx={0.5}
             />
-            {/* Highlight bordo superiore */}
             <rect x={x} y={y} width={sw} height={0.6} fill="rgba(255,255,255,0.3)" rx={0.3} />
           </g>
         )
       })}
 
-      {/* Per la panoramica: linee di divisione verticali tra i pannelli */}
       {panoramica && slots.map((slot, i) => {
         if (i === 0) return null
         const x = slot.x * VW / 100
@@ -80,7 +72,6 @@ function CompositionSvg({ slots, panoramica }: { slots: Slot[]; panoramica?: boo
         return <line key={`div-${i}`} x1={x} y1={y} x2={x} y2={y + sh} stroke={WALL_BG} strokeWidth={1.5} />
       })}
 
-      {/* Righello stilizzato in basso a destra */}
       <g opacity={0.5}>
         <line x1={VW - 18} y1={VH - 4} x2={VW - 3} y2={VH - 4} stroke="#888" strokeWidth={0.6} />
         <line x1={VW - 18} y1={VH - 5.5} x2={VW - 18} y2={VH - 2.5} stroke="#888" strokeWidth={0.6} />
@@ -99,9 +90,15 @@ const BADGE_COLORS: Record<string, { bg: string; color: string }> = {
   'Design esclusivo':      { bg: '#f3e8ff', color: '#6b21a8' },
   'Effetto wow':           { bg: '#dcfce7', color: '#166534' },
   'Impatto massimo':       { bg: '#fee2e2', color: '#991b1b' },
+  'Grande formato':        { bg: '#fff7ed', color: '#9a3412' },
+  'Grande impatto':        { bg: '#fef2f2', color: '#b91c1c' },
+  'Gallery wall':          { bg: '#ecfdf5', color: '#065f46' },
+  'Classico':              { bg: '#f8fafc', color: '#475569' },
+  'Geometrico':            { bg: '#eef2ff', color: '#3730a3' },
+  'Narrativo':             { bg: '#fdf4ff', color: '#7e22ce' },
 }
 
-function CompositionCard({ c }: { c: Composizione }) {
+function CompositionCard({ c, index }: { c: Composizione; index: number }) {
   const badge = c.badge ? BADGE_COLORS[c.badge] : null
 
   return (
@@ -126,39 +123,40 @@ function CompositionCard({ c }: { c: Composizione }) {
         el.style.transform = 'translateY(0)'
       }}
     >
-      {/* SVG preview */}
-      <div style={{ padding: '14px 14px 8px' }}>
-        <CompositionSvg slots={c.slots} panoramica={c.panoramica} />
-      </div>
-
-      {/* Info */}
-      <div style={{ padding: '8px 18px 18px', flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {/* Badge */}
+      {/* Numero composizione */}
+      <div style={{ padding: '10px 14px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: '10px', fontWeight: 700, color: '#bbb', letterSpacing: '.1em' }}>
+          N° {String(index + 1).padStart(2, '0')}
+        </span>
         {badge && (
           <span style={{
-            display: 'inline-block',
             fontSize: '10px', fontWeight: 700,
-            letterSpacing: '.08em', textTransform: 'uppercase',
+            letterSpacing: '.06em', textTransform: 'uppercase',
             background: badge.bg, color: badge.color,
-            padding: '3px 8px', borderRadius: 20,
-            alignSelf: 'flex-start',
+            padding: '2px 8px', borderRadius: 20,
           }}>
             {c.badge}
           </span>
         )}
+      </div>
 
-        {/* Nome */}
+      {/* SVG preview */}
+      <div style={{ padding: '8px 14px' }}>
+        <CompositionSvg slots={c.slots} panoramica={c.panoramica} />
+      </div>
+
+      {/* Info */}
+      <div style={{ padding: '4px 18px 18px', flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
         <h3 style={{
           fontFamily: 'Playfair Display, Georgia, serif',
-          fontWeight: 700, fontSize: '17px',
+          fontWeight: 700, fontSize: '16px',
           color: '#1a1a1a', lineHeight: 1.2,
           margin: 0,
         }}>
           {c.nome}
         </h3>
 
-        {/* Pezzi + materiale */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
           <span style={{
             fontSize: '11px', fontWeight: 700,
             background: `${AC}18`, color: AC,
@@ -166,33 +164,28 @@ function CompositionCard({ c }: { c: Composizione }) {
           }}>
             {c.pezzi} {c.pezzi === 1 ? 'pannello' : 'pannelli'}
           </span>
-          <span style={{ fontSize: '11px', color: '#9b9590' }}>
-            {c.materiale}
-          </span>
+          <span style={{ fontSize: '11px', color: '#9b9590' }}>{c.materiale}</span>
         </div>
 
-        {/* Descrizione */}
-        <p style={{ fontSize: '13px', color: '#6b6660', lineHeight: 1.55, margin: 0 }}>
+        <p style={{ fontSize: '12px', color: '#6b6660', lineHeight: 1.55, margin: 0 }}>
           {c.descrizione}
         </p>
 
-        {/* Misure */}
-        <div style={{ marginTop: 'auto', paddingTop: 8 }}>
+        <div style={{ marginTop: 'auto', paddingTop: 6 }}>
           {c.dimensioni.map(d => (
-            <div key={d.id} style={{ fontSize: '12px', color: '#888', marginBottom: 2 }}>
+            <div key={d.id} style={{ fontSize: '11px', color: '#888', marginBottom: 2 }}>
               <span style={{ fontWeight: 600, color: '#555' }}>{d.label}</span>
-              <span style={{ color: '#aaa' }}> · {d.pareteLabel}</span>
+              <span style={{ color: '#bbb' }}> · {d.pareteLabel}</span>
             </div>
           ))}
         </div>
 
-        {/* CTA */}
         <a
           href="#tool"
           style={{
             display: 'block',
-            marginTop: 12,
-            padding: '10px 0',
+            marginTop: 10,
+            padding: '9px 0',
             borderRadius: 10,
             background: AC,
             color: '#fff',
@@ -212,20 +205,58 @@ function CompositionCard({ c }: { c: Composizione }) {
   )
 }
 
-// ─── Gallery griglia ─────────────────────────────────────────────────────────
+// ─── Gallery griglia con intestazioni di gruppo ───────────────────────────────
 
 export function ComposizioniGallery() {
+  // Raggruppa composizioni per gruppo
+  const gruppi = COMPOSIZIONI.reduce<Record<string, { comps: Composizione[]; indices: number[] }>>(
+    (acc, c, i) => {
+      if (!acc[c.gruppo]) acc[c.gruppo] = { comps: [], indices: [] }
+      acc[c.gruppo].comps.push(c)
+      acc[c.gruppo].indices.push(i)
+      return acc
+    },
+    {},
+  )
+
   return (
-    <section style={{ maxWidth: 1100, margin: '0 auto', padding: '0 clamp(16px,4vw,40px) 64px' }}>
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(min(340px, 100%), 1fr))',
-        gap: 24,
-      }}>
-        {COMPOSIZIONI.map(c => (
-          <CompositionCard key={c.id} c={c} />
-        ))}
-      </div>
+    <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 clamp(16px,4vw,40px) 64px' }}>
+      {Object.entries(gruppi).map(([gruppo, { comps, indices }]) => (
+        <div key={gruppo} style={{ marginBottom: 64 }}>
+          {/* Intestazione gruppo */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24,
+            paddingBottom: 14, borderBottom: '1px solid #e8e4de',
+          }}>
+            <h3 style={{
+              fontFamily: 'Playfair Display, Georgia, serif',
+              fontSize: 'clamp(18px,2.5vw,24px)',
+              fontWeight: 700, color: '#1a1a1a',
+              margin: 0,
+            }}>
+              {gruppo}
+            </h3>
+            <span style={{
+              fontSize: '12px', fontWeight: 600,
+              background: `${AC}14`, color: AC,
+              padding: '3px 10px', borderRadius: 20,
+              whiteSpace: 'nowrap',
+            }}>
+              {comps.length} composizioni
+            </span>
+          </div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(min(300px, 100%), 1fr))',
+            gap: 20,
+          }}>
+            {comps.map((c, j) => (
+              <CompositionCard key={c.id} c={c} index={indices[j]} />
+            ))}
+          </div>
+        </div>
+      ))}
     </section>
   )
 }
