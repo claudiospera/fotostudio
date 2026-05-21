@@ -638,14 +638,14 @@ function RoomScene({
   const CM_SCALE_BASE = (containerW / 420) * 3.6
   const minSidePx     = Math.round(containerW * 0.20)
   const shortSideCm   = Math.min(widthCm, heightCm)
-  const maxCmScale    = Math.min((containerW * 0.62) / widthCm, (containerH * 0.44) / heightCm)
+  const maxCmScale    = Math.min((containerW * 0.68) / widthCm, (containerH * 0.56) / heightCm)
   const CM_SCALE      = Math.min(Math.max(CM_SCALE_BASE, minSidePx / shortSideCm), maxCmScale)
   const panelW = Math.round(widthCm  * CM_SCALE)
   const panelH = Math.round(heightCm * CM_SCALE)
 
   const panelLeft   = Math.round(containerW * 0.40 - panelW / 2)
   const panelTopRaw = Math.round(containerH * 0.24 - panelH / 2)
-  const panelTop    = Math.max(6, Math.min(panelTopRaw, containerH * 0.47 - panelH))
+  const panelTop    = Math.max(6, Math.min(panelTopRaw, containerH * 0.55 - panelH))
   const nailTop     = Math.max(4, panelTop - 5)
 
   // Bordo tela: spessore laterale simulato
