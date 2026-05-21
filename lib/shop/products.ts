@@ -251,9 +251,9 @@ export const PRODUCTS: Product[] = [
     id: 'forex',
     slug: 'forex',
     name: 'Stampa su Forex',
-    shortDescription: 'Stampa rigida su pannello in forex 5mm',
+    shortDescription: 'Stampa su carta fotografica plastificata e montata su forex 1 cm',
     description:
-      'Stampa fotografica su pannello in forex (PVC espanso) da 5mm. Effetto moderno e minimalista, leggerissima e pronta da appendere.',
+      'La foto viene stampata su carta fotografica professionale, plastificata e incollata su pannello PVC espanso da 1 cm di spessore. Bordo perimetrale 1 cm, effetto premium, leggero e pronto da appendere.',
     category: 'decorazioni',
     status: 'available',
     images: ['/images/shop/forex/ambientata.png', '/images/shop/forex/catalogo.png'],

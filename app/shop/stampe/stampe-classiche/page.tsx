@@ -776,7 +776,7 @@ export default function StampeClassichePage() {
                       type="range" min={1} max={3} step={0.01}
                       value={activePhoto.zoom}
                       onChange={e => updatePhoto(activePhoto.id, { zoom: Number(e.target.value) })}
-                      style={{ flex: 1, accentColor: '#00c1de', cursor: 'pointer', height: 4 }}
+                      style={{ flex: 1, accentColor: '#00c1de', cursor: 'pointer', height: 4, touchAction: 'none' }}
                     />
                     <span style={{ fontSize: '11px', color: '#aaa', minWidth: 34, textAlign: 'right' }}>
                       {Math.round(activePhoto.zoom * 100)}%

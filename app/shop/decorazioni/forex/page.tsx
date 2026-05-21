@@ -239,7 +239,7 @@ export default function ForexPage() {
                 <input
                   type="range" min={1} max={2} step={0.01} value={zoom}
                   onChange={e => setZoom(Number(e.target.value))}
-                  style={{ flex: 1, accentColor: '#00c1de', cursor: 'pointer', height: 4 }}
+                  style={{ flex: 1, accentColor: '#00c1de', cursor: 'pointer', height: 4, touchAction: 'none' }}
                   aria-label="Zoom foto"
                 />
                 <span style={{ fontSize: '11px', color: '#aaa', minWidth: 32, textAlign: 'right' }}>
@@ -295,7 +295,7 @@ export default function ForexPage() {
           <div style={{ marginTop: 16, display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
             <Tag>{panelW}×{panelH} cm</Tag>
             {!isSquare && <Tag>{rotated ? 'Orizzontale' : 'Verticale'}</Tag>}
-            <Tag>Forex 5mm</Tag>
+            <Tag>Forex 1 cm</Tag>
           </div>
         </div>
 
@@ -308,18 +308,19 @@ export default function ForexPage() {
               Stampa su Forex
             </h1>
             <p style={{ fontSize: '14px', color: '#666', lineHeight: 1.65 }}>
-              Pannello in PVC espanso da 5mm con stampa fotografica diretta UV.<br />
-              Bordo perimetrale 1 cm · Effetto moderno e minimalista, leggerissimo e pronto da appendere.
+              La tua foto viene stampata su carta fotografica professionale, plastificata e
+              montata su pannello PVC espanso da <strong>1 cm</strong> di spessore.<br />
+              Bordo perimetrale 1 cm · Effetto premium, leggero e pronto da appendere.
             </p>
           </div>
 
           {/* Feature cards */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             {[
-              ['Pannello 5mm',        'PVC espanso rigido'],
-              ['Stampa UV diretta',   'Alta risoluzione'],
+              ['Pannello 1 cm',       'PVC espanso rigido'],
+              ['Carta fotografica',   'Plastificata e montata'],
               ['Bordi netti 1 cm',    'Finitura professionale'],
-              ['Pronto da appendere', 'Leggerissimo'],
+              ['Pronto da appendere', 'Leggero e resistente'],
             ].map(([title, sub]) => (
               <div key={title} style={{ background: '#fff', border: '1px solid #ebebeb', borderRadius: 10, padding: '12px 14px' }}>
                 <p style={{ fontSize: '12px', fontWeight: 700, color: '#0a0a0a', marginBottom: 2 }}>{title}</p>
@@ -613,6 +614,63 @@ function RoomScene({
         background: 'linear-gradient(270deg, rgba(0,0,0,0.10) 0%, transparent 100%)',
         pointerEvents: 'none',
       }} />
+
+      {/* ── Divano moderno ── */}
+      {(() => {
+        const SW = Math.round(ROOM_W * 0.52)
+        const SX = Math.round((ROOM_W - SW) / 2)
+        const BH = Math.round(FLOOR_H * 0.65)
+        const RDX = Math.round(BH * 0.22)
+        return (
+          <div style={{ position:'absolute', left:SX, top:WALL_H - BH, width:SW, height:BH + FLOOR_H, background:'#35353e', borderRadius:`${RDX}px ${RDX}px 0 0`, boxShadow:'0 -6px 24px rgba(0,0,0,0.22)', pointerEvents:'none', zIndex:1 }}>
+            <div style={{ position:'absolute', top:0, left:'33%', width:2, height:Math.round(BH*0.6), background:'rgba(0,0,0,0.3)' }} />
+            <div style={{ position:'absolute', top:0, left:'67%', width:2, height:Math.round(BH*0.6), background:'rgba(0,0,0,0.3)' }} />
+            <div style={{ position:'absolute', top:4, left:'5%', width:'90%', height:2, background:'rgba(255,255,255,0.06)', borderRadius:2 }} />
+          </div>
+        )
+      })()}
+
+      {/* ── Piante esotiche ── */}
+      {[
+        { isLeft: true,  px: Math.round(ROOM_W * 0.06) },
+        { isLeft: false, px: Math.round(ROOM_W * 0.94) },
+      ].map(({ isLeft, px }) => {
+        const ph = Math.round(FLOOR_H * 0.58)
+        const pw = Math.round(ph * 0.85)
+        const maxLH = Math.round(WALL_H * 0.46)
+        const leafDefs = [
+          { rot: isLeft ? -38 :  38, ratio: 0.90, wr: 0.38 },
+          { rot: isLeft ?  12 : -12, ratio: 1.00, wr: 0.40 },
+          { rot: isLeft ? -18 :  18, ratio: 0.78, wr: 0.35 },
+          { rot: isLeft ?  55 : -55, ratio: 0.65, wr: 0.32 },
+        ]
+        return (
+          <div key={isLeft ? 'l' : 'r'} style={{ position:'absolute', top:0, left:0, right:0, bottom:0, pointerEvents:'none' }}>
+            {leafDefs.map(({ rot, ratio, wr }, i) => {
+              const lh = Math.round(maxLH * ratio)
+              const lw = Math.round(lh * wr)
+              return (
+                <div key={i} style={{
+                  position:'absolute', width:lw, height:lh,
+                  bottom: FLOOR_H + ph - 6,
+                  left: px - Math.round(lw / 2),
+                  background: i % 2 === 0 ? 'linear-gradient(160deg,#3a8c6a,#1b4332)' : 'linear-gradient(160deg,#2d6a4f,#0d2b1f)',
+                  borderRadius: isLeft ? '50% 5% 50% 50%' : '5% 50% 50% 50%',
+                  transform: `rotate(${rot}deg)`,
+                  transformOrigin: 'bottom center',
+                }} />
+              )
+            })}
+            <div style={{
+              position:'absolute', width:pw, height:ph,
+              bottom: FLOOR_H - Math.round(FLOOR_H * 0.12),
+              left: px - Math.round(pw / 2),
+              background: 'linear-gradient(135deg,#9b7e5a,#6b5535)',
+              clipPath: 'polygon(12% 0%,88% 0%,100% 100%,0% 100%)',
+            }} />
+          </div>
+        )
+      })}
 
       {/* Chiodo */}
       <div style={{
