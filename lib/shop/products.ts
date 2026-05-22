@@ -494,7 +494,7 @@ export const PRODUCTS: Product[] = [
     status: 'available',
     images: ['/images/shop/gadget/PHOTO-GLOBE-CUORE-P9008_HIGH.jpg'],
     variants: [
-      { id: 'pgc-9x9', label: '9×9 cm', price: 2500, widthCm: 9, heightCm: 9 },
+      { id: 'pgc-9x9', label: '9×9 cm', price: 1300, widthCm: 9, heightCm: 9 },
     ],
     featured: false,
     createdAt: '2026-01-01T00:00:00Z',

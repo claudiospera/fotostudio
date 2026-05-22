@@ -13,7 +13,7 @@ function fmt(cents: number) {
   return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(cents / 100)
 }
 
-const PRICE = 2500
+const PRICE = 1300
 
 // ─── Dimensioni area stampa (9×9 cm, quadrato) ────────────────────────────────
 const PREV_SIZE = 340          // preview px (quadrato)
