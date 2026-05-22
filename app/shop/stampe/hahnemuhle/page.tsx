@@ -378,7 +378,7 @@ export default function HahnemuhlePage() {
   const isSmallFormat = format ? format.w * format.h <= 24 * 36 : true
 
   const basePrice  = format ? getPrice(format, paper.id) : null
-  const sprayExtra = basePrice && spray ? Math.round(basePrice * 0.20) : 0
+  const sprayExtra = basePrice && spray ? Math.round(basePrice * 0.10) : 0
   const certExtra  = certificato ? 1500 : 0
   const price      = basePrice != null ? basePrice + sprayExtra + certExtra : null
 
@@ -858,7 +858,7 @@ export default function HahnemuhlePage() {
                 {(paper.id === 'to285' ? FORMATS.filter(f => f.w <= TORCHON_MAX_SIDE && f.h <= TORCHON_MAX_SIDE) : FORMATS).map(f => {
                   const active = format?.fmt === f.fmt
                   const bp = getPrice(f, paper.id)
-                  const displayPrice = bp + (spray ? Math.round(bp * 0.20) : 0) + certExtra
+                  const displayPrice = bp + (spray ? Math.round(bp * 0.10) : 0) + certExtra
                   return (
                     <button
                       key={f.fmt}
@@ -942,7 +942,7 @@ export default function HahnemuhlePage() {
                   style={{ width: 18, height: 18, accentColor: paper.color, cursor: 'pointer', flexShrink: 0 }}
                 />
                 <span style={{ fontSize: '13px', fontWeight: 600, color: '#333' }}>
-                  Applicazione {basePrice ? `(+${formatPrice(Math.round(basePrice * 0.20))})` : '(+20%)'}
+                  Applicazione {basePrice ? `(+${formatPrice(Math.round(basePrice * 0.10))})` : '(+10%)'}
                 </span>
               </label>
             </div>
@@ -991,7 +991,7 @@ export default function HahnemuhlePage() {
                         <span>Stampa</span><span>{formatPrice(basePrice)}</span>
                       </div>
                       {spray && <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span>Spray protettivo (+20%)</span><span>+{formatPrice(sprayExtra)}</span>
+                        <span>Spray protettivo (+10%)</span><span>+{formatPrice(sprayExtra)}</span>
                       </div>}
                       {certificato && <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <span>Certificato autenticità</span><span>+{formatPrice(1500)}</span>
