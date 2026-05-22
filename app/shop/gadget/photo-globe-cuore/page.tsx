@@ -1,7 +1,7 @@
 'use client'
 
 // app/shop/gadget/photo-globe-cuore/page.tsx
-// Photo Globe Cuore — foto ritagliata a forma di cuore in acrilico
+// Photo Globe Cuore — canvas preview con maschera cuore in tempo reale
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
@@ -13,22 +13,20 @@ function fmt(cents: number) {
   return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(cents / 100)
 }
 
-const PRICE = 1300
-
-// ─── Dimensioni area stampa (9×9 cm, quadrato) ────────────────────────────────
-const PREV_SIZE = 340          // preview px (quadrato)
-const OUT_SIZE  = 900          // canvas output (100px/cm × 9cm)
+const PRICE    = 1300
+const PREV_SIZE = 340
+const OUT_SIZE  = 900
 const SCALE     = OUT_SIZE / PREV_SIZE
-
-const MASK_SRC = '/images/shop/gadget/cuore.png'
-
-function clamp(v: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, v)) }
+const MASK_SRC  = '/images/shop/gadget/cuore.png'
 
 // ─── Componente principale ────────────────────────────────────────────────────
 
 export default function PhotoGlobeCuorePage() {
   const { addItem } = useCart()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const canvasRef    = useRef<HTMLCanvasElement>(null)
+  const maskImgRef   = useRef<HTMLImageElement | null>(null)
+  const photoImgRef  = useRef<HTMLImageElement | null>(null)
 
   // ── Foto ──
   const [photoUrl,      setPhotoUrl]      = useState<string | null>(null)
@@ -44,34 +42,72 @@ export default function PhotoGlobeCuorePage() {
   const [qty,           setQty]           = useState(1)
   const [addedFeedback, setAddedFeedback] = useState(false)
 
+  // ─── Pre-carica la maschera una volta sola ───────────────────────────────
+  useEffect(() => {
+    const m = new window.Image()
+    m.src = MASK_SRC
+    m.onload = () => { maskImgRef.current = m }
+  }, [])
+
+  // ─── Ridisegna il canvas ogni volta che cambia foto / zoom / offset ───────
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    ctx.clearRect(0, 0, PREV_SIZE, PREV_SIZE)
+
+    const photo = photoImgRef.current
+    const mask  = maskImgRef.current
+
+    if (!photo || !mask || !photoNatSize) return
+
+    const containScale = Math.min(PREV_SIZE / photoNatSize.w, PREV_SIZE / photoNatSize.h)
+    const w = photoNatSize.w * containScale * photoZoom
+    const h = photoNatSize.h * containScale * photoZoom
+    const x = (PREV_SIZE - w) / 2 + photoOffset.x
+    const y = (PREV_SIZE - h) / 2 + photoOffset.y
+
+    ctx.drawImage(photo, x, y, w, h)
+    ctx.globalCompositeOperation = 'destination-in'
+    ctx.drawImage(mask, 0, 0, PREV_SIZE, PREV_SIZE)
+    ctx.globalCompositeOperation = 'source-over'
+  }, [photoNatSize, photoZoom, photoOffset])
+
   // Cleanup blob
   useEffect(() => {
     return () => { if (photoUrl) URL.revokeObjectURL(photoUrl) }
   }, [photoUrl])
 
   // ─── Drag foto ────────────────────────────────────────────────────────────
-  const photoDragRef  = useRef<{ sx: number; sy: number; ox: number; oy: number } | null>(null)
+  const photoDragRef = useRef<{ sx: number; sy: number; ox: number; oy: number } | null>(null)
 
   useEffect(() => {
     if (!photoUrl) return
     const onMove = (cx: number, cy: number) => {
       if (!photoDragRef.current) return
-      const dx = cx - photoDragRef.current.sx
-      const dy = cy - photoDragRef.current.sy
-      setPhotoOffset({ x: photoDragRef.current.ox + dx, y: photoDragRef.current.oy + dy })
+      setPhotoOffset({
+        x: photoDragRef.current.ox + cx - photoDragRef.current.sx,
+        y: photoDragRef.current.oy + cy - photoDragRef.current.sy,
+      })
     }
     const onEnd = () => { photoDragRef.current = null }
     const mm = (e: MouseEvent) => onMove(e.clientX, e.clientY)
-    const tm = (e: TouchEvent) => { if (!photoDragRef.current) return; e.preventDefault(); onMove(e.touches[0].clientX, e.touches[0].clientY) }
+    const tm = (e: TouchEvent) => {
+      if (!photoDragRef.current) return
+      e.preventDefault()
+      onMove(e.touches[0].clientX, e.touches[0].clientY)
+    }
     window.addEventListener('mousemove', mm)
-    window.addEventListener('mouseup',   onEnd)
+    window.addEventListener('mouseup', onEnd)
     window.addEventListener('touchmove', tm, { passive: false })
-    window.addEventListener('touchend',  onEnd)
+    window.addEventListener('touchend', onEnd)
     return () => {
       window.removeEventListener('mousemove', mm)
-      window.removeEventListener('mouseup',   onEnd)
+      window.removeEventListener('mouseup', onEnd)
       window.removeEventListener('touchmove', tm)
-      window.removeEventListener('touchend',  onEnd)
+      window.removeEventListener('touchend', onEnd)
     }
   }, [photoUrl])
 
@@ -80,14 +116,26 @@ export default function PhotoGlobeCuorePage() {
     const file = e.target.files?.[0]
     if (!file) return
     if (photoUrl) URL.revokeObjectURL(photoUrl)
-    setPhotoUrl(URL.createObjectURL(file))
+
+    const localUrl = URL.createObjectURL(file)
+    setPhotoUrl(localUrl)
     setUploadedUrl(null)
     setPhotoFilename(file.name)
     setUploading(true)
     setPhotoZoom(1)
     setPhotoOffset({ x: 0, y: 0 })
     setPhotoNatSize(null)
+    photoImgRef.current = null
     e.target.value = ''
+
+    // Carica l'immagine nel ref per il canvas
+    const img = new window.Image()
+    img.src = localUrl
+    img.onload = () => {
+      photoImgRef.current = img
+      setPhotoNatSize({ w: img.naturalWidth, h: img.naturalHeight })
+    }
+
     try {
       const res = await fetch('/api/shop/presign-photo', {
         method: 'POST',
@@ -105,51 +153,35 @@ export default function PhotoGlobeCuorePage() {
 
   const removePhoto = useCallback(() => {
     if (photoUrl) URL.revokeObjectURL(photoUrl)
+    photoImgRef.current = null
     setPhotoUrl(null); setUploadedUrl(null); setPhotoFilename(undefined)
     setPhotoZoom(1); setPhotoOffset({ x: 0, y: 0 }); setPhotoNatSize(null)
+    // Pulisci canvas
+    const ctx = canvasRef.current?.getContext('2d')
+    if (ctx) ctx.clearRect(0, 0, PREV_SIZE, PREV_SIZE)
   }, [photoUrl])
 
-  // ─── Calcolo dimensioni foto in preview ───────────────────────────────────
-  const photoPreview = (() => {
-    if (!photoNatSize) return null
-    const containScale = Math.min(PREV_SIZE / photoNatSize.w, PREV_SIZE / photoNatSize.h)
-    const w = photoNatSize.w * containScale * photoZoom
-    const h = photoNatSize.h * containScale * photoZoom
-    const x = (PREV_SIZE - w) / 2 + photoOffset.x
-    const y = (PREV_SIZE - h) / 2 + photoOffset.y
-    return { w, h, x, y }
-  })()
-
-  // ─── Add to cart con canvas render a cuore ────────────────────────────────
+  // ─── Add to cart con canvas render ad alta risoluzione ────────────────────
   async function handleAddToCart() {
     if (uploading || isRendering) return
-    let imageUrl = uploadedUrl ?? photoUrl ?? '/images/shop/gadget/photo-globe-cuore.jpg'
+    let imageUrl = uploadedUrl ?? photoUrl ?? '/images/shop/gadget/PHOTO-GLOBE-CUORE-P9008_HIGH.jpg'
 
-    if (photoUrl && photoNatSize && photoPreview) {
+    if (photoImgRef.current && photoNatSize) {
       setIsRendering(true)
       try {
         const canvas = document.createElement('canvas')
         canvas.width = OUT_SIZE; canvas.height = OUT_SIZE
         const ctx = canvas.getContext('2d')
-        if (ctx) {
-          // 1. Sfondo trasparente — disegna foto
-          const img = await new Promise<HTMLImageElement>((res, rej) => {
-            const i = document.createElement('img')
-            i.crossOrigin = 'anonymous'
-            i.onload = () => res(i); i.onerror = rej; i.src = photoUrl
-          })
-          ctx.drawImage(img,
-            photoPreview.x * SCALE, photoPreview.y * SCALE,
-            photoPreview.w * SCALE, photoPreview.h * SCALE
-          )
+        if (ctx && maskImgRef.current) {
+          const containScale = Math.min(PREV_SIZE / photoNatSize.w, PREV_SIZE / photoNatSize.h)
+          const w = photoNatSize.w * containScale * photoZoom
+          const h = photoNatSize.h * containScale * photoZoom
+          const x = (PREV_SIZE - w) / 2 + photoOffset.x
 
-          // 2. Applica maschera cuore (destination-in = tieni solo dove la maschera è opaca)
+          const y = (PREV_SIZE - h) / 2 + photoOffset.y
+          ctx.drawImage(photoImgRef.current, x * SCALE, y * SCALE, w * SCALE, h * SCALE)
           ctx.globalCompositeOperation = 'destination-in'
-          const mask = await new Promise<HTMLImageElement>((res, rej) => {
-            const m = document.createElement('img')
-            m.onload = () => res(m); m.onerror = rej; m.src = MASK_SRC
-          })
-          ctx.drawImage(mask, 0, 0, OUT_SIZE, OUT_SIZE)
+          ctx.drawImage(maskImgRef.current, 0, 0, OUT_SIZE, OUT_SIZE)
           ctx.globalCompositeOperation = 'source-over'
 
           const blob = await new Promise<Blob | null>(r => canvas.toBlob(b => r(b), 'image/png'))
@@ -212,83 +244,64 @@ export default function PhotoGlobeCuorePage() {
         alignItems: 'start',
       }}>
 
-        {/* ── SINISTRA: Gallery + Preview ───────────────────────────────── */}
+        {/* ── SINISTRA ──────────────────────────────────────────────────── */}
         <div className="shop-sticky" style={{ position: 'sticky', top: 88 }}>
 
           {/* Foto prodotto */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ borderRadius: 16, overflow: 'hidden', background: '#f0f0f0', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 220 }}>
-              <Image
-                src="/images/shop/gadget/PHOTO-GLOBE-CUORE-P9008_HIGH.jpg"
-                alt="Photo Globe Cuore"
-                width={400} height={400}
-                style={{ width: '100%', maxHeight: 320, objectFit: 'contain' }}
-              />
-            </div>
+          <div style={{ borderRadius: 16, overflow: 'hidden', background: '#f0f0f0', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 220 }}>
+            <Image
+              src="/images/shop/gadget/PHOTO-GLOBE-CUORE-P9008_HIGH.jpg"
+              alt="Photo Globe Cuore"
+              width={400} height={400}
+              style={{ width: '100%', maxHeight: 320, objectFit: 'contain' }}
+            />
           </div>
 
           {/* Etichetta preview */}
           <p style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 10 }}>
-            Anteprima foto (forma cuore)
+            Anteprima foto nel cuore
           </p>
 
-          {/* Preview a cuore */}
+          {/* Canvas preview */}
           <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <div style={{
-              width: PREV_SIZE,
-              height: PREV_SIZE,
-              position: 'relative',
-              overflow: 'hidden',
-              // maschera CSS cuore per la preview
-              WebkitMaskImage: `url('${MASK_SRC}')`,
-              maskImage: `url('${MASK_SRC}')`,
-              WebkitMaskSize: 'contain',
-              maskSize: 'contain',
-              WebkitMaskRepeat: 'no-repeat',
-              maskRepeat: 'no-repeat',
-              WebkitMaskPosition: 'center',
-              maskPosition: 'center',
-              background: '#e8e8e8',
-              cursor: photoUrl ? 'grab' : 'default',
-              userSelect: 'none',
-            }}>
-              {/* Foto */}
-              {photoUrl && photoPreview && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: photoPreview.x,
-                    top:  photoPreview.y,
-                    width: photoPreview.w,
-                    height: photoPreview.h,
-                    touchAction: 'none',
-                  }}
-                  onMouseDown={e => { e.preventDefault(); photoDragRef.current = { sx: e.clientX, sy: e.clientY, ox: photoOffset.x, oy: photoOffset.y } }}
-                  onTouchStart={e => { photoDragRef.current = { sx: e.touches[0].clientX, sy: e.touches[0].clientY, ox: photoOffset.x, oy: photoOffset.y } }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={photoUrl} alt=""
-                    style={{ width: '100%', height: '100%', objectFit: 'fill', display: 'block', pointerEvents: 'none' }}
-                    onLoad={e => {
-                      const img = e.currentTarget
-                      setPhotoNatSize({ w: img.naturalWidth, h: img.naturalHeight })
-                    }}
-                  />
-                </div>
-              )}
+            <div style={{ position: 'relative', width: PREV_SIZE, height: PREV_SIZE }}>
+              {/* Sfondo grigio visibile fuori dalla sagoma */}
+              <canvas
+                ref={canvasRef}
+                width={PREV_SIZE}
+                height={PREV_SIZE}
+                style={{
+                  display: 'block',
+                  cursor: photoUrl ? 'grab' : 'default',
+                  userSelect: 'none',
+                  touchAction: 'none',
+                  borderRadius: 4,
+                }}
+                onMouseDown={e => {
+                  if (!photoUrl) return
+                  e.preventDefault()
+                  photoDragRef.current = { sx: e.clientX, sy: e.clientY, ox: photoOffset.x, oy: photoOffset.y }
+                }}
+                onTouchStart={e => {
+                  if (!photoUrl) return
+                  photoDragRef.current = { sx: e.touches[0].clientX, sy: e.touches[0].clientY, ox: photoOffset.x, oy: photoOffset.y }
+                }}
+              />
 
-              {/* Placeholder upload */}
+              {/* Placeholder quando non c'è foto */}
               {!photoUrl && (
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   style={{
                     position: 'absolute', inset: 0, width: '100%', height: '100%',
-                    border: 'none', background: 'transparent', cursor: 'pointer',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    border: '2px dashed #d0d0d0', borderRadius: 4,
+                    background: '#f5f5f5', cursor: 'pointer',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8,
                   }}
                 >
-                  <Upload size={24} color="#bbb" />
+                  {/* Sagoma cuore come guida visiva */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={MASK_SRC} alt="" style={{ width: 120, height: 120, opacity: 0.15, pointerEvents: 'none' }} />
                   <span style={{ fontSize: '11px', color: '#bbb', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em' }}>Carica foto</span>
                 </button>
               )}
@@ -313,7 +326,7 @@ export default function PhotoGlobeCuorePage() {
               </div>
               <p style={{ fontSize: '11px', color: '#aaa', textAlign: 'center' }}>
                 <ZoomIn size={11} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }} />
-                Trascina la foto per riposizionarla nel cuore
+                Trascina per riposizionare dentro al cuore
               </p>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={() => fileInputRef.current?.click()}
@@ -329,7 +342,7 @@ export default function PhotoGlobeCuorePage() {
           )}
         </div>
 
-        {/* ── DESTRA: Configuratore ─────────────────────────────────────── */}
+        {/* ── DESTRA ────────────────────────────────────────────────────── */}
         <div className="shop-first-mobile" style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
 
           <div>
@@ -337,7 +350,7 @@ export default function PhotoGlobeCuorePage() {
               Photo Globe Cuore
             </h1>
             <p style={{ fontSize: '14px', color: '#666', lineHeight: 1.65 }}>
-              Cuore in acrilico effetto trasparente con la tua foto personalizzata. Al suo interno acqua e cuoricini colorati che fluttuano. La foto viene ritagliata automaticamente nella forma a cuore. Dimensioni 9×9 cm.
+              Cuore in acrilico effetto trasparente con la tua foto personalizzata. Al suo interno acqua e cuoricini colorati che fluttuano. La foto viene ritagliata nella forma a cuore. Dimensioni 9×9 cm.
             </p>
           </div>
 
@@ -366,11 +379,11 @@ export default function PhotoGlobeCuorePage() {
 
           {photoUrl && (
             <div style={{ padding: '14px 16px', background: '#fff0f3', borderRadius: 12, border: '1px solid #ffc8d5', fontSize: '12px', color: '#555', lineHeight: 1.7 }}>
-              <b>💡 Suggerimento:</b> regola lo zoom e trascina la foto per centrare il viso o il soggetto nel cuore.
+              <b>💡 Suggerimento:</b> regola lo zoom e trascina la foto per centrare il viso nel cuore.
             </div>
           )}
 
-          {/* Caratteristiche prodotto */}
+          {/* Caratteristiche */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             {[
               { icon: '❤️', label: 'Forma cuore', desc: 'Sagoma ritagliata' },
@@ -460,7 +473,7 @@ export default function PhotoGlobeCuorePage() {
   )
 }
 
-// ─── Stili condivisi ──────────────────────────────────────────────────────────
+// ─── Stili ────────────────────────────────────────────────────────────────────
 
 const labelStyle: React.CSSProperties = {
   fontSize: '11px', fontWeight: 700, color: '#555',
