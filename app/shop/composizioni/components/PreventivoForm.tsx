@@ -261,7 +261,7 @@ export function PreventivoForm() {
           <textarea
             id="note"
             rows={3}
-            placeholder="Es. La foto è un ritratto di famiglia, vorrei uno stile caldo e naturale…"
+            placeholder="Es. Mi serve per il giorno 20 maggio, vorrei la consegna entro quella data…"
             value={note}
             onChange={e => setNote(e.target.value)}
             style={{
