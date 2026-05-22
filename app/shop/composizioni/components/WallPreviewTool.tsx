@@ -103,14 +103,19 @@ function renderSlotCover(
   addInnerShadow(ctx, slotX, slotY, slotW, slotH)
 }
 
+interface SlotState { zoom: number; panX: number; panY: number }
+const defaultSlotState = (): SlotState => ({ zoom: 1, panX: 0, panY: 0 })
+
 function drawCanvas(
   canvas: HTMLCanvasElement,
   imgs: (HTMLImageElement | null)[],
   composizione: Composizione,
   roomImg: HTMLImageElement | null,
   mode: 'single' | 'multi',
-  zoom = 1, panX = 0, panY = 0,
+  singleState: SlotState,
+  slotStates: SlotState[],
   texts: TextOverlay[] = [],
+  highlightSlot: number | null = null,
 ) {
   const CW = canvas.width, CH = canvas.height
   const ctx = canvas.getContext('2d')
@@ -144,10 +149,10 @@ function drawCanvas(
   ctx.restore()
 
   // Render slots
-  const loaded = imgs.filter(Boolean) as HTMLImageElement[]
   if (mode === 'single') {
     const img = imgs[0] ?? null
     if (img) {
+      const { zoom, panX, panY } = singleState
       const bboxX = offsetX + Math.min(...slots.map(s => s.x)) * scale
       const bboxY = offsetY + Math.min(...slots.map(s => s.y)) * scale
       const bboxR = offsetX + Math.max(...slots.map(s => s.x + s.w)) * scale
@@ -155,16 +160,23 @@ function drawCanvas(
       slots.forEach(slot => {
         renderSlotFromBbox(ctx, img,
           offsetX + slot.x * scale, offsetY + slot.y * scale, slot.w * scale, slot.h * scale,
-          bboxX, bboxY, bboxR - bboxX, bboxB - bboxY,
-          zoom, panX, panY)
+          bboxX, bboxY, bboxR - bboxX, bboxB - bboxY, zoom, panX, panY)
       })
     }
   } else {
     slots.forEach((slot, i) => {
-      const img = imgs[i] ?? (loaded.length > 0 ? loaded[i % loaded.length] : null)
-      renderSlotCover(ctx, img,
-        offsetX + slot.x * scale, offsetY + slot.y * scale, slot.w * scale, slot.h * scale,
-        zoom, panX, panY)
+      const img   = imgs[i] ?? null
+      const st    = slotStates[i] ?? defaultSlotState()
+      const sx    = offsetX + slot.x * scale, sy = offsetY + slot.y * scale
+      const sw    = slot.w * scale,           sh = slot.h * scale
+      renderSlotCover(ctx, img, sx, sy, sw, sh, st.zoom, st.panX, st.panY)
+      // Highlight del pannello selezionato
+      if (highlightSlot === i) {
+        ctx.save()
+        ctx.strokeStyle = '#7d9b76'; ctx.lineWidth = 3
+        ctx.strokeRect(sx + 1.5, sy + 1.5, sw - 3, sh - 3)
+        ctx.restore()
+      }
     })
   }
 
@@ -252,7 +264,11 @@ function SuggestionCard({ composizione, imgs, roomImg, label }: {
   const sizes = SIZES_BY_PANELS[Math.min(composizione.slots.length, 6)] ?? SIZES_BY_PANELS[3]
   useEffect(() => {
     const c = canvasRef.current; if (!c) return
-    drawCanvas(c, imgs, composizione, roomImg, 'multi')
+    const slotCount = composizione.slots.length
+    drawCanvas(c, imgs, composizione, roomImg, 'multi',
+      defaultSlotState(),
+      Array.from({ length: slotCount }, defaultSlotState),
+    )
   }, [imgs, composizione, roomImg])
   return (
     <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 14, overflow: 'hidden' }}>
@@ -307,15 +323,18 @@ export function WallPreviewTool() {
   // Livello attivo: foto o testo
   const [activeLayer, setActiveLayer] = useState<ActiveLayer>('foto')
 
-  // Zoom / pan foto
-  const [zoom, setZoom] = useState(1)
-  const [panX, setPanX] = useState(0)
-  const [panY, setPanY] = useState(0)
+  // Zoom / pan — singola foto (mode=single) e per-slot (mode=multi)
+  const [singleState, setSingleState] = useState<SlotState>(defaultSlotState())
+  const [slotStates,  setSlotStates]  = useState<SlotState[]>([])
+  const [selectedSlot, setSelectedSlot] = useState<number | null>(null) // slot selezionato in multi
 
   // Drag generico (foto o testo)
   const isDragging      = useRef(false)
   const dragStart       = useRef<{ mx: number; my: number; px: number; py: number } | null>(null)
   const draggingTextIdx = useRef<number | null>(null)
+
+  // Swap slot: drag thumbnail → altro thumbnail
+  const dragSlotFrom = useRef<number | null>(null)
 
   // Testo
   const [texts,          setTexts]          = useState<TextOverlay[]>([])
@@ -344,7 +363,11 @@ export function WallPreviewTool() {
     img.src = '/images/shop/scene-ambiente.png'
   }, [])
 
-  useEffect(() => { setMultiImgs(Array(slotCount).fill(null)) }, [slotCount])
+  useEffect(() => {
+    setMultiImgs(Array(slotCount).fill(null))
+    setSlotStates(Array.from({ length: slotCount }, defaultSlotState))
+    setSelectedSlot(null)
+  }, [slotCount])
 
   // Wheel zoom sul canvas (solo livello foto)
   useEffect(() => {
@@ -352,11 +375,17 @@ export function WallPreviewTool() {
     const handler = (e: WheelEvent) => {
       if (activeLayer !== 'foto') return
       e.preventDefault()
-      setZoom(z => Math.max(0.5, Math.min(4, z - e.deltaY * 0.001)))
+      const delta = -e.deltaY * 0.001
+      if (mode === 'single') {
+        setSingleState(s => ({ ...s, zoom: Math.max(0.5, Math.min(4, s.zoom + delta)) }))
+      } else if (selectedSlot !== null) {
+        setSlotStates(prev => prev.map((s, i) => i === selectedSlot
+          ? { ...s, zoom: Math.max(0.5, Math.min(4, s.zoom + delta)) } : s))
+      }
     }
     canvas.addEventListener('wheel', handler, { passive: false })
     return () => canvas.removeEventListener('wheel', handler)
-  }, [activeLayer])
+  }, [activeLayer, mode, selectedSlot])
 
   const activeImgs: (HTMLImageElement | null)[] =
     mode === 'single'
@@ -367,8 +396,10 @@ export function WallPreviewTool() {
   const redraw = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas || !hasAny) return
-    drawCanvas(canvas, activeImgs, composizione, roomImgRef.current, mode, zoom, panX, panY, texts)
-  }, [activeImgs, composizione, mode, hasAny, zoom, panX, panY, texts])
+    drawCanvas(canvas, activeImgs, composizione, roomImgRef.current, mode,
+      singleState, slotStates, texts,
+      mode === 'multi' && activeLayer === 'foto' ? selectedSlot : null)
+  }, [activeImgs, composizione, mode, hasAny, singleState, slotStates, texts, selectedSlot, activeLayer])
 
   useEffect(() => { redraw() }, [redraw])
 
@@ -393,6 +424,13 @@ export function WallPreviewTool() {
   async function handleMultiFile(file: File, index: number) {
     const img = await loadImg(file)
     setMultiImgs(prev => { const n = [...prev]; n[index] = img; return n })
+    setSelectedSlot(index)
+    setActiveLayer('foto')
+  }
+
+  function swapSlots(a: number, b: number) {
+    setMultiImgs(prev => { const n = [...prev]; [n[a], n[b]] = [n[b], n[a]]; return n })
+    setSlotStates(prev => { const n = [...prev]; [n[a], n[b]] = [n[b], n[a]]; return n })
   }
 
   async function handleAdviceFile(file: File, index: number) {
@@ -435,17 +473,14 @@ export function WallPreviewTool() {
     if (activeLayer === 'testo') {
       const idx = findNearestText(x, y)
       if (idx !== null) {
-        draggingTextIdx.current = idx
-        setSelectedTextIdx(idx)
+        draggingTextIdx.current = idx; setSelectedTextIdx(idx)
         dragStart.current = { mx: e.clientX, my: e.clientY, px: texts[idx].x, py: texts[idx].y }
-      } else {
-        setSelectedTextIdx(null)
-        draggingTextIdx.current = null
-      }
+      } else { setSelectedTextIdx(null); draggingTextIdx.current = null }
     } else {
       // layer foto
       isDragging.current = true
-      dragStart.current = { mx: e.clientX, my: e.clientY, px: panX, py: panY }
+      const st = mode === 'single' ? singleState : (slotStates[selectedSlot ?? -1] ?? defaultSlotState())
+      dragStart.current = { mx: e.clientX, my: e.clientY, px: st.panX, py: st.panY }
     }
   }
 
@@ -459,18 +494,18 @@ export function WallPreviewTool() {
     if (activeLayer === 'testo' && draggingTextIdx.current !== null) {
       const i = draggingTextIdx.current
       setTexts(prev => prev.map((t, j) => j === i
-        ? { ...t, x: dragStart.current!.px + dx, y: dragStart.current!.py + dy }
-        : t))
+        ? { ...t, x: dragStart.current!.px + dx, y: dragStart.current!.py + dy } : t))
     } else if (activeLayer === 'foto' && isDragging.current) {
-      setPanX(dragStart.current.px + dx)
-      setPanY(dragStart.current.py + dy)
+      if (mode === 'single') {
+        setSingleState(s2 => ({ ...s2, panX: dragStart.current!.px + dx, panY: dragStart.current!.py + dy }))
+      } else if (selectedSlot !== null) {
+        setSlotStates(prev => prev.map((s2, i) => i === selectedSlot
+          ? { ...s2, panX: dragStart.current!.px + dx, panY: dragStart.current!.py + dy } : s2))
+      }
     }
   }
 
-  function onMouseUp() {
-    isDragging.current = false
-    draggingTextIdx.current = null
-  }
+  function onMouseUp() { isDragging.current = false; draggingTextIdx.current = null }
 
   function onCanvasClick(e: React.MouseEvent<HTMLCanvasElement>) {
     if (!addingText || !pendingText.trim()) return
@@ -489,7 +524,16 @@ export function WallPreviewTool() {
     a.click()
   }
 
-  function resetView() { setZoom(1); setPanX(0); setPanY(0) }
+  function resetView() {
+    if (mode === 'single') setSingleState(defaultSlotState())
+    else if (selectedSlot !== null) setSlotStates(prev => prev.map((s, i) => i === selectedSlot ? defaultSlotState() : s))
+  }
+
+  const currentZoom = mode === 'single' ? singleState.zoom : (slotStates[selectedSlot ?? -1]?.zoom ?? 1)
+  const setCurrentZoom = (fn: (z: number) => number) => {
+    if (mode === 'single') setSingleState(s => ({ ...s, zoom: fn(s.zoom) }))
+    else if (selectedSlot !== null) setSlotStates(prev => prev.map((s, i) => i === selectedSlot ? { ...s, zoom: fn(s.zoom) } : s))
+  }
 
   const canvasCursor = addingText ? 'crosshair'
     : activeLayer === 'testo' && texts.length > 0 ? 'move'
@@ -571,10 +615,50 @@ export function WallPreviewTool() {
                   </label>
                   <div style={{ display: 'grid', gridTemplateColumns: slotCount <= 3 ? `repeat(${slotCount}, 1fr)` : 'repeat(3, 1fr)', gap: 8 }}>
                     {Array.from({ length: slotCount }).map((_, i) => (
-                      <SlotUpload key={i} index={i} img={multiImgs[i] ?? null} onFile={handleMultiFile} />
+                      <div key={i}
+                        draggable={!!multiImgs[i]}
+                        onDragStart={() => { dragSlotFrom.current = i }}
+                        onDragOver={e => e.preventDefault()}
+                        onDrop={e => {
+                          e.preventDefault()
+                          if (dragSlotFrom.current !== null && dragSlotFrom.current !== i) {
+                            swapSlots(dragSlotFrom.current, i)
+                            dragSlotFrom.current = null
+                          }
+                        }}
+                        onClick={() => { setSelectedSlot(i); setActiveLayer('foto') }}
+                        style={{
+                          border: `2px solid ${selectedSlot === i ? AC : (multiImgs[i] ? `${AC}66` : '#c8c0b4')}`,
+                          borderRadius: 10, cursor: 'pointer', overflow: 'hidden',
+                          background: multiImgs[i] ? 'transparent' : '#fafaf8',
+                          minHeight: 64, position: 'relative', transition: 'all .15s',
+                          boxShadow: selectedSlot === i ? `0 0 0 2px ${AC}44` : 'none',
+                        }}>
+                        {multiImgs[i] ? (
+                          <>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={multiImgs[i]!.src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', minHeight: 64 }} />
+                            {selectedSlot === i && (
+                              <div style={{ position: 'absolute', inset: 0, background: `${AC}22`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <span style={{ fontSize: '10px', fontWeight: 700, color: '#fff', background: AC, borderRadius: 4, padding: '2px 6px' }}>Selezionata</span>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 64, gap: 4 }}
+                            onClick={e => { e.stopPropagation(); document.getElementById(`slot-input-${i}`)?.click() }}>
+                            <Upload size={15} color="#b0a89a" />
+                            <p style={{ fontSize: '10px', color: '#bbb', margin: 0 }}>Foto {i + 1}</p>
+                          </div>
+                        )}
+                        <input id={`slot-input-${i}`} type="file" accept="image/*,image/heic,image/heif" style={{ display: 'none' }}
+                          onChange={e => { const f = e.target.files?.[0]; if (f) handleMultiFile(f, i) }} />
+                      </div>
                     ))}
                   </div>
-                  <p style={{ fontSize: '11px', color: '#aaa', marginTop: 8 }}>Foto diverse per ogni riquadro</p>
+                  <p style={{ fontSize: '11px', color: '#aaa', marginTop: 6 }}>
+                    Clicca per selezionare · Trascina per scambiare posizione
+                  </p>
                 </div>
               )}
 
@@ -621,22 +705,30 @@ export function WallPreviewTool() {
                   {/* Livello FOTO */}
                   {activeLayer === 'foto' && (
                     <>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                        <button onClick={() => setZoom(z => Math.max(0.5, z - 0.1))} style={{ padding: '6px', borderRadius: 8, border: `1px solid ${BORDER}`, background: '#fafaf8', cursor: 'pointer', display: 'flex', flexShrink: 0 }}>
-                          <ZoomOut size={14} color="#555" />
-                        </button>
-                        <input type="range" min="50" max="400" step="1" value={Math.round(zoom * 100)}
-                          onChange={e => setZoom(Number(e.target.value) / 100)}
-                          style={{ flex: 1, accentColor: AC, minWidth: 0 }} />
-                        <button onClick={() => setZoom(z => Math.min(4, z + 0.1))} style={{ padding: '6px', borderRadius: 8, border: `1px solid ${BORDER}`, background: '#fafaf8', cursor: 'pointer', display: 'flex', flexShrink: 0 }}>
-                          <ZoomIn size={14} color="#555" />
-                        </button>
-                        <span style={{ fontSize: '11px', color: '#999', minWidth: 36, textAlign: 'right', flexShrink: 0 }}>{Math.round(zoom * 100)}%</span>
-                      </div>
-                      <p style={{ fontSize: '11px', color: '#aaa', margin: '0 0 8px' }}>Trascina sulla preview per spostare · Rotella per zoomare</p>
-                      <button onClick={resetView} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 8, border: `1px solid ${BORDER}`, background: '#fafaf8', cursor: 'pointer', fontSize: '11px', color: '#666', fontFamily: 'Montserrat,sans-serif' }}>
-                        <RotateCcw size={11} /> Reset
-                      </button>
+                      {mode === 'multi' && selectedSlot === null ? (
+                        <p style={{ fontSize: '12px', color: '#aaa', margin: 0, fontStyle: 'italic', textAlign: 'center', padding: '8px 0' }}>
+                          Seleziona un pannello sopra per regolarne l&apos;inquadratura
+                        </p>
+                      ) : (
+                        <>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                            <button onClick={() => setCurrentZoom(z => Math.max(0.5, z - 0.1))} style={{ padding: '6px', borderRadius: 8, border: `1px solid ${BORDER}`, background: '#fafaf8', cursor: 'pointer', display: 'flex', flexShrink: 0 }}>
+                              <ZoomOut size={14} color="#555" />
+                            </button>
+                            <input type="range" min="50" max="400" step="1" value={Math.round(currentZoom * 100)}
+                              onChange={e => setCurrentZoom(() => Number(e.target.value) / 100)}
+                              style={{ flex: 1, accentColor: AC, minWidth: 0 }} />
+                            <button onClick={() => setCurrentZoom(z => Math.min(4, z + 0.1))} style={{ padding: '6px', borderRadius: 8, border: `1px solid ${BORDER}`, background: '#fafaf8', cursor: 'pointer', display: 'flex', flexShrink: 0 }}>
+                              <ZoomIn size={14} color="#555" />
+                            </button>
+                            <span style={{ fontSize: '11px', color: '#999', minWidth: 36, textAlign: 'right', flexShrink: 0 }}>{Math.round(currentZoom * 100)}%</span>
+                          </div>
+                          <p style={{ fontSize: '11px', color: '#aaa', margin: '0 0 8px' }}>Trascina sulla preview per spostare · Rotella per zoomare</p>
+                          <button onClick={resetView} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 8, border: `1px solid ${BORDER}`, background: '#fafaf8', cursor: 'pointer', fontSize: '11px', color: '#666', fontFamily: 'Montserrat,sans-serif' }}>
+                            <RotateCcw size={11} /> Reset
+                          </button>
+                        </>
+                      )}
                     </>
                   )}
 
