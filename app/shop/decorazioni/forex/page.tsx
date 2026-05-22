@@ -150,27 +150,6 @@ export default function ForexPage() {
     let imageUrl = uploadedUrl ?? photoUrl ?? '/images/shop/forex/ambientata.png'
     const filename = photoFilename
 
-    if (photoUrl && photoNatSize) {
-      setIsRendering(true)
-      try {
-        const cW = Math.round(panelW * 100), cH = Math.round(panelH * 100)
-        const blob = await renderSingleCanvas(photoUrl, photoNatSize.w, photoNatSize.h, zoom, photoOffset.x, photoOffset.y, cW, cH)
-        if (blob) {
-          const res = await fetch('/api/shop/presign-photo', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ filename: filename ?? 'forex.jpg', contentType: 'image/jpeg' }),
-          })
-          if (res.ok) {
-            const { uploadUrl, publicUrl } = await res.json()
-            await fetch(uploadUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': 'image/jpeg' } })
-            imageUrl = publicUrl
-          }
-        }
-      } catch { /* fallback */ }
-      setIsRendering(false)
-    }
-
     addItem({
       productId:    'forex',
       variantId:    `${variant.id}${isSquare ? '' : rotated ? '__h' : '__v'}`,

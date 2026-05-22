@@ -364,27 +364,6 @@ export default function HahnemuhlePage() {
     let imageUrl = uploadedUrl ?? photoUrl ?? '/images/shop/hahnemuhle/catalogo.jpg'
     const filename = photoFilename
 
-    if (photoUrl && photoNatSize && fmtW && fmtH) {
-      setIsRendering(true)
-      try {
-        const cW = Math.round(fmtW * 100), cH = Math.round(fmtH * 100)
-        const blob = await renderSingleCanvasHahne(photoUrl, photoNatSize.w, photoNatSize.h, zoom, photoOffset.x, photoOffset.y, cW, cH)
-        if (blob) {
-          const res = await fetch('/api/shop/presign-photo', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ filename: filename ?? 'hahne.jpg', contentType: 'image/jpeg' }),
-          })
-          if (res.ok) {
-            const { uploadUrl, publicUrl } = await res.json()
-            await fetch(uploadUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': 'image/jpeg' } })
-            imageUrl = publicUrl
-          }
-        }
-      } catch { /* fallback */ }
-      setIsRendering(false)
-    }
-
     addItem({
       productId:    'hahnemuhle',
       variantId:    `${paper.id}__${format.fmt.replace('×', 'x')}`,

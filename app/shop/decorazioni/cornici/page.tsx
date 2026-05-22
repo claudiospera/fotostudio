@@ -201,27 +201,6 @@ export default function CorniciPage() {
     let imageUrl = uploadedUrl ?? photoUrl ?? 'https://images.unsplash.com/photo-1416339306562-f3d12fefd36f?w=800&q=80'
     const filename = photoFilename
 
-    if (photoUrl && photoNatSize) {
-      setIsRendering(true)
-      try {
-        const cW = Math.round(effW * 100), cH = Math.round(effH * 100)
-        const blob = await renderSingleCanvasCornici(photoUrl, photoNatSize.w, photoNatSize.h, zoom, photoOffset.x, photoOffset.y, cW, cH)
-        if (blob) {
-          const res = await fetch('/api/shop/presign-photo', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ filename: filename ?? 'cornice.jpg', contentType: 'image/jpeg' }),
-          })
-          if (res.ok) {
-            const { uploadUrl, publicUrl } = await res.json()
-            await fetch(uploadUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': 'image/jpeg' } })
-            imageUrl = publicUrl
-          }
-        }
-      } catch { /* fallback */ }
-      setIsRendering(false)
-    }
-
     addItem({
       productId:    'cornici',
       variantId:    `${variant.id}__${frame.id}__${printType.id}__${passeEnabled ? passe.id : 'no-passe'}`,

@@ -754,24 +754,8 @@ export default function InstaxPage() {
     try {
       for (const p of photos) {
         // Render the full polaroid composite (frame + photo crop + label)
-        let imageUrl = p.uploadedUrl || p.url
-        let filename = `instax-${format.id}-${frame.id}-${p.name}`
-
-        try {
-          const blob = await renderInstaxComposite(p, format, frame)
-          if (blob) {
-            const res = await fetch('/api/shop/presign-photo', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ filename, contentType: 'image/jpeg' }),
-            })
-            if (res.ok) {
-              const { uploadUrl, publicUrl } = await res.json()
-              await fetch(uploadUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': 'image/jpeg' } })
-              imageUrl = publicUrl
-            }
-          }
-        } catch { /* fall back to raw upload URL */ }
+        const imageUrl = p.uploadedUrl || p.url
+        const filename = `instax-${format.id}-${frame.id}-${p.name}`
 
         addItem({
           productId:    'stampe-instax',

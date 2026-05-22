@@ -237,43 +237,6 @@ export default function TappetinoMousePage() {
     let imageUrl = uploadedUrl ?? photoUrl ?? '/images/shop/gadget/tappetino-mouse.png'
     const orientLabel = rotated ? ' — Orizzontale' : ''
 
-    if (photoUrl && photoNatSize) {
-      setIsRendering(true)
-      try {
-        const cW = Math.round(effW * 100), cH = Math.round(effH * 100)
-        const canvas = document.createElement('canvas')
-        canvas.width = cW; canvas.height = cH
-        const ctx = canvas.getContext('2d')
-        if (ctx) {
-          ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cW, cH)
-          const img = await new Promise<HTMLImageElement>((res, rej) => {
-            const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = photoUrl
-          })
-          const cs = Math.max(cW / photoNatSize.w, cH / photoNatSize.h)
-          const iW = photoNatSize.w * cs * zoom
-          const iH = photoNatSize.h * cs * zoom
-          const offX = photoOffset.x * cW, offY = photoOffset.y * cH
-          ctx.save(); ctx.rect(0, 0, cW, cH); ctx.clip()
-          ctx.drawImage(img, (cW - iW) / 2 + offX, (cH - iH) / 2 + offY, iW, iH)
-          ctx.restore()
-          const blob = await new Promise<Blob | null>(r => canvas.toBlob(b => r(b), 'image/jpeg', 0.93))
-          if (blob) {
-            const res = await fetch('/api/shop/presign-photo', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ filename: photoFilename ?? 'tappetino.jpg', contentType: 'image/jpeg' }),
-            })
-            if (res.ok) {
-              const { uploadUrl, publicUrl } = await res.json()
-              await fetch(uploadUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': 'image/jpeg' } })
-              imageUrl = publicUrl
-            }
-          }
-        }
-      } catch { /* fallback */ }
-      setIsRendering(false)
-    }
-
     addItem({
       productId:    'tappetino-mouse',
       variantId:    `tap-rett${rotated ? '__h' : '__v'}`,

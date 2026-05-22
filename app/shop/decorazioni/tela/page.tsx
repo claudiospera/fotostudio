@@ -165,27 +165,6 @@ export default function TelaPage() {
     let imageUrl = uploadedUrl ?? photoUrl ?? '/images/shop/tela/catalogo.jpg'
     const filename = photoFilename
 
-    if (photoUrl && photoNatSize) {
-      setIsRendering(true)
-      try {
-        const cW = Math.round(canvasW * 100), cH = Math.round(canvasH * 100)
-        const blob = await renderSingleCanvas(photoUrl, photoNatSize.w, photoNatSize.h, zoom, photoOffset.x, photoOffset.y, cW, cH)
-        if (blob) {
-          const res = await fetch('/api/shop/presign-photo', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ filename: filename ?? 'tela.jpg', contentType: 'image/jpeg' }),
-          })
-          if (res.ok) {
-            const { uploadUrl, publicUrl } = await res.json()
-            await fetch(uploadUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': 'image/jpeg' } })
-            imageUrl = publicUrl
-          }
-        }
-      } catch { /* fallback */ }
-      setIsRendering(false)
-    }
-
     addItem({
       productId:    'tela',
       variantId:    `${variant.id}__${borderType.id}${isSquare ? '' : rotated ? '__h' : '__v'}`,

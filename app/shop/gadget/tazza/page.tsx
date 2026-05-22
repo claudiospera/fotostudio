@@ -246,7 +246,7 @@ export default function TazzaPage() {
           ctx.shadowColor = 'transparent'
         }
 
-        const blob = await new Promise<Blob | null>(r => canvas.toBlob(b => r(b), 'image/jpeg', 0.93))
+        const blob = await new Promise<Blob | null>(r => canvas.toBlob(b => r(b), 'image/jpeg', 1.0))
         if (blob) {
           const res = await fetch('/api/shop/presign-photo', {
             method: 'POST',

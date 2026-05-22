@@ -311,23 +311,8 @@ export default function PosterPage() {
     try {
       for (const p of photos) {
         const pv = VARIANTS.find(v => v.id === p.variantId) ?? VARIANTS[0]
-        let imageUrl = p.uploadedUrl || p.url
+        const imageUrl = p.uploadedUrl || p.url
         const filename = p.name
-        try {
-          const blob = await renderPosterComposite(p, pv)
-          if (blob) {
-            const res = await fetch('/api/shop/presign-photo', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ filename, contentType: 'image/jpeg' }),
-            })
-            if (res.ok) {
-              const { uploadUrl, publicUrl } = await res.json()
-              await fetch(uploadUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': 'image/jpeg' } })
-              imageUrl = publicUrl
-            }
-          }
-        } catch { /* fallback */ }
         addItem({
           productId:    'poster',
           variantId:    `${pv.id}__satinata--${p.id}`,
