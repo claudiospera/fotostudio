@@ -660,6 +660,83 @@ export default function HahnemuhlePage() {
               </div>
             )}
 
+            {/* ── Matt Fibre Duo su richiesta ────────────────────────── */}
+            <div style={{
+              background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
+              borderRadius: 16, overflow: 'hidden',
+              border: '1px solid rgba(255,255,255,0.08)',
+            }}>
+              {/* Badge */}
+              <div style={{ padding: '20px 24px 0' }}>
+                <span style={{
+                  display: 'inline-block',
+                  background: 'rgba(255,255,255,0.12)', color: '#c8d8ff',
+                  fontSize: '9px', fontWeight: 700, letterSpacing: '.18em',
+                  textTransform: 'uppercase', padding: '4px 10px', borderRadius: 20,
+                  marginBottom: 14,
+                }}>
+                  Su richiesta
+                </span>
+                <h3 style={{
+                  fontFamily: 'Poppins, sans-serif', fontWeight: 800,
+                  fontSize: '18px', color: '#ffffff', marginBottom: 6, lineHeight: 1.2,
+                }}>
+                  Hahnemühle Matt FineArt Baryta Duo
+                </h3>
+                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.6, marginBottom: 20 }}>
+                  La doppia anima della Fine Art: fronte opaco baryta, retro lucido fotografico. Una carta unica al mondo.
+                </p>
+              </div>
+
+              {/* Caratteristiche */}
+              <div style={{ padding: '0 24px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {[
+                  { icon: '◈', label: 'Doppia superficie', desc: 'Fronte opaco baryta · Retro lucido fotografico' },
+                  { icon: '⬡', label: '315 g/m² · 100% cotone', desc: 'Grammatura elevata, spessore 0,55 mm — rigida e pregiata' },
+                  { icon: '◎', label: 'Bianco ottico neutro', desc: 'Riproduzione fedele dei colori, contrasto elevato' },
+                  { icon: '◻', label: 'Certificata archival', desc: 'Durabilità superiore a 200 anni, museum quality' },
+                  { icon: '✦', label: 'Ideale per', desc: 'B&N artistico · Ritratti · Portfolio professionale · Esposizioni' },
+                ].map(f => (
+                  <div key={f.label} style={{
+                    display: 'flex', gap: 12, alignItems: 'flex-start',
+                    padding: '10px 14px', borderRadius: 10,
+                    background: 'rgba(255,255,255,0.06)',
+                  }}>
+                    <span style={{ fontSize: '16px', flexShrink: 0, color: '#c8d8ff', lineHeight: 1.4 }}>{f.icon}</span>
+                    <div>
+                      <p style={{ fontSize: '12px', fontWeight: 700, color: '#fff', marginBottom: 2 }}>{f.label}</p>
+                      <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>{f.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Nota + CTA */}
+              <div style={{
+                margin: '0 24px 24px',
+                padding: '16px',
+                background: 'rgba(255,255,255,0.05)',
+                borderRadius: 12,
+                border: '1px solid rgba(255,255,255,0.1)',
+              }}>
+                <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.6, marginBottom: 14 }}>
+                  La Matt FineArt Baryta Duo non è disponibile nel configuratore standard per via della sua esclusività. Scrivici per un preventivo personalizzato con formato, quantità e spedizione.
+                </p>
+                <Link
+                  href="/contatti"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 8,
+                    background: '#fff', color: '#1a1a2e',
+                    borderRadius: 10, padding: '11px 22px',
+                    fontSize: '13px', fontWeight: 700,
+                    textDecoration: 'none', letterSpacing: '.01em',
+                  }}
+                >
+                  ✉ Scrivici per la stampa
+                </Link>
+              </div>
+            </div>
+
             {/* Schede tecniche carte */}
             <div style={{ background: '#fff', border: '1px solid #e8e8e8', borderRadius: 16, overflow: 'hidden' }}>
               <div style={{ padding: '16px 20px', borderBottom: '1px solid #f0f0f0' }}>
