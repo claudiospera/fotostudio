@@ -377,6 +377,64 @@ function SuggestionCard({ composizione, imgs, roomImg, label }: {
   )
 }
 
+// ─── PricePanel ───────────────────────────────────────────────────────────────
+
+function PricePanel({ composizione }: { composizione: Composizione }) {
+  const sizes = SIZES_BY_PANELS[Math.min(composizione.slots.length, 6)] ?? SIZES_BY_PANELS[3]
+  const [materiale, setMateriale] = useState(MATERIALI[0])
+  const [sizeIdx,   setSizeIdx]   = useState(0)
+  const total = getTotal(sizes[sizeIdx], materiale)
+
+  return (
+    <div style={{ background: '#fff', border: `1.5px solid ${BORDER}`, borderRadius: 14, padding: '16px 18px' }}>
+      <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#888', margin: '0 0 12px' }}>
+        Calcola il prezzo
+      </p>
+
+      {/* Materiale */}
+      <p style={{ fontSize: '10px', color: '#888', margin: '0 0 6px', fontWeight: 700 }}>Materiale</p>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+        {MATERIALI.map(m => (
+          <button key={m} onClick={() => setMateriale(m)} style={{
+            padding: '5px 11px', borderRadius: 20, fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+            border: `1.5px solid ${materiale === m ? AC : BORDER}`,
+            background: materiale === m ? `${AC}18` : '#fafaf8',
+            color: materiale === m ? AC : '#666', transition: 'all .12s',
+          }}>{m}</button>
+        ))}
+      </div>
+
+      {/* Dimensioni */}
+      <p style={{ fontSize: '10px', color: '#888', margin: '0 0 6px', fontWeight: 700 }}>Dimensioni</p>
+      <select value={sizeIdx} onChange={e => setSizeIdx(Number(e.target.value))} style={{
+        width: '100%', padding: '8px 12px', borderRadius: 8, border: `1.5px solid ${BORDER}`,
+        background: '#fff', fontSize: '13px', fontWeight: 600, color: '#1a1a1a', cursor: 'pointer', marginBottom: 14,
+      }}>
+        {sizes.map((s, i) => <option key={s} value={i}>{s}</option>)}
+      </select>
+
+      {/* Totale */}
+      {total !== null ? (
+        <>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 12 }}>
+            <span style={{ fontSize: '28px', fontWeight: 800, color: '#1a1a1a', fontFamily: 'Poppins,sans-serif' }}>€{total}</span>
+            <span style={{ fontSize: '12px', color: '#aaa' }}>{composizione.slots.length} pannell{composizione.slots.length === 1 ? 'o' : 'i'}</span>
+          </div>
+          <a href={MAT_SLUG[materiale] ?? '#'} style={{
+            display: 'block', textAlign: 'center', background: '#1a1a1a', color: '#fff',
+            padding: '11px', borderRadius: 10, textDecoration: 'none', fontSize: '13px', fontWeight: 700,
+            fontFamily: 'Montserrat,sans-serif',
+          }}>
+            Acquista → €{total}
+          </a>
+        </>
+      ) : (
+        <p style={{ fontSize: '12px', color: '#aaa', margin: 0 }}>Prezzo non disponibile per questa combinazione</p>
+      )}
+    </div>
+  )
+}
+
 // ─── WallPreviewTool ───────────────────────────────────────────────────────────
 
 type ActiveLayer = 'foto' | 'testo'
@@ -924,6 +982,9 @@ export function WallPreviewTool() {
                 </div>
               )}
 
+              {/* Calcolatore prezzo inline */}
+              {hasAny && <PricePanel composizione={composizione} />}
+
               {/* Actions */}
               {hasAny && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -934,9 +995,6 @@ export function WallPreviewTool() {
                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px', borderRadius: 10, background: 'transparent', color: '#888', border: '1.5px solid #ddd', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
                     <RefreshCw size={14} /> Ricomincia
                   </button>
-                  <a href="#consiglio" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '11px', borderRadius: 10, background: '#1a1a1a', color: '#fff', textDecoration: 'none', fontSize: '13px', fontWeight: 700, fontFamily: 'Montserrat,sans-serif' }}>
-                    Calcola il prezzo ↓
-                  </a>
                 </div>
               )}
             </div>
