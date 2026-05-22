@@ -117,7 +117,7 @@ export default function ChiSonoPage() {
           maxHeight: '75vh',
         }}>
           <Image
-            src="/images/claudio/claudio-spera.jpg"
+            src="/images/claudio/hf_20260507_143616_e5667b0b-64ac-4f5a-9147-2342e8199862.png"
             alt="Claudio Spera — Fotografo"
             fill
             style={{ objectFit: 'cover', objectPosition: 'center top' }}
