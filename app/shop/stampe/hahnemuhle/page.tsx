@@ -772,8 +772,8 @@ export default function HahnemuhlePage() {
                 <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.6, marginBottom: 14 }}>
                   La Matt FineArt 200 Duo non è disponibile nel configuratore standard. Scrivici per un preventivo personalizzato con formato, quantità e spedizione.
                 </p>
-                <Link
-                  href="/contatti"
+                <a
+                  href="mailto:info@claudiospera.com?subject=Richiesta%20stampa%20Hahnem%C3%BChle%20Matt%20FineArt%20200%20Duo&body=Ciao%20Claudio%2C%0A%0Avorrei%20richiedere%20un%20preventivo%20per%20la%20stampa%20su%20Hahnem%C3%BChle%20Matt%20FineArt%20200%20Duo.%0A%0AFormato%3A%20%0AQuantit%C3%A0%3A%20%0A%0AGrazie!"
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: 8,
                     background: '#fff', color: '#1a1a2e',
@@ -783,7 +783,7 @@ export default function HahnemuhlePage() {
                   }}
                 >
                   ✉ Scrivici per la stampa
-                </Link>
+                </a>
               </div>
             </div>
 
