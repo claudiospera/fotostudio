@@ -200,7 +200,7 @@ export default function ServiziPage() {
 
         <div style={{ marginTop: 'clamp(32px,4vw,48px)', textAlign: 'center' }}>
           <a
-            href="https://www.youtube.com/@claudiospera"
+            href="https://www.claudiospera.com/video"
             target="_blank" rel="noopener noreferrer"
             style={{
               fontFamily: "'Jost', sans-serif", fontWeight: 300,
@@ -210,6 +210,120 @@ export default function ServiziPage() {
             }}
           >
             Vedi tutti i video
+          </a>
+        </div>
+      </section>
+
+      {/* ── REEL INSTAGRAM ── */}
+      <section style={{
+        borderTop: `1px solid ${BORDER}`,
+        padding: 'clamp(64px,8vw,112px) clamp(24px,5vw,64px)',
+        display: 'flex', flexDirection: 'column', gap: 'clamp(32px,4vw,56px)',
+      }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20 }}>
+          <div>
+            <div style={{
+              fontFamily: "'Jost', sans-serif", fontWeight: 300,
+              fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase',
+              color: INK, opacity: 0.5, marginBottom: 8,
+            }}>Reel &amp; Stories</div>
+            <div style={{
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontStyle: 'italic', fontWeight: 400,
+              fontSize: 'clamp(32px,4vw,52px)', color: INK, lineHeight: 1.1,
+            }}>Momenti in verticale</div>
+          </div>
+          <a
+            href="https://www.instagram.com/claudiosperafotografo/"
+            target="_blank" rel="noopener noreferrer"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 10,
+              fontFamily: "'Jost', sans-serif", fontWeight: 300,
+              fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase',
+              color: INK, textDecoration: 'none', opacity: 0.7,
+              border: `1px solid ${BORDER}`, padding: '12px 24px',
+              transition: 'opacity .2s',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+              <circle cx="12" cy="12" r="4"/>
+              <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
+            </svg>
+            @claudiosperafotografo
+          </a>
+        </div>
+
+        {/* Griglia card verticali */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: 'clamp(10px,1.5vw,20px)',
+        }} className="reel-grid">
+          {[1,2,3,4].map(i => (
+            <a
+              key={i}
+              href="https://www.instagram.com/claudiosperafotografo/reels/"
+              target="_blank" rel="noopener noreferrer"
+              style={{
+                display: 'block', textDecoration: 'none',
+                aspectRatio: '9/16',
+                background: 'rgba(26,22,18,0.06)',
+                position: 'relative', overflow: 'hidden',
+              }}
+              className="reel-card"
+            >
+              {/* Overlay hover */}
+              <div className="reel-overlay" style={{
+                position: 'absolute', inset: 0,
+                background: 'rgba(26,22,18,0.45)',
+                display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center', gap: 10,
+                opacity: 0, transition: 'opacity .25s',
+              }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+                <span style={{
+                  fontFamily: "'Jost', sans-serif", fontWeight: 300,
+                  fontSize: 8, letterSpacing: '0.2em', textTransform: 'uppercase',
+                  color: '#fff',
+                }}>Vedi su Instagram</span>
+              </div>
+              {/* Icona play statica */}
+              <div style={{
+                position: 'absolute', bottom: 12, left: 12,
+              }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(26,22,18,0.4)" strokeWidth="1.5">
+                  <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+              </div>
+            </a>
+          ))}
+        </div>
+
+        {/* CTA principale */}
+        <div style={{ textAlign: 'center' }}>
+          <p style={{
+            fontFamily: "'Jost', sans-serif", fontWeight: 300,
+            fontSize: 12, color: INK, opacity: 0.55,
+            marginBottom: 20, lineHeight: 1.7,
+          }}>
+            I miei reel raccontano momenti veri — dietro le quinte, atmosfere, emozioni.<br/>
+            Seguimi su Instagram per non perderne nessuno.
+          </p>
+          <a
+            href="https://www.instagram.com/claudiosperafotografo/reels/"
+            target="_blank" rel="noopener noreferrer"
+            style={{
+              fontFamily: "'Jost', sans-serif", fontWeight: 300,
+              fontSize: 9, letterSpacing: '0.22em', textTransform: 'uppercase',
+              background: INK, color: '#F5F0E8', padding: '13px 32px',
+              textDecoration: 'none', display: 'inline-block',
+            }}
+          >
+            Guarda i Reel
           </a>
         </div>
       </section>
@@ -260,9 +374,11 @@ export default function ServiziPage() {
 
       <style>{`
         .pub-service-card:hover { opacity: 0.65; }
+        .reel-card:hover .reel-overlay { opacity: 1 !important; }
         @media (max-width: 700px) {
           div[style*='repeat(3, 1fr)'] { grid-template-columns: 1fr !important; }
           .yt-grid { grid-template-columns: 1fr !important; }
+          .reel-grid { grid-template-columns: repeat(2, 1fr) !important; }
         }
         @media (max-width: 960px) and (min-width: 701px) {
           div[style*='repeat(3, 1fr)'] { grid-template-columns: repeat(2, 1fr) !important; }
