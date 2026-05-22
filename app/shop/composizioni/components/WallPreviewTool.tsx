@@ -23,7 +23,7 @@ const SIZES_BY_PANELS: Record<number, string[]> = {
 type MatCode = 'tela' | 'forex' | 'cornice'
 const PP: Record<string, Partial<Record<MatCode, number>>> = {
   '20x20': { tela: 25, forex: 15, cornice: 18 },
-  '20x30': { tela: 30, forex: 20, cornice: 22 },
+  '20x30': { tela: 30, forex: 20, cornice: 28 },
   '20x50': { tela: 35, forex: 30 },
   '20x60': { tela: 40, forex: 35 },
   '30x30': { tela: 30, forex: 25, cornice: 25 },
@@ -46,9 +46,9 @@ const MAT_CODE: Record<string, MatCode> = {
   'Stampa con cornice': 'cornice',
 }
 const MAT_SLUG: Record<string, string> = {
-  'Tela su telaio': '/shop/tela',
-  'Stampa su Forex': '/shop/forex',
-  'Stampa con cornice': '/shop/cornici',
+  'Tela su telaio': '/shop/decorazioni/tela',
+  'Stampa su Forex': '/shop/decorazioni/forex',
+  'Stampa con cornice': '/shop/decorazioni/cornici',
 }
 function getTotal(sizeLabel: string, material: string): number | null {
   const code = MAT_CODE[material]
@@ -313,7 +313,7 @@ function SuggestionCard({ composizione, imgs, roomImg, label }: {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [materiale, setMateriale] = useState(MATERIALI[0])
   const [sizeIdx,   setSizeIdx]   = useState(0)
-  const sizes = SIZES_BY_PANELS[Math.min(composizione.slots.length, 6)] ?? SIZES_BY_PANELS[3]
+  const sizes = composizione.dimensioni.map(d => d.label)
   useEffect(() => {
     const c = canvasRef.current; if (!c) return
     const slotCount = composizione.slots.length
@@ -380,10 +380,12 @@ function SuggestionCard({ composizione, imgs, roomImg, label }: {
 // ─── PricePanel ───────────────────────────────────────────────────────────────
 
 function PricePanel({ composizione }: { composizione: Composizione }) {
-  const sizes = SIZES_BY_PANELS[Math.min(composizione.slots.length, 6)] ?? SIZES_BY_PANELS[3]
+  const sizes = composizione.dimensioni.map(d => d.label)
   const [materiale, setMateriale] = useState(MATERIALI[0])
   const [sizeIdx,   setSizeIdx]   = useState(0)
-  const total = getTotal(sizes[sizeIdx], materiale)
+  // reset sizeIdx when composizione changes
+  const safeIdx = Math.min(sizeIdx, sizes.length - 1)
+  const total = getTotal(sizes[safeIdx], materiale)
 
   return (
     <div style={{ background: '#fff', border: `1.5px solid ${BORDER}`, borderRadius: 14, padding: '16px 18px' }}>
@@ -413,6 +415,13 @@ function PricePanel({ composizione }: { composizione: Composizione }) {
         {sizes.map((s, i) => <option key={s} value={i}>{s}</option>)}
       </select>
 
+      {/* Nota parete */}
+      {composizione.dimensioni[safeIdx] && (
+        <p style={{ fontSize: '11px', color: AC, margin: '-8px 0 10px', fontWeight: 600 }}>
+          📐 {composizione.dimensioni[safeIdx].pareteLabel}
+        </p>
+      )}
+
       {/* Totale */}
       {total !== null ? (
         <>
@@ -429,7 +438,10 @@ function PricePanel({ composizione }: { composizione: Composizione }) {
           </a>
         </>
       ) : (
-        <p style={{ fontSize: '12px', color: '#aaa', margin: 0 }}>Prezzo non disponibile per questa combinazione</p>
+        <p style={{ fontSize: '12px', color: '#aaa', margin: 0, fontStyle: 'italic' }}>
+          Prezzo su richiesta per questa combinazione —{' '}
+          <a href="/contatti" style={{ color: AC }}>contattami</a>
+        </p>
       )}
     </div>
   )
