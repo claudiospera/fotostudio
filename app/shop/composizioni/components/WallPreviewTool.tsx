@@ -19,12 +19,29 @@ const SIZES_BY_PANELS: Record<number, string[]> = {
   6: ['6 × 20×30 cm', '6 × 30×40 cm'],
 }
 
+const FONT_OPTIONS = [
+  { label: 'Montserrat',          value: 'Montserrat, sans-serif',                    style: 'bold' },
+  { label: 'Cormorant Garamond',  value: '"Cormorant Garamond", Georgia, serif',       style: 'italic' },
+  { label: 'Playfair Display',    value: '"Playfair Display", Georgia, serif',         style: 'bold' },
+  { label: 'Great Vibes',         value: '"Great Vibes", cursive',                     style: 'normal' },
+  { label: 'Dancing Script',      value: '"Dancing Script", cursive',                  style: 'bold' },
+  { label: 'Josefin Sans',        value: '"Josefin Sans", sans-serif',                 style: 'normal' },
+  { label: 'Bebas Neue',          value: '"Bebas Neue", sans-serif',                   style: 'normal' },
+  { label: 'Lora',                value: 'Lora, Georgia, serif',                       style: 'italic' },
+  { label: 'Raleway',             value: 'Raleway, sans-serif',                        style: 'normal' },
+  { label: 'Sacramento',          value: 'Sacramento, cursive',                        style: 'normal' },
+] as const
+
+type FontOption = typeof FONT_OPTIONS[number]
+
 interface TextOverlay {
   x: number
   y: number
   content: string
   size: number
   color: string
+  font: string   // value da FONT_OPTIONS
+  style: string  // bold | italic | normal
 }
 
 // ─── Canvas helpers ────────────────────────────────────────────────────────────
@@ -154,7 +171,7 @@ function drawCanvas(
   // Text overlays
   texts.forEach(t => {
     ctx.save()
-    ctx.font = `bold ${t.size}px Montserrat,sans-serif`
+    ctx.font = `${t.style} ${t.size}px ${t.font}`
     ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 6; ctx.shadowOffsetY = 2
     ctx.fillStyle = t.color
     ctx.fillText(t.content, t.x, t.y)
@@ -307,6 +324,7 @@ export function WallPreviewTool() {
   const [textColor,      setTextColor]       = useState('#ffffff')
   const [addingText,     setAddingText]      = useState(false)
   const [selectedTextIdx, setSelectedTextIdx] = useState<number | null>(null)
+  const [textFont,       setTextFont]        = useState<FontOption>(FONT_OPTIONS[0])
 
   // Impaginatore
   const [adviceImgs,  setAdviceImgs]  = useState<(HTMLImageElement | null)[]>(Array(6).fill(null))
@@ -458,7 +476,7 @@ export function WallPreviewTool() {
     if (!addingText || !pendingText.trim()) return
     const canvas = canvasRef.current; if (!canvas) return
     const { x, y } = toCvCoords(canvas, e)
-    setTexts(prev => [...prev, { x, y, content: pendingText.trim(), size: textSize, color: textColor }])
+    setTexts(prev => [...prev, { x, y, content: pendingText.trim(), size: textSize, color: textColor, font: textFont.value, style: textFont.style }])
     setAddingText(false)
     setActiveLayer('testo') // switcha al layer testo dopo aver piazzato
   }
@@ -632,6 +650,32 @@ export function WallPreviewTool() {
                         style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1.5px solid ${BORDER}`, fontSize: '13px', color: '#1a1a1a', marginBottom: 10, boxSizing: 'border-box', display: 'block' }}
                       />
 
+                      {/* Font */}
+                      <div style={{ marginBottom: 10 }}>
+                        <p style={{ fontSize: '10px', color: '#888', margin: '0 0 6px', fontWeight: 700 }}>Font</p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 180, overflowY: 'auto', paddingRight: 2 }}>
+                          {FONT_OPTIONS.map(fo => (
+                            <button key={fo.value} onClick={() => {
+                              setTextFont(fo)
+                              if (selectedTextIdx !== null) {
+                                setTexts(prev => prev.map((t, i) => i === selectedTextIdx ? { ...t, font: fo.value, style: fo.style } : t))
+                              }
+                            }} style={{
+                              padding: '6px 10px', borderRadius: 7, border: `1.5px solid ${textFont.value === fo.value ? AC : BORDER}`,
+                              background: textFont.value === fo.value ? `${AC}18` : '#fafaf8',
+                              cursor: 'pointer', textAlign: 'left',
+                              fontSize: 15, fontFamily: fo.value, fontStyle: fo.style === 'italic' ? 'italic' : 'normal',
+                              fontWeight: fo.style === 'bold' ? 700 : 400,
+                              color: textFont.value === fo.value ? '#1a1a1a' : '#555',
+                              lineHeight: 1.2,
+                              transition: 'all .12s',
+                            }}>
+                              {fo.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
                       {/* Dimensione */}
                       <div style={{ marginBottom: 10 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -698,7 +742,7 @@ export function WallPreviewTool() {
                             Seleziona un testo e trascinalo per spostarlo
                           </p>
                           {texts.map((t, i) => (
-                            <div key={i} onClick={() => { setSelectedTextIdx(i); setTextSize(t.size); setTextColor(t.color) }}
+                            <div key={i} onClick={() => { setSelectedTextIdx(i); setTextSize(t.size); setTextColor(t.color); const f = FONT_OPTIONS.find(fo => fo.value === t.font) ?? FONT_OPTIONS[0]; setTextFont(f) }}
                               style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px', background: selectedTextIdx === i ? `${AC}18` : '#f7f4ef', borderRadius: 6, cursor: 'pointer', border: `1.5px solid ${selectedTextIdx === i ? AC : 'transparent'}` }}>
                               <div style={{ width: 12, height: 12, borderRadius: '50%', background: t.color, border: '1px solid #ccc', flexShrink: 0 }} />
                               <span style={{ fontSize: '11px', color: '#555', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.content}</span>
