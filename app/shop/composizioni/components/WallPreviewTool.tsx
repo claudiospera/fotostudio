@@ -22,11 +22,52 @@ const SIZES_BY_PANELS: Record<number, string[]> = {
 
 // ─── Canvas helpers ────────────────────────────────────────────────────────────
 
+function addInnerShadow(
+  ctx: CanvasRenderingContext2D,
+  slotX: number, slotY: number, slotW: number, slotH: number,
+) {
+  ctx.save()
+  ctx.beginPath(); ctx.rect(slotX, slotY, slotW, slotH); ctx.clip()
+  const grd = ctx.createLinearGradient(slotX, slotY, slotX, slotY + slotH)
+  grd.addColorStop(0,   'rgba(0,0,0,0.06)')
+  grd.addColorStop(0.1, 'rgba(0,0,0,0)')
+  grd.addColorStop(0.9, 'rgba(0,0,0,0)')
+  grd.addColorStop(1,   'rgba(0,0,0,0.08)')
+  ctx.fillStyle = grd
+  ctx.fillRect(slotX, slotY, slotW, slotH)
+  ctx.restore()
+}
+
+// Disegna un singolo slot ritagliando la porzione corrispondente del bounding-box
+// dell'intera composizione (modalità immagine continua).
+function renderSlotFromBbox(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  slotX: number, slotY: number, slotW: number, slotH: number,
+  bboxX: number, bboxY: number, bboxW: number, bboxH: number,
+) {
+  ctx.save()
+  ctx.beginPath()
+  ctx.rect(slotX, slotY, slotW, slotH)
+  ctx.clip()
+
+  // Adatta l'immagine al bounding box con object-fit: cover
+  const s  = Math.max(bboxW / img.naturalWidth, bboxH / img.naturalHeight)
+  const dw = img.naturalWidth  * s
+  const dh = img.naturalHeight * s
+  const dx = bboxX + (bboxW - dw) / 2
+  const dy = bboxY + (bboxH - dh) / 2
+  ctx.drawImage(img, dx, dy, dw, dh)
+  ctx.restore()
+
+  addInnerShadow(ctx, slotX, slotY, slotW, slotH)
+}
+
+// Disegna un singolo slot con la propria immagine (modalità multi-foto).
 function renderSlotCover(
   ctx: CanvasRenderingContext2D,
   img: HTMLImageElement | null,
   slotX: number, slotY: number, slotW: number, slotH: number,
-  fraction: { startX: number; endX: number } | null = null,
 ) {
   ctx.save()
   ctx.beginPath()
@@ -40,30 +81,15 @@ function renderSlotCover(
     return
   }
 
-  let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight
-  if (fraction) {
-    sx = img.naturalWidth * fraction.startX
-    sw = img.naturalWidth * (fraction.endX - fraction.startX)
-  }
-
-  const scale = Math.max(slotW / sw, slotH / sh)
-  const dw = sw * scale, dh = sh * scale
-  ctx.drawImage(img, sx, sy, sw, sh,
+  const scale = Math.max(slotW / img.naturalWidth, slotH / img.naturalHeight)
+  const dw = img.naturalWidth * scale, dh = img.naturalHeight * scale
+  ctx.drawImage(img,
     slotX + (slotW - dw) / 2,
     slotY + (slotH - dh) / 2,
     dw, dh)
-
-  // Inner shadow
-  ctx.restore(); ctx.save()
-  ctx.beginPath(); ctx.rect(slotX, slotY, slotW, slotH); ctx.clip()
-  const grd = ctx.createLinearGradient(slotX, slotY, slotX, slotY + slotH)
-  grd.addColorStop(0,   'rgba(0,0,0,0.06)')
-  grd.addColorStop(0.1, 'rgba(0,0,0,0)')
-  grd.addColorStop(0.9, 'rgba(0,0,0,0)')
-  grd.addColorStop(1,   'rgba(0,0,0,0.08)')
-  ctx.fillStyle = grd
-  ctx.fillRect(slotX, slotY, slotW, slotH)
   ctx.restore()
+
+  addInnerShadow(ctx, slotX, slotY, slotW, slotH)
 }
 
 function drawCanvas(
@@ -106,28 +132,32 @@ function drawCanvas(
 
   // Render slots
   const loadedImgs = imgs.filter(Boolean) as HTMLImageElement[]
-  slots.forEach((slot, i) => {
-    const x = offsetX + slot.x * scale, y = offsetY + slot.y * scale
-    const w = slot.w * scale,           h = slot.h * scale
 
-    let img: HTMLImageElement | null = null
-    let frac: { startX: number; endX: number } | null = null
+  if (mode === 'single') {
+    const img = imgs[0] ?? null
+    if (img) {
+      // Calcola il bounding box di tutti gli slot in coordinate canvas
+      const bboxX = offsetX + Math.min(...slots.map(s => s.x)) * scale
+      const bboxY = offsetY + Math.min(...slots.map(s => s.y)) * scale
+      const bboxR = offsetX + Math.max(...slots.map(s => s.x + s.w)) * scale
+      const bboxB = offsetY + Math.max(...slots.map(s => s.y + s.h)) * scale
+      const bboxW = bboxR - bboxX, bboxH = bboxB - bboxY
 
-    if (mode === 'single') {
-      img = imgs[0] ?? null
-      if (composizione.panoramica && img) {
-        const n = slots.length
-        frac = { startX: i / n, endX: (i + 1) / n }
-      }
-    } else {
-      // multi: cycle through available photos
-      img = loadedImgs.length > 0 ? (loadedImgs[i % loadedImgs.length] ?? null) : null
-      // override with specifically assigned photo if present
-      if (imgs[i] !== undefined && imgs[i] !== null) img = imgs[i]
+      slots.forEach(slot => {
+        const x = offsetX + slot.x * scale, y = offsetY + slot.y * scale
+        const w = slot.w * scale,           h = slot.h * scale
+        renderSlotFromBbox(ctx, img, x, y, w, h, bboxX, bboxY, bboxW, bboxH)
+      })
     }
-
-    renderSlotCover(ctx, img, x, y, w, h, frac)
-  })
+  } else {
+    slots.forEach((slot, i) => {
+      const x = offsetX + slot.x * scale, y = offsetY + slot.y * scale
+      const w = slot.w * scale,           h = slot.h * scale
+      // usa la foto assegnata allo slot, o cicla tra quelle disponibili
+      const img = (imgs[i] ?? (loadedImgs.length > 0 ? loadedImgs[i % loadedImgs.length] : null))
+      renderSlotCover(ctx, img, x, y, w, h)
+    })
+  }
 
   // Watermark
   ctx.save(); ctx.globalAlpha = 0.16; ctx.fillStyle = '#000'
