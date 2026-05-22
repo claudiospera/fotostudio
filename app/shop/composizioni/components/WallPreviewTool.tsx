@@ -4,7 +4,8 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { COMPOSIZIONI, type Composizione } from '@/lib/composizioni-data'
-import { Upload, Download, RefreshCw, X, ZoomIn, ZoomOut, Type, RotateCcw } from 'lucide-react'
+import { Upload, Download, RefreshCw, X, ZoomIn, ZoomOut, Type, RotateCcw, ShoppingCart, Check } from 'lucide-react'
+import { useCart } from '@/components/shop/CartProvider'
 
 const AC     = '#7d9b76'
 const BORDER = '#e0dbd4'
@@ -69,6 +70,72 @@ function getTotal(sizeLabel: string, material: string): number | null {
     return PP[key]?.[code] ?? null
   }
   return null
+}
+
+// Mappa (materiale, formato pannello "WxH") → (productId, variantId, priceCents)
+const VARIANT_MAP: Record<string, Record<string, { productId: string; variantId: string; priceCents: number }>> = {
+  'Tela su telaio': {
+    '20x30':  { productId: 'tela', variantId: 'tel-30x40',  priceCents: 3500 }, // approssimato
+    '30x30':  { productId: 'tela', variantId: 'tel-30x30',  priceCents: 3000 },
+    '30x40':  { productId: 'tela', variantId: 'tel-30x40',  priceCents: 3500 },
+    '30x50':  { productId: 'tela', variantId: 'tel-30x50',  priceCents: 4000 },
+    '30x60':  { productId: 'tela', variantId: 'tel-30x60',  priceCents: 4500 },
+    '40x40':  { productId: 'tela', variantId: 'tel-40x40',  priceCents: 4000 },
+    '40x50':  { productId: 'tela', variantId: 'tel-40x50',  priceCents: 4500 },
+    '40x60':  { productId: 'tela', variantId: 'tel-40x60',  priceCents: 4700 },
+    '50x70':  { productId: 'tela', variantId: 'tel-50x70',  priceCents: 6000 },
+    '70x100': { productId: 'tela', variantId: 'tel-70x100', priceCents: 10000 },
+  },
+  'Stampa su Forex': {
+    '15x20': { productId: 'forex', variantId: 'fx-15x20', priceCents: 1000 },
+    '20x30': { productId: 'forex', variantId: 'fx-20x30', priceCents: 2000 },
+    '30x30': { productId: 'forex', variantId: 'fx-30x30', priceCents: 2500 },
+    '30x40': { productId: 'forex', variantId: 'fx-30x40', priceCents: 3000 },
+    '30x50': { productId: 'forex', variantId: 'fx-30x50', priceCents: 3500 },
+    '30x60': { productId: 'forex', variantId: 'fx-30x60', priceCents: 4000 },
+    '40x40': { productId: 'forex', variantId: 'fx-40x40', priceCents: 3500 },
+    '40x50': { productId: 'forex', variantId: 'fx-40x50', priceCents: 4000 },
+    '40x60': { productId: 'forex', variantId: 'fx-40x60', priceCents: 4200 },
+    '50x50': { productId: 'forex', variantId: 'fx-50x50', priceCents: 4500 },
+    '50x60': { productId: 'forex', variantId: 'fx-50x60', priceCents: 4700 },
+    '50x70': { productId: 'forex', variantId: 'fx-50x70', priceCents: 5000 },
+  },
+  'Stampa con cornice': {
+    '10x15': { productId: 'cornici', variantId: '10x15', priceCents: 1500 },
+    '13x18': { productId: 'cornici', variantId: '13x18', priceCents: 1800 },
+    '15x20': { productId: 'cornici', variantId: '15x20', priceCents: 2200 },
+    '20x30': { productId: 'cornici', variantId: '20x30', priceCents: 2800 },
+    '30x40': { productId: 'cornici', variantId: '30x40', priceCents: 3800 },
+    '30x60': { productId: 'cornici', variantId: '30x60', priceCents: 2500 },
+  },
+}
+
+// Ritorna productId, variantId, priceCents, quantity dal label della dimensione
+function getVariantInfo(sizeLabel: string, material: string): { productId: string; variantId: string; priceCents: number; quantity: number } | null {
+  const map = VARIANT_MAP[material]
+  if (!map) return null
+  const m = sizeLabel.match(/^(\d+)\s*[×x]\s*(\d+)[×x](\d+)/)
+  if (m) {
+    const count = parseInt(m[1])
+    const [a, b] = [parseInt(m[2]), parseInt(m[3])]
+    const key = `${Math.min(a, b)}x${Math.max(a, b)}`
+    const v = map[key]; if (!v) return null
+    return { ...v, quantity: count }
+  }
+  const m2 = sizeLabel.match(/^(\d+)[×x](\d+)/)
+  if (m2) {
+    const [a, b] = [parseInt(m2[1]), parseInt(m2[2])]
+    const key = `${Math.min(a, b)}x${Math.max(a, b)}`
+    const v = map[key]; if (!v) return null
+    return { ...v, quantity: 1 }
+  }
+  return null
+}
+
+const MAT_IMAGE: Record<string, string> = {
+  'Tela su telaio':    '/images/shop/tela/catalogo.jpg',
+  'Stampa su Forex':   '/images/shop/forex/catalogo.png',
+  'Stampa con cornice': '/images/shop/stampe/cornici.png',
 }
 
 const FONT_OPTIONS = [
@@ -313,7 +380,28 @@ function SuggestionCard({ composizione, imgs, roomImg, label }: {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [materiale, setMateriale] = useState(MATERIALI[0])
   const [sizeIdx,   setSizeIdx]   = useState(0)
+  const [added,     setAdded]     = useState(false)
+  const { addItem } = useCart()
   const sizes = composizione.dimensioni.map(d => d.label)
+  const safeIdx2 = Math.min(sizeIdx, sizes.length - 1)
+  const variantInfo2 = getVariantInfo(sizes[safeIdx2], materiale)
+
+  function handleAdd() {
+    if (!variantInfo2) return
+    addItem({
+      productId:    variantInfo2.productId,
+      variantId:    variantInfo2.variantId,
+      quantity:     variantInfo2.quantity,
+      productName:  materiale,
+      variantLabel: `${sizes[safeIdx2]} — ${composizione.nome}`,
+      price:        variantInfo2.priceCents,
+      image:        MAT_IMAGE[materiale] ?? '',
+      notes:        `Composizione: ${composizione.nome} (${composizione.slots.length} pannell${composizione.slots.length === 1 ? 'o' : 'i'})`,
+    })
+    setAdded(true)
+    setTimeout(() => setAdded(false), 2500)
+  }
+
   useEffect(() => {
     const c = canvasRef.current; if (!c) return
     const slotCount = composizione.slots.length
@@ -350,28 +438,43 @@ function SuggestionCard({ composizione, imgs, roomImg, label }: {
           {sizes.map((s, i) => <option key={s} value={i}>{s}</option>)}
         </select>
         {(() => {
-          const total = getTotal(sizes[sizeIdx], materiale)
+          const total = getTotal(sizes[safeIdx2], materiale)
           return total !== null ? (
             <div style={{ marginBottom: 12 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
                 <span style={{ fontSize: '26px', fontWeight: 800, color: '#1a1a1a', fontFamily: 'Poppins,sans-serif' }}>€{total}</span>
                 <span style={{ fontSize: '12px', color: '#aaa' }}>{composizione.slots.length} pannelli</span>
               </div>
-              <p style={{ fontSize: '11px', color: '#aaa', margin: '2px 0 0' }}>{sizes[sizeIdx]} · {materiale}</p>
+              <p style={{ fontSize: '11px', color: '#aaa', margin: '2px 0 0' }}>{sizes[safeIdx2]} · {materiale}</p>
             </div>
           ) : (
-            <p style={{ fontSize: '12px', color: '#888', margin: '0 0 12px' }}>{sizes[sizeIdx]} · {materiale}</p>
+            <p style={{ fontSize: '12px', color: '#888', margin: '0 0 12px' }}>{sizes[safeIdx2]} · {materiale}</p>
           )
         })()}
-        <a href={MAT_SLUG[materiale] ?? '#'} style={{
-          display: 'block', textAlign: 'center', background: '#1a1a1a', color: '#fff',
-          padding: '11px', borderRadius: 10, textDecoration: 'none', fontSize: '13px', fontWeight: 700,
-          fontFamily: 'Montserrat,sans-serif',
-        }}>
-          {getTotal(sizes[sizeIdx], materiale) !== null
-            ? `Acquista · €${getTotal(sizes[sizeIdx], materiale)} →`
-            : 'Vai al prodotto →'}
-        </a>
+        {variantInfo2 ? (
+          <>
+            <button onClick={handleAdd} style={{
+              width: '100%', padding: '11px', borderRadius: 10, border: 'none', cursor: 'pointer',
+              background: added ? '#22863a' : '#1a1a1a', color: '#fff',
+              fontSize: '13px', fontWeight: 700, fontFamily: 'Montserrat,sans-serif',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              transition: 'background .2s',
+            }}>
+              {added ? <><Check size={14} /> Aggiunto!</> : <><ShoppingCart size={14} /> Aggiungi al carrello</>}
+            </button>
+            {added && (
+              <a href="/shop/carrello" style={{ display: 'block', textAlign: 'center', marginTop: 8, fontSize: '12px', color: AC, textDecoration: 'underline' }}>
+                Vai al carrello →
+              </a>
+            )}
+          </>
+        ) : (
+          <a href="/contatti" style={{
+            display: 'block', textAlign: 'center', background: '#1a1a1a', color: '#fff',
+            padding: '11px', borderRadius: 10, textDecoration: 'none', fontSize: '13px', fontWeight: 700,
+            fontFamily: 'Montserrat,sans-serif',
+          }}>Contattami per un preventivo →</a>
+        )}
       </div>
     </div>
   )
@@ -383,9 +486,28 @@ function PricePanel({ composizione }: { composizione: Composizione }) {
   const sizes = composizione.dimensioni.map(d => d.label)
   const [materiale, setMateriale] = useState(MATERIALI[0])
   const [sizeIdx,   setSizeIdx]   = useState(0)
+  const [added,     setAdded]     = useState(false)
+  const { addItem } = useCart()
   // reset sizeIdx when composizione changes
   const safeIdx = Math.min(sizeIdx, sizes.length - 1)
   const total = getTotal(sizes[safeIdx], materiale)
+  const variantInfo = getVariantInfo(sizes[safeIdx], materiale)
+
+  function handleAddToCart() {
+    if (!variantInfo) return
+    addItem({
+      productId:    variantInfo.productId,
+      variantId:    variantInfo.variantId,
+      quantity:     variantInfo.quantity,
+      productName:  materiale,
+      variantLabel: `${sizes[safeIdx]} — ${composizione.nome}`,
+      price:        variantInfo.priceCents,
+      image:        MAT_IMAGE[materiale] ?? '',
+      notes:        `Composizione: ${composizione.nome} (${composizione.slots.length} pannell${composizione.slots.length === 1 ? 'o' : 'i'})`,
+    })
+    setAdded(true)
+    setTimeout(() => setAdded(false), 2500)
+  }
 
   return (
     <div style={{ background: '#fff', border: `1.5px solid ${BORDER}`, borderRadius: 14, padding: '16px 18px' }}>
@@ -423,19 +545,33 @@ function PricePanel({ composizione }: { composizione: Composizione }) {
       )}
 
       {/* Totale */}
-      {total !== null ? (
+      {total !== null && variantInfo ? (
         <>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 12 }}>
             <span style={{ fontSize: '28px', fontWeight: 800, color: '#1a1a1a', fontFamily: 'Poppins,sans-serif' }}>€{total}</span>
-            <span style={{ fontSize: '12px', color: '#aaa' }}>{composizione.slots.length} pannell{composizione.slots.length === 1 ? 'o' : 'i'}</span>
+            <span style={{ fontSize: '12px', color: '#aaa' }}>{variantInfo.quantity} pannell{variantInfo.quantity === 1 ? 'o' : 'i'} · €{variantInfo.priceCents / 100} cad.</span>
           </div>
-          <a href={MAT_SLUG[materiale] ?? '#'} style={{
-            display: 'block', textAlign: 'center', background: '#1a1a1a', color: '#fff',
-            padding: '11px', borderRadius: 10, textDecoration: 'none', fontSize: '13px', fontWeight: 700,
-            fontFamily: 'Montserrat,sans-serif',
-          }}>
-            Acquista → €{total}
-          </a>
+          <button
+            onClick={handleAddToCart}
+            style={{
+              width: '100%', padding: '12px', borderRadius: 10, border: 'none', cursor: 'pointer',
+              background: added ? '#22863a' : '#1a1a1a', color: '#fff',
+              fontSize: '13px', fontWeight: 700, fontFamily: 'Montserrat,sans-serif',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              transition: 'background .2s',
+            }}>
+            {added
+              ? <><Check size={15} /> Aggiunto al carrello!</>
+              : <><ShoppingCart size={15} /> Aggiungi al carrello · €{total}</>}
+          </button>
+          {added && (
+            <a href="/shop/carrello" style={{
+              display: 'block', textAlign: 'center', marginTop: 8,
+              fontSize: '12px', color: AC, textDecoration: 'underline',
+            }}>
+              Vai al carrello →
+            </a>
+          )}
         </>
       ) : (
         <p style={{ fontSize: '12px', color: '#aaa', margin: 0, fontStyle: 'italic' }}>
