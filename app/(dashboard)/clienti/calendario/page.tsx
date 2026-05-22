@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronRight, Menu } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Menu, Calendar, Copy, RefreshCw, Check } from 'lucide-react'
 import { useUIStore } from '@/store/ui'
 import type { Cliente, CategoriaCliente } from '@/lib/types'
 
@@ -53,6 +53,10 @@ export default function CalendarioClientiPage() {
   const [year,  setYear]            = useState(() => new Date().getFullYear())
   const [month, setMonth]           = useState(() => new Date().getMonth())
   const [selected, setSelected]     = useState<Date | null>(null)
+  const [icalToken, setIcalToken]   = useState<string | null>(null)
+  const [copied, setCopied]         = useState(false)
+  const [showIcal, setShowIcal]     = useState(false)
+  const [regenerating, setRegenerating] = useState(false)
 
   const fetchClienti = useCallback(async () => {
     setLoading(true)
@@ -62,6 +66,27 @@ export default function CalendarioClientiPage() {
   }, [])
 
   useEffect(() => { fetchClienti() }, [fetchClienti])
+
+  // Carica il token iCal
+  useEffect(() => {
+    fetch('/api/ical-token').then(r => r.ok ? r.json() : null).then(d => { if (d?.token) setIcalToken(d.token) })
+  }, [])
+
+  const icalUrl = icalToken
+    ? `${process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin}/api/ical?token=${icalToken}`
+    : ''
+
+  const copyIcalUrl = () => {
+    if (!icalUrl) return
+    navigator.clipboard.writeText(icalUrl).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) })
+  }
+
+  const regenerateToken = async () => {
+    setRegenerating(true)
+    const res = await fetch('/api/ical-token', { method: 'POST' })
+    if (res.ok) { const d = await res.json(); setIcalToken(d.token) }
+    setRegenerating(false)
+  }
 
   const prevMonth = () => {
     if (month === 0) { setMonth(11); setYear(y => y - 1) }
@@ -130,6 +155,20 @@ export default function CalendarioClientiPage() {
         </h1>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
+          {/* Bottone iCal */}
+          <button
+            onClick={() => setShowIcal(v => !v)}
+            title="Sincronizza con iPhone / iCal"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '6px 12px', borderRadius: 'var(--r2)', fontSize: 12, fontWeight: 600,
+              border: `1px solid ${showIcal ? 'var(--ac)' : 'rgba(255,255,255,0.1)'}`,
+              background: showIcal ? 'var(--acd)' : 'var(--s2)',
+              color: showIcal ? 'var(--ac)' : 'var(--t2)', cursor: 'pointer', transition: 'all .15s',
+            }}
+          >
+            <Calendar size={13} /> iCal
+          </button>
           <button
             onClick={goToday}
             style={{
@@ -151,6 +190,71 @@ export default function CalendarioClientiPage() {
           </button>
         </div>
       </div>
+
+      {/* PANNELLO iCAL */}
+      {showIcal && (
+        <div style={{
+          padding: '14px 28px',
+          borderBottom: '1px solid var(--b1)',
+          background: 'var(--s1)',
+          display: 'flex', flexDirection: 'column', gap: 10,
+          flexShrink: 0,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Calendar size={14} color="var(--ac)" />
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--tx)' }}>
+              Sincronizza con iPhone / Mac / Google Calendar
+            </span>
+          </div>
+          <p style={{ fontSize: 12, color: 'var(--t2)', margin: 0, lineHeight: 1.6 }}>
+            Copia il link e aggiungilo come <strong style={{ color: 'var(--tx)' }}>calendario sottoscritto</strong> su iPhone
+            (Calendario → Aggiungi account → Altro → Aggiungi calendario sottoscritto) oppure su Mac o Google Calendar.
+            Si aggiorna automaticamente ogni ora.
+          </p>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{
+              flex: 1, minWidth: 0,
+              background: 'var(--s2)', border: '1px solid var(--b1)',
+              borderRadius: 'var(--r2)', padding: '8px 12px',
+              fontSize: 11, fontFamily: 'monospace', color: 'var(--t2)',
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>
+              {icalUrl || 'Caricamento…'}
+            </div>
+            <button
+              onClick={copyIcalUrl}
+              disabled={!icalUrl}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '8px 14px', borderRadius: 'var(--r2)',
+                border: 'none', cursor: icalUrl ? 'pointer' : 'not-allowed',
+                background: copied ? '#22c55e' : 'var(--ac)',
+                color: '#fff', fontSize: 12, fontWeight: 700,
+                transition: 'background .2s', flexShrink: 0,
+              }}
+            >
+              {copied ? <><Check size={13} /> Copiato!</> : <><Copy size={13} /> Copia link</>}
+            </button>
+            <button
+              onClick={regenerateToken}
+              disabled={regenerating}
+              title="Rigenera link (invalida il precedente)"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '8px 12px', borderRadius: 'var(--r2)',
+                border: '1px solid var(--b1)', background: 'var(--s2)',
+                color: 'var(--t3)', cursor: 'pointer', fontSize: 12, flexShrink: 0,
+              }}
+            >
+              <RefreshCw size={13} style={{ animation: regenerating ? 'spin 1s linear infinite' : 'none' }} />
+              Rigenera
+            </button>
+          </div>
+          <p style={{ fontSize: 11, color: 'var(--t3)', margin: 0 }}>
+            ⚠️ Il link è privato — chiunque lo possieda può vedere i tuoi eventi. Usa &quot;Rigenera&quot; per invalidare il vecchio link.
+          </p>
+        </div>
+      )}
 
       {/* BODY */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
