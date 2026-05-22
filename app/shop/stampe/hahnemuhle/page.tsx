@@ -366,6 +366,8 @@ export default function HahnemuhlePage() {
   const [whiteBorder, setWhiteBorder] = useState(false)
   const [borderCm,    setBorderCm]    = useState<2.5 | 5>(2.5)
   const [rotated,     setRotated]     = useState(false)
+  const [spray,       setSpray]       = useState(false)
+  const [certificato, setCertificato] = useState(false)
 
   // Formato con rotazione applicata
   const fmtW       = format ? (rotated ? Math.max(format.w, format.h) : format.w) : null
@@ -375,7 +377,10 @@ export default function HahnemuhlePage() {
   // Formati fino a 24×36 → consigliato 2.5cm
   const isSmallFormat = format ? format.w * format.h <= 24 * 36 : true
 
-  const price = format ? getPrice(format, paper.id) : null
+  const basePrice  = format ? getPrice(format, paper.id) : null
+  const sprayExtra = basePrice && spray ? Math.round(basePrice * 0.20) : 0
+  const certExtra  = certificato ? 1500 : 0
+  const price      = basePrice != null ? basePrice + sprayExtra + certExtra : null
 
   useEffect(() => {
     return () => { if (photoUrl) URL.revokeObjectURL(photoUrl) }
@@ -418,7 +423,7 @@ export default function HahnemuhlePage() {
       variantId:    `${paper.id}__${format.fmt.replace('×', 'x')}`,
       quantity:     qty,
       productName:  'Stampa Fine Art Hahnemühle',
-      variantLabel: `${paper.label} — ${fmtW}×${fmtH} cm${isSquare ? '' : rotated ? ' (orizzontale)' : ' (verticale)'}`,
+      variantLabel: `${paper.label} — ${fmtW}×${fmtH} cm${isSquare ? '' : rotated ? ' (orizzontale)' : ' (verticale)'}${spray ? ' · Spray' : ''}${certificato ? ' · Certificato' : ''}`,
       price,
       image:        imageUrl,
       filename,
@@ -920,21 +925,78 @@ export default function HahnemuhlePage() {
               </div>
             )}
 
+            {/* Spray Protettivo */}
+            <div style={{ background: '#fff', border: '1px solid #e8e8e8', borderRadius: 16, padding: 20 }}>
+              <h3 style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700, fontSize: '15px', color: '#0a0a0a', marginBottom: 6 }}>
+                Spray Protettivo Hahnemühle
+              </h3>
+              <p style={{ fontSize: '12px', color: '#666', lineHeight: 1.65, fontStyle: 'italic', marginBottom: 14 }}>
+                Lo spray protettivo Hahnemühle protegge le stampe dagli agenti esterni, i raggi UV e riduce il rischio di impronte e graffi, senza incidere sulla qualità visiva e senza alterare la superficie.
+              </p>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={spray}
+                  onChange={e => setSpray(e.target.checked)}
+                  style={{ width: 18, height: 18, accentColor: paper.color, cursor: 'pointer', flexShrink: 0 }}
+                />
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#333' }}>
+                  Applicazione {basePrice ? `(+${formatPrice(Math.round(basePrice * 0.20))})` : '(+20%)'}
+                </span>
+              </label>
+            </div>
+
+            {/* Certificato di autenticità */}
+            <div style={{ background: '#fff', border: '1px solid #e8e8e8', borderRadius: 16, padding: 20 }}>
+              <h3 style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700, fontSize: '15px', color: '#0a0a0a', marginBottom: 6 }}>
+                Certificato di autenticità Hahnemühle
+              </h3>
+              <p style={{ fontSize: '12px', color: '#666', lineHeight: 1.65, fontStyle: 'italic', marginBottom: 14 }}>
+                Realizzato su carta filigranata, con due bollini olografici numerati.
+              </p>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={certificato}
+                  onChange={e => setCertificato(e.target.checked)}
+                  style={{ width: 18, height: 18, accentColor: paper.color, cursor: 'pointer', flexShrink: 0 }}
+                />
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#333' }}>
+                  Sì (+{formatPrice(1500)})
+                </span>
+              </label>
+            </div>
+
             {/* Quantità + CTA */}
             <div style={{ background: '#fff', border: '1px solid #e8e8e8', borderRadius: 16, padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
 
               {price ? (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                  <div>
-                    <p style={{ fontSize: '11px', color: '#aaa', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 4 }}>Prezzo unitario</p>
-                    <p style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 800, fontSize: '28px', color: paper.color, lineHeight: 1 }}>
-                      {formatPrice(price)}
-                    </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                    <div>
+                      <p style={{ fontSize: '11px', color: '#aaa', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 4 }}>Prezzo unitario</p>
+                      <p style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 800, fontSize: '28px', color: paper.color, lineHeight: 1 }}>
+                        {formatPrice(price)}
+                      </p>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <p style={{ fontSize: '11px', color: '#aaa' }}>{paper.label}</p>
+                      <p style={{ fontSize: '12px', fontWeight: 700, color: '#555' }}>{format?.fmt} cm</p>
+                    </div>
                   </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <p style={{ fontSize: '11px', color: '#aaa' }}>{paper.label}</p>
-                    <p style={{ fontSize: '12px', fontWeight: 700, color: '#555' }}>{format?.fmt} cm</p>
-                  </div>
+                  {(spray || certificato) && basePrice != null && (
+                    <div style={{ fontSize: '11px', color: '#888', lineHeight: 1.8, padding: '8px 12px', background: '#f9f9f9', borderRadius: 8 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span>Stampa</span><span>{formatPrice(basePrice)}</span>
+                      </div>
+                      {spray && <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span>Spray protettivo (+20%)</span><span>+{formatPrice(sprayExtra)}</span>
+                      </div>}
+                      {certificato && <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span>Certificato autenticità</span><span>+{formatPrice(1500)}</span>
+                      </div>}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <p style={{ fontSize: '13px', color: '#bbb', textAlign: 'center' }}>
