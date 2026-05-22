@@ -64,7 +64,7 @@ export default function ServiziPage() {
       <section style={{
         paddingTop: 'clamp(120px,14vw,180px)',
         paddingBottom: 0,
-        paddingLeft: 'clamp(24px,7vw,96px)',
+        paddingLeft: 'clamp(48px,7vw,96px)',
         paddingRight: 'clamp(24px,5vw,64px)',
         minHeight: '90vh',
         display: 'flex', flexDirection: 'column', justifyContent: 'space-between',

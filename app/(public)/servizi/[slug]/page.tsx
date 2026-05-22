@@ -19,7 +19,7 @@ const SERVIZI: Record<string, ServizioData> = {
     nome: 'Matrimoni',
     location: 'Campania · e dintorni',
     quote: 'Ogni matrimonio porta con se una luce che non assomiglia a nessun\'altra.',
-    descrizione: 'Racconto il vostro matrimonio come una storia scritta insieme, fotogramma dopo fotogramma. Non pose costruite, ma emozioni autentiche: lo sguardo che si incrocia prima del si, il tremore delle mani, le lacrime che scappano prima del previsto. Lavoro in Campania e dintorni, disponibile a seguirvi ovunque la vostra storia vi porti. Ogni report e unico, ogni album e un libro che racconta esattamente la vostra giornata.',
+    descrizione: 'Racconto il vostro matrimonio come una storia scritta insieme, fotogramma dopo fotogramma. Emozioni autentiche: lo sguardo che si incrocia prima del si, il tremore delle mani, le lacrime che scappano prima del previsto. Lavoro in Campania e dintorni, disponibile a seguirvi ovunque la vostra storia vi porti. Ogni report e unico, ogni album e un libro che racconta esattamente la vostra giornata.',
     include: [
       'Sopralluogo e consulenza pre-matrimonio',
       'Copertura dell\'intera giornata',
