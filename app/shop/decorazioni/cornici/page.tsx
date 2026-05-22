@@ -65,7 +65,7 @@ const PASSEPARTOUT_OPTIONS: PassepartoutOption[] = [
 
 // Formati che supportano schienale (solo fino a 20×30)
 const SCHIENALE_VARIANTS = new Set(['10x15', '13x18', '15x20', '20x30'])
-const SCHIENALE_PRICE = 300 // €3,00
+const SCHIENALE_PRICE = 0 // gratuito
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -718,7 +718,7 @@ export default function CorniciPage() {
                   }} />
                 </button>
                 <span style={{ fontSize: '13px', color: '#555', fontWeight: 500 }}>
-                  {schienaleEnabled ? `Attivo (+${formatPrice(SCHIENALE_PRICE)})` : 'Non attivo'}
+                  {schienaleEnabled ? 'Attivo (gratuito)' : 'Non attivo'}
                 </span>
               </div>
               <p style={{ fontSize: '11px', color: '#aaa', marginTop: 8 }}>
@@ -770,7 +770,7 @@ export default function CorniciPage() {
               {schienaleEnabled && schienaleAvailable && (
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span>Schienale</span>
-                  <span style={{ fontWeight: 600, color: '#555' }}>+{formatPrice(SCHIENALE_PRICE)}</span>
+                  <span style={{ fontWeight: 600, color: '#22c55e' }}>Gratuito</span>
                 </div>
               )}
               {qty > 1 && (
