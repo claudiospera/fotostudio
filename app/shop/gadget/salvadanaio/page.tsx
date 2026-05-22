@@ -16,11 +16,11 @@ function fmt(cents: number) {
 const PRICE = 1500
 
 // ─── Dimensioni area stampa ────────────────────────────────────────────────────
-const PREV_W = 360                              // preview px larghezza
-const PREV_H = Math.round(PREV_W * 10 / 12)    // ~300px (proporzione 12×10 cm)
-const OUT_W  = 1200                             // canvas output (100px/cm × 12cm)
-const OUT_H  = 1000                             // canvas output (100px/cm × 10cm)
-const SCALE  = OUT_W / PREV_W
+const PREV_W = 400                                 // preview px larghezza
+const PREV_H = Math.round(PREV_W * 8.5 / 20)      // 170px
+const OUT_W  = 2000                                // canvas output (100px/cm × 20cm)
+const OUT_H  = 850                                 // canvas output (100px/cm × 8.5cm)
+const SCALE  = OUT_W / PREV_W                      // 5
 
 // ─── Font ─────────────────────────────────────────────────────────────────────
 const FONTS = [
@@ -266,7 +266,7 @@ export default function SalvadanaiPage() {
       variantId:    'sal-std',
       quantity:     qty,
       productName:  'Salvadanaio Personalizzato',
-      variantLabel: `12×10 cm${text.trim() ? ` · Testo: "${text.slice(0, 20)}"` : ''}`,
+      variantLabel: `20×8,5 cm${text.trim() ? ` · Testo: "${text.slice(0, 20)}"` : ''}`,
       price:        PRICE,
       image:        imageUrl,
       filename:     photoFilename,
@@ -320,7 +320,7 @@ export default function SalvadanaiPage() {
 
           {/* Etichetta preview */}
           <p style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 10 }}>
-            Anteprima area di stampa (12×10 cm)
+            Anteprima area di stampa (20×8,5 cm)
           </p>
 
           {/* Preview area stampa */}
@@ -409,8 +409,8 @@ export default function SalvadanaiPage() {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-              <span style={{ fontSize: '10px', color: '#bbb' }}>← 12 cm →</span>
-              <span style={{ fontSize: '10px', color: '#bbb' }}>10 cm</span>
+              <span style={{ fontSize: '10px', color: '#bbb' }}>← 20 cm →</span>
+              <span style={{ fontSize: '10px', color: '#bbb' }}>8,5 cm</span>
             </div>
           </div>
 
@@ -463,7 +463,7 @@ export default function SalvadanaiPage() {
               Salvadanaio Personalizzato
             </h1>
             <p style={{ fontSize: '14px', color: '#666', lineHeight: 1.65 }}>
-              Salvadanaio in ceramica con stampa fotografica personalizzata. Area di stampa 12×10 cm. Aggiungi la tua foto e un testo personalizzato.
+              Salvadanaio in ceramica con stampa fotografica personalizzata. Area di stampa 20×8,5 cm. Aggiungi la tua foto e un testo personalizzato.
             </p>
           </div>
 
@@ -664,7 +664,7 @@ export default function SalvadanaiPage() {
             </div>
 
             <div style={{ fontSize: '12px', color: '#888', lineHeight: 1.7, padding: '10px 12px', background: '#f9f9f9', borderRadius: 8 }}>
-              <b style={{ color: '#555' }}>Salvadanaio in ceramica</b> — area stampa 12×10 cm
+              <b style={{ color: '#555' }}>Salvadanaio in ceramica</b> — area stampa 20×8,5 cm
               {!photoUrl && !text.trim() && <div style={{ color: '#f59e0b', fontWeight: 600 }}>Nessuna personalizzazione aggiunta</div>}
               {text.trim() && <div>Testo: <em>&ldquo;{text.slice(0, 30)}{text.length > 30 ? '…' : ''}&rdquo;</em> — {font.label}</div>}
             </div>
