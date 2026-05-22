@@ -11,12 +11,64 @@ const BORDER = '#e0dbd4'
 const MATERIALI = ['Tela su telaio', 'Stampa su Forex', 'Stampa con cornice']
 
 const SIZES_BY_PANELS: Record<number, string[]> = {
-  1: ['40×50 cm', '50×70 cm', '70×100 cm', '100×140 cm'],
-  2: ['2 × 30×40 cm', '2 × 40×50 cm', '2 × 50×70 cm', '2 × 70×100 cm'],
+  1: ['30×60 cm', '40×50 cm', '50×70 cm', '70×100 cm', '100×140 cm'],
+  2: ['2 × 30×40 cm', '2 × 30×60 cm', '2 × 40×50 cm', '2 × 50×70 cm', '2 × 70×100 cm'],
   3: ['3 × 20×60 cm', '3 × 30×60 cm', '3 × 40×60 cm', '3 × 50×70 cm'],
-  4: ['4 × 30×40 cm', '4 × 40×50 cm', '4 × 30×60 cm'],
-  5: ['5 × 20×30 cm', '5 × 30×40 cm', '5 × 20×60 cm'],
-  6: ['6 × 20×30 cm', '6 × 30×40 cm'],
+  4: ['4 × 30×40 cm', '4 × 30×60 cm', '4 × 40×50 cm'],
+  5: ['5 × 20×30 cm', '5 × 30×40 cm', '5 × 30×60 cm', '5 × 20×60 cm'],
+  6: ['6 × 20×30 cm', '6 × 30×40 cm', '6 × 30×60 cm'],
+}
+
+// Prezzo per singolo pannello (€) per materiale e formato
+type MatCode = 'tela' | 'forex' | 'cornice'
+const PP: Record<string, Partial<Record<MatCode, number>>> = {
+  '20x20': { tela: 25, forex: 15, cornice: 18 },
+  '20x30': { tela: 30, forex: 20, cornice: 22 },
+  '20x50': { tela: 35, forex: 30 },
+  '20x60': { tela: 40, forex: 35 },
+  '30x30': { tela: 30, forex: 25, cornice: 25 },
+  '30x40': { tela: 35, forex: 30, cornice: 38 },
+  '30x50': { tela: 40, forex: 35 },
+  '30x60': { tela: 45, forex: 40, cornice: 25 },
+  '30x90': { tela: 65, forex: 55 },
+  '35x50': { tela: 45, forex: 40 },
+  '40x40': { tela: 40, forex: 35 },
+  '40x50': { tela: 45, forex: 40 },
+  '40x60': { tela: 47, forex: 42 },
+  '40x80': { tela: 60, forex: 50 },
+  '50x50': { tela: 55, forex: 45 },
+  '50x70': { tela: 60, forex: 50 },
+  '70x100': { tela: 100, forex: 80 },
+}
+const MAT_CODE: Record<string, MatCode> = {
+  'Tela su telaio': 'tela',
+  'Stampa su Forex': 'forex',
+  'Stampa con cornice': 'cornice',
+}
+const MAT_SLUG: Record<string, string> = {
+  'Tela su telaio': '/shop/tela',
+  'Stampa su Forex': '/shop/forex',
+  'Stampa con cornice': '/shop/cornici',
+}
+function getTotal(sizeLabel: string, material: string): number | null {
+  const code = MAT_CODE[material]
+  if (!code) return null
+  // "N × W×H cm" or "W×H cm"
+  const m = sizeLabel.match(/^(\d+)\s*[×x]\s*(\d+)[×x](\d+)/)
+  if (m) {
+    const count = parseInt(m[1])
+    const [a, b] = [parseInt(m[2]), parseInt(m[3])]
+    const key = `${Math.min(a, b)}x${Math.max(a, b)}`
+    const up = PP[key]?.[code]; if (!up) return null
+    return up * count
+  }
+  const m2 = sizeLabel.match(/^(\d+)[×x](\d+)/)
+  if (m2) {
+    const [a, b] = [parseInt(m2[1]), parseInt(m2[2])]
+    const key = `${Math.min(a, b)}x${Math.max(a, b)}`
+    return PP[key]?.[code] ?? null
+  }
+  return null
 }
 
 const FONT_OPTIONS = [
@@ -132,11 +184,11 @@ function drawCanvas(
   }
 
   const slots  = composizione.slots
-  const WALL_H = Math.round(CH * 0.56)
-  const availW = CW * 0.84, availH = WALL_H * 0.88
+  const WALL_H = Math.round(CH * 0.70)
+  const availW = CW * 0.88, availH = WALL_H * 0.88
   const scale  = Math.min(availW / 100, availH / 70)
-  const offsetX = CW * 0.42 - (100 * scale) / 2
-  const offsetY = WALL_H * 0.06 + (availH - 70 * scale) / 2
+  const offsetX = CW * 0.44 - (100 * scale) / 2
+  const offsetY = WALL_H * 0.04 + (availH - 70 * scale) / 2
 
   // Drop shadows
   ctx.save()
@@ -297,12 +349,29 @@ function SuggestionCard({ composizione, imgs, roomImg, label }: {
         }}>
           {sizes.map((s, i) => <option key={s} value={i}>{s}</option>)}
         </select>
-        <p style={{ fontSize: '12px', color: '#888', margin: '0 0 12px' }}>Materiale: <strong>{materiale}</strong> · {sizes[sizeIdx]}</p>
-        <a href="#preventivo" style={{
+        {(() => {
+          const total = getTotal(sizes[sizeIdx], materiale)
+          return total !== null ? (
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                <span style={{ fontSize: '26px', fontWeight: 800, color: '#1a1a1a', fontFamily: 'Poppins,sans-serif' }}>€{total}</span>
+                <span style={{ fontSize: '12px', color: '#aaa' }}>{composizione.slots.length} pannelli</span>
+              </div>
+              <p style={{ fontSize: '11px', color: '#aaa', margin: '2px 0 0' }}>{sizes[sizeIdx]} · {materiale}</p>
+            </div>
+          ) : (
+            <p style={{ fontSize: '12px', color: '#888', margin: '0 0 12px' }}>{sizes[sizeIdx]} · {materiale}</p>
+          )
+        })()}
+        <a href={MAT_SLUG[materiale] ?? '#'} style={{
           display: 'block', textAlign: 'center', background: '#1a1a1a', color: '#fff',
           padding: '11px', borderRadius: 10, textDecoration: 'none', fontSize: '13px', fontWeight: 700,
           fontFamily: 'Montserrat,sans-serif',
-        }}>Richiedi questo preventivo →</a>
+        }}>
+          {getTotal(sizes[sizeIdx], materiale) !== null
+            ? `Acquista · €${getTotal(sizes[sizeIdx], materiale)} →`
+            : 'Vai al prodotto →'}
+        </a>
       </div>
     </div>
   )
@@ -865,8 +934,8 @@ export function WallPreviewTool() {
                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px', borderRadius: 10, background: 'transparent', color: '#888', border: '1.5px solid #ddd', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
                     <RefreshCw size={14} /> Ricomincia
                   </button>
-                  <a href="#preventivo" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '11px', borderRadius: 10, background: '#1a1a1a', color: '#fff', textDecoration: 'none', fontSize: '13px', fontWeight: 700, fontFamily: 'Montserrat,sans-serif' }}>
-                    Richiedi preventivo →
+                  <a href="#consiglio" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '11px', borderRadius: 10, background: '#1a1a1a', color: '#fff', textDecoration: 'none', fontSize: '13px', fontWeight: 700, fontFamily: 'Montserrat,sans-serif' }}>
+                    Calcola il prezzo ↓
                   </a>
                 </div>
               )}

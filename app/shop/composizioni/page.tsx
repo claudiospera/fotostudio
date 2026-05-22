@@ -4,7 +4,6 @@
 import type { Metadata } from 'next'
 import { ComposizioniGallery } from './components/ComposizioniGallery'
 import { WallPreviewTool }     from './components/WallPreviewTool'
-import { PreventivoForm }      from './components/PreventivoForm'
 
 export const metadata: Metadata = {
   title: 'Composizioni su Tela & Cornice — Storie da Raccontare',
@@ -77,7 +76,7 @@ function Hero() {
             border: '1.5px solid #ddd',
           }}
         >
-          Prova il tool interattivo
+          Prova il visualizzatore
         </a>
       </div>
 
@@ -89,7 +88,7 @@ function Hero() {
         {[
           { val: '30',  label: 'composizioni disponibili' },
           { val: '3',   label: 'materiali a scelta' },
-          { val: '48h', label: 'preventivo personalizzato' },
+          { val: '€',   label: 'prezzi trasparenti in tempo reale' },
           { val: '100%', label: 'handmade in Italia' },
         ].map(s => (
           <div key={s.val} style={{
@@ -145,7 +144,7 @@ function ComeFunziona() {
   const steps = [
     { n: '1', titolo: 'Scegli la composizione', testo: 'Sfoglia i 10 layout e scegli quello che si adatta meglio al tuo spazio e ai tuoi ricordi.' },
     { n: '2', titolo: 'Carica la tua foto',     testo: 'Usa il tool interattivo per vedere in anteprima come apparirà la tua foto sulla parete.' },
-    { n: '3', titolo: 'Richiedi il preventivo', testo: 'Compila il form: ti risponderemo entro 24–48 ore con prezzi, materiali e guida alla consegna.' },
+    { n: '3', titolo: 'Scegli e acquista',       testo: 'Scegli materiale e dimensioni, vedi il prezzo in tempo reale e procedi all\'acquisto direttamente online.' },
   ]
 
   return (
@@ -224,7 +223,6 @@ export default function ComposizioniPage() {
       <ComposizioniGallery />
       <ComeFunziona />
       <WallPreviewTool />
-      <PreventivoForm />
       <FooterNote />
     </div>
   )
