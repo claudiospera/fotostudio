@@ -5,7 +5,7 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Servizi — Claudio Spera Fotografo',
+  title: 'Servizi Fotografici — Claudio Spera Fotografo',
   description: 'Matrimoni, battesimi, comunioni, maternità, compleanni e ritratti. Scopri tutti i servizi fotografici di Claudio Spera a Mirabella Eclano, Campania.',
 }
 
@@ -42,8 +42,13 @@ export default function ServiziPage() {
           Claudio Spera · Fotografo
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(20px,3vw,40px)' }}>
-          {['Servizi', 'Galleria', 'Chi sono', 'Contatti'].map(label => (
-            <Link key={label} href={`/${label.toLowerCase().replace(' ', '-')}`} style={{
+          {[
+            { label: 'Servizi Fotografici', href: '/servizi' },
+            { label: 'Galleria',  href: '/galleria' },
+            { label: 'Chi sono',  href: '/chi-sono' },
+            { label: 'Contatti',  href: '/contatti' },
+          ].map(({ label, href }) => (
+            <Link key={href} href={href} style={{
               fontFamily: "'Jost', sans-serif", fontWeight: 300,
               fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase',
               color: INK, textDecoration: 'none', opacity: 0.7,
@@ -51,6 +56,7 @@ export default function ServiziPage() {
               {label}
             </Link>
           ))}
+
         </div>
       </nav>
 

@@ -20,7 +20,7 @@ export default async function HomePage() {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <a href="#servizi" style={{ fontSize: '13px', color: '#555', textDecoration: 'none', padding: '6px 14px', borderRadius: 10, transition: 'all .15s' }} className="nav-link">Servizi</a>
+          <Link href="/servizi" style={{ fontSize: '13px', color: '#555', textDecoration: 'none', padding: '6px 14px', borderRadius: 10, transition: 'all .15s' }} className="nav-link">Servizi Fotografici</Link>
           <a href="#galleria-cliente" style={{ fontSize: '13px', color: '#555', textDecoration: 'none', padding: '6px 14px', borderRadius: 10, transition: 'all .15s' }} className="nav-link">Galleria</a>
           <Link href="/shop" style={{ fontSize: '13px', color: '#00c1de', fontWeight: 700, textDecoration: 'none', padding: '6px 14px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 5 }} className="nav-link">Shop</Link>
           <Link href="/login" style={{ fontSize: '12px', fontWeight: 600, color: '#fff', background: '#00c1de', borderRadius: 10, padding: '8px 18px', textDecoration: 'none', transition: 'all .15s', marginLeft: 8 }} className="nav-cta">Accedi</Link>
