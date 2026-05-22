@@ -1,6 +1,5 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { Heart, User, Users, Camera, Briefcase, Star } from 'lucide-react'
 
 export default async function HomePage() {
   return (
@@ -61,31 +60,37 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── SERVIZI ── */}
-      <section id="servizi" style={{ padding: 'clamp(64px, 9vw, 110px) clamp(24px, 5vw, 60px)', background: '#f3f3f3', borderTop: '1px solid #e8e8e8' }}>
+      {/* ── SHOP ── */}
+      <section id="shop" style={{ padding: 'clamp(64px, 9vw, 110px) clamp(24px, 5vw, 60px)', background: '#f3f3f3', borderTop: '1px solid #e8e8e8' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ marginBottom: 56, textAlign: 'center' }}>
-            <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.2em', textTransform: 'uppercase', color: '#00c1de', marginBottom: 14 }}>Cosa faccio</p>
-            <h2 style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 800, fontSize: 'clamp(26px, 4vw, 44px)', color: '#0a0a0a', letterSpacing: '-0.025em', lineHeight: 1.1 }}>Ogni occasione,<br />la sua storia</h2>
+            <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.2em', textTransform: 'uppercase', color: '#00c1de', marginBottom: 14 }}>Shop</p>
+            <h2 style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 800, fontSize: 'clamp(26px, 4vw, 44px)', color: '#0a0a0a', letterSpacing: '-0.025em', lineHeight: 1.1 }}>Le tue foto,<br />sempre con te</h2>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(290px, 100%), 1fr))', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(240px, 100%), 1fr))', gap: 16, marginBottom: 40 }}>
             {[
-              { title: 'Matrimonio',       desc: "Il giorno piu importante della vostra vita, raccontato con delicatezza e rispetto.", Icon: Heart },
-              { title: 'Ritratto',         desc: 'La tua personalita e la tua essenza, catturate in ogni singolo scatto.',             Icon: User },
-              { title: 'Famiglia',         desc: 'I momenti insieme che crescono con voi. Ricordi veri, naturali, per sempre.',         Icon: Users },
-              { title: 'Newborn',          desc: 'I primissimi giorni della vita, la prima storia che inizia a scriversi.',             Icon: Star },
-              { title: 'Moda / Editorial', desc: 'Creativita e stile, fusi insieme per raccontare il tuo brand o la tua immagine.',    Icon: Camera },
-              { title: 'Corporate',        desc: 'Il volto professionale della tua azienda, comunicato con eleganza e precisione.',     Icon: Briefcase },
-            ].map(({ title, desc, Icon }) => (
-              <div key={title} style={{ padding: '32px 28px', background: '#ffffff', border: '1px solid #e8e8e8', borderRadius: 16, transition: 'box-shadow .18s, transform .18s' }} className="service-card">
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(0,193,222,0.10)', border: '1px solid rgba(0,193,222,0.18)', display: 'grid', placeItems: 'center', marginBottom: 20 }}>
-                  <Icon size={18} color="#00c1de" strokeWidth={2} />
+              { label: 'Stampe & Poster',      href: '/shop/stampe',              img: '/images/shop/stampe/poster.jpg' },
+              { label: 'Stampa su Tela',        href: '/shop/decorazioni/tela',    img: '/images/shop/tela/catalogo.jpg' },
+              { label: 'Cornici',               href: '/shop/decorazioni/cornici', img: '/images/shop/cornici/preview-bianco-1.jpg' },
+              { label: 'Gadget Personalizzati', href: '/shop/gadget',              img: '/images/shop/gadget/cuscino-ambientata.jpg' },
+            ].map(({ label, href, img }) => (
+              <Link key={href} href={href} style={{ display: 'block', textDecoration: 'none', borderRadius: 16, overflow: 'hidden', background: '#fff', border: '1px solid #e8e8e8', transition: 'box-shadow .18s, transform .18s' }} className="shop-card">
+                <div style={{ position: 'relative', aspectRatio: '4/3', background: '#f9f9f9' }}>
+                  <Image src={img} alt={label} fill style={{ objectFit: 'cover' }} />
                 </div>
-                <h3 style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700, fontSize: '15px', color: '#0a0a0a', marginBottom: 10 }}>{title}</h3>
-                <p style={{ fontSize: '13px', color: '#777', lineHeight: 1.7 }}>{desc}</p>
-              </div>
+                <div style={{ padding: '16px 20px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700, fontSize: '14px', color: '#0a0a0a' }}>{label}</span>
+                  <span style={{ fontSize: '18px', color: '#00c1de', lineHeight: 1 }}>→</span>
+                </div>
+              </Link>
             ))}
+          </div>
+
+          <div style={{ textAlign: 'center' }}>
+            <Link href="/shop" style={{ display: 'inline-block', background: '#00c1de', color: '#fff', borderRadius: 12, padding: '13px 32px', fontSize: '13px', fontWeight: 700, textDecoration: 'none', letterSpacing: '.04em' }}>
+              Esplora tutto lo shop →
+            </Link>
           </div>
         </div>
       </section>
@@ -98,16 +103,6 @@ export default async function HomePage() {
             &ldquo;Non fotografo eventi. Racconto emozioni, sguardi, silenzi — tutto cio che le parole non riescono a dire.&rdquo;
           </blockquote>
           <p style={{ fontSize: '13px', color: '#00c1de', fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase' }}>Claudio Spera</p>
-        </div>
-      </section>
-
-      {/* ── SHOP BANNER ── */}
-      <section style={{ padding: 'clamp(56px, 7vw, 88px) clamp(24px, 5vw, 60px)', background: '#00c1de', borderTop: '1px solid rgba(255,255,255,0.15)' }}>
-        <div style={{ maxWidth: 800, margin: '0 auto', textAlign: 'center' }}>
-          <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.7)', marginBottom: 16 }}>Nuova sezione</p>
-          <h2 style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 800, fontSize: 'clamp(24px, 4vw, 40px)', color: '#fff', letterSpacing: '-0.02em', marginBottom: 16 }}>Le tue foto diventano prodotti</h2>
-          <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.8)', lineHeight: 1.7, marginBottom: 32, maxWidth: 480, margin: '0 auto 32px' }}>Stampe fine art, tele, gadget personalizzati e molto altro. Scopri lo shop.</p>
-          <Link href="/shop" style={{ display: 'inline-block', background: '#fff', color: '#00c1de', borderRadius: 12, padding: '14px 32px', fontSize: '13px', fontWeight: 800, textDecoration: 'none', letterSpacing: '.04em' }}>Vai allo shop →</Link>
         </div>
       </section>
 
@@ -148,7 +143,7 @@ export default async function HomePage() {
       <style>{`
         .nav-link:hover { color: #0a0a0a !important; background: #f3f3f3; }
         .nav-cta:hover  { background: #009ab3 !important; }
-        .service-card:hover { box-shadow: 0 8px 28px rgba(0,193,222,0.10); transform: translateY(-2px); }
+        .shop-card:hover { box-shadow: 0 8px 28px rgba(0,193,222,0.12); transform: translateY(-2px); }
       `}</style>
     </div>
   )
