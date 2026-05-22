@@ -857,7 +857,8 @@ export default function HahnemuhlePage() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
                 {(paper.id === 'to285' ? FORMATS.filter(f => f.w <= TORCHON_MAX_SIDE && f.h <= TORCHON_MAX_SIDE) : FORMATS).map(f => {
                   const active = format?.fmt === f.fmt
-                  const p = getPrice(f, paper.id)
+                  const bp = getPrice(f, paper.id)
+                  const displayPrice = bp + (spray ? Math.round(bp * 0.20) : 0) + certExtra
                   return (
                     <button
                       key={f.fmt}
@@ -875,7 +876,7 @@ export default function HahnemuhlePage() {
                       </span>
                       <span style={{ fontSize: '10px', color: '#aaa' }}>cm</span>
                       <span style={{ fontSize: '11px', fontWeight: 600, color: active ? paper.color : '#888', marginTop: 2 }}>
-                        {formatPrice(p)}
+                        {formatPrice(displayPrice)}
                       </span>
                     </button>
                   )
