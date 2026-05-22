@@ -63,6 +63,10 @@ const PASSEPARTOUT_OPTIONS: PassepartoutOption[] = [
   { id: 'nero',   label: 'Nero',   color: '#1a1a1a', extraPrice: 500 },
 ]
 
+// Formati che supportano schienale (solo fino a 20×30)
+const SCHIENALE_VARIANTS = new Set(['10x15', '13x18', '15x20', '20x30'])
+const SCHIENALE_PRICE = 300 // €3,00
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function formatPrice(cents: number): string {
@@ -105,8 +109,9 @@ export default function CorniciPage() {
   const [variant,       setVariant]       = useState(VARIANTS[0])
   const [frame,         setFrame]         = useState(FRAMES[1])
   const [printType,     setPrintType]     = useState(PRINT_TYPES[0])
-  const [passeEnabled,  setPasseEnabled]  = useState(false)
-  const [passe,         setPasse]         = useState(PASSEPARTOUT_OPTIONS[0])
+  const [passeEnabled,      setPasseEnabled]      = useState(false)
+  const [passe,             setPasse]             = useState(PASSEPARTOUT_OPTIONS[0])
+  const [schienaleEnabled,  setSchienaleEnabled]  = useState(false)
   const [qty,           setQty]           = useState(1)
   const [addedFeedback, setAddedFeedback] = useState(false)
   const [galleryIdx,    setGalleryIdx]    = useState(0)
@@ -175,14 +180,18 @@ export default function CorniciPage() {
     () => PRINT_PRICES[variant.id]?.[printType.id as 'foto' | 'hahnemuhle'] ?? 0,
     [variant, printType]
   )
+  const schienaleAvailable = SCHIENALE_VARIANTS.has(variant.id)
   const unitPrice = useMemo(
-    () => variant.price + printPrice + (passeEnabled ? passe.extraPrice : 0),
-    [variant, printPrice, passeEnabled, passe]
+    () => variant.price + printPrice + (passeEnabled ? passe.extraPrice : 0) + (schienaleEnabled && schienaleAvailable ? SCHIENALE_PRICE : 0),
+    [variant, printPrice, passeEnabled, passe, schienaleEnabled, schienaleAvailable]
   )
   const total = unitPrice * qty
 
-  // Reset orientamento quando cambia il formato
-  useEffect(() => { setRotated(false) }, [variant.id])
+  // Reset orientamento e schienale quando cambia il formato
+  useEffect(() => {
+    setRotated(false)
+    if (!SCHIENALE_VARIANTS.has(variant.id)) setSchienaleEnabled(false)
+  }, [variant.id])
 
   // Dimensioni effettive con orientamento
   const effW = rotated ? variant.heightCm : variant.widthCm
@@ -196,6 +205,7 @@ export default function CorniciPage() {
       printType.label,
       `Cornice ${frame.label}`,
       passeEnabled ? `Passepartout ${passe.label}` : null,
+      schienaleEnabled && schienaleAvailable ? 'Con schienale' : null,
     ].filter(Boolean).join(' — ')
 
     let imageUrl = uploadedUrl ?? photoUrl ?? 'https://images.unsplash.com/photo-1416339306562-f3d12fefd36f?w=800&q=80'
@@ -203,7 +213,7 @@ export default function CorniciPage() {
 
     addItem({
       productId:    'cornici',
-      variantId:    `${variant.id}__${frame.id}__${printType.id}__${passeEnabled ? passe.id : 'no-passe'}`,
+      variantId:    `${variant.id}__${frame.id}__${printType.id}__${passeEnabled ? passe.id : 'no-passe'}__${schienaleEnabled && schienaleAvailable ? 'schienale' : 'no-schienale'}`,
       quantity:     qty,
       productName:  'Foto in Cornice',
       variantLabel: label,
@@ -687,6 +697,36 @@ export default function CorniciPage() {
             )}
           </Section>
 
+          {/* Schienale */}
+          {schienaleAvailable && (
+            <Section title="Schienale">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <button
+                  onClick={() => setSchienaleEnabled(!schienaleEnabled)}
+                  style={{
+                    width: 50, height: 28, borderRadius: 14,
+                    background: schienaleEnabled ? '#00c1de' : '#d0d0d0',
+                    position: 'relative', border: 'none', cursor: 'pointer',
+                    transition: 'background .2s', padding: 0, flexShrink: 0,
+                  }}
+                  aria-label="Attiva/disattiva schienale"
+                >
+                  <div style={{
+                    width: 22, height: 22, borderRadius: '50%', background: '#fff',
+                    position: 'absolute', top: 3, left: schienaleEnabled ? 25 : 3,
+                    transition: 'left .2s', boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+                  }} />
+                </button>
+                <span style={{ fontSize: '13px', color: '#555', fontWeight: 500 }}>
+                  {schienaleEnabled ? `Attivo (+${formatPrice(SCHIENALE_PRICE)})` : 'Non attivo'}
+                </span>
+              </div>
+              <p style={{ fontSize: '11px', color: '#aaa', marginTop: 8 }}>
+                Pannello rigido posteriore — mantiene la stampa piatta e protetta (disponibile fino a 20×30 cm)
+              </p>
+            </Section>
+          )}
+
           {/* Quantità */}
           <Section title="Quantità">
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -725,6 +765,12 @@ export default function CorniciPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span>Passepartout {passe.label}</span>
                   <span style={{ fontWeight: 600, color: '#555' }}>+{formatPrice(passe.extraPrice)}</span>
+                </div>
+              )}
+              {schienaleEnabled && schienaleAvailable && (
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Schienale</span>
+                  <span style={{ fontWeight: 600, color: '#555' }}>+{formatPrice(SCHIENALE_PRICE)}</span>
                 </div>
               )}
               {qty > 1 && (
