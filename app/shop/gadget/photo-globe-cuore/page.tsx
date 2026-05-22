@@ -70,7 +70,7 @@ export default function PhotoGlobeCuorePage() {
     const y = (PREV_SIZE - h) / 2 + photoOffset.y
 
     ctx.drawImage(photo, x, y, w, h)
-    ctx.globalCompositeOperation = 'destination-in'
+    ctx.globalCompositeOperation = 'destination-out'
     ctx.drawImage(mask, 0, 0, PREV_SIZE, PREV_SIZE)
     ctx.globalCompositeOperation = 'source-over'
   }, [photoNatSize, photoZoom, photoOffset])
@@ -180,7 +180,7 @@ export default function PhotoGlobeCuorePage() {
 
           const y = (PREV_SIZE - h) / 2 + photoOffset.y
           ctx.drawImage(photoImgRef.current, x * SCALE, y * SCALE, w * SCALE, h * SCALE)
-          ctx.globalCompositeOperation = 'destination-in'
+          ctx.globalCompositeOperation = 'destination-out'
           ctx.drawImage(maskImgRef.current, 0, 0, OUT_SIZE, OUT_SIZE)
           ctx.globalCompositeOperation = 'source-over'
 
