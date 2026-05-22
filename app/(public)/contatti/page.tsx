@@ -17,9 +17,9 @@ const BORDER = 'rgba(26,22,18,0.14)'
 const INPUT_BORDER = 'rgba(26,22,18,0.22)'
 
 const TIPI_EVENTO = [
-  'Matrimonio', 'Fuga d\'amore', 'Fidanzamento',
-  'Ritratti', 'Battesimo & Prima infanzia', 'Comunione & Cresima',
-  'Maternità', 'Compleanno & Festa',
+  'Matrimonio', 'Promessa di matrimonio', 'Ritratti',
+  'Battesimo & Prima infanzia', 'Comunione & Cresima',
+  'Maternità', 'Compleanno & Festa', 'Altro',
 ]
 
 const DURATE = ['1 ora', '2 ore', '4 ore', '6 ore', '8 ore', '10/12 ore']
