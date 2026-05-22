@@ -480,6 +480,26 @@ export const PRODUCTS: Product[] = [
     createdAt: '2026-01-01T00:00:00Z',
   },
 
+  {
+    id: 'photo-globe-cuore',
+    slug: 'photo-globe-cuore',
+    name: 'Photo Globe Cuore',
+    shortDescription: 'Cuore in acrilico effetto trasparente con la tua foto, acqua e cuoricini fluttuanti — 9×9 cm',
+    description:
+      'Cuore in acrilico effetto trasparente con spazio per inserire una foto personalizzata. ' +
+      'Al suo interno acqua e cuoricini colorati che fluttuano. ' +
+      'Originale idea regalo per San Valentino, anniversari e occasioni speciali. ' +
+      'La foto viene ritagliata automaticamente nella forma a cuore.',
+    category: 'gadget',
+    status: 'available',
+    images: ['/images/shop/gadget/PHOTO-GLOBE-CUORE-P9008_HIGH.jpg'],
+    variants: [
+      { id: 'pgc-9x9', label: '9×9 cm', price: 2500, widthCm: 9, heightCm: 9 },
+    ],
+    featured: false,
+    createdAt: '2026-01-01T00:00:00Z',
+  },
+
 ]
 
 // ─── Helper ───────────────────────────────────────────────────────────────
