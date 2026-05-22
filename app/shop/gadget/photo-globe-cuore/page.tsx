@@ -13,11 +13,17 @@ function fmt(cents: number) {
   return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(cents / 100)
 }
 
-const PRICE    = 1300
-const PREV_SIZE = 340
-const OUT_SIZE  = 900
-const SCALE     = OUT_SIZE / PREV_SIZE
-const MASK_SRC  = '/images/shop/gadget/cuore.png'
+const PRICE   = 1300
+// Proporzioni reali del PNG maschera (3413×2761)
+const MASK_W  = 3413
+const MASK_H  = 2761
+const PREV_W  = 340
+const PREV_H  = Math.round(PREV_W * MASK_H / MASK_W)   // ≈ 275
+const OUT_W   = 900
+const OUT_H   = Math.round(OUT_W * MASK_H / MASK_W)    // ≈ 728
+const SCALE_X = OUT_W / PREV_W
+const SCALE_Y = OUT_H / PREV_H
+const MASK_SRC = '/images/shop/gadget/cuore.png'
 
 // ─── Componente principale ────────────────────────────────────────────────────
 
@@ -56,22 +62,22 @@ export default function PhotoGlobeCuorePage() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    ctx.clearRect(0, 0, PREV_SIZE, PREV_SIZE)
+    ctx.clearRect(0, 0, PREV_W, PREV_H)
 
     const photo = photoImgRef.current
     const mask  = maskImgRef.current
 
     if (!photo || !mask || !photoNatSize) return
 
-    const containScale = Math.min(PREV_SIZE / photoNatSize.w, PREV_SIZE / photoNatSize.h)
+    const containScale = Math.min(PREV_W / photoNatSize.w, PREV_H / photoNatSize.h)
     const w = photoNatSize.w * containScale * photoZoom
     const h = photoNatSize.h * containScale * photoZoom
-    const x = (PREV_SIZE - w) / 2 + photoOffset.x
-    const y = (PREV_SIZE - h) / 2 + photoOffset.y
+    const x = (PREV_W - w) / 2 + photoOffset.x
+    const y = (PREV_H - h) / 2 + photoOffset.y
 
     ctx.drawImage(photo, x, y, w, h)
     ctx.globalCompositeOperation = 'destination-out'
-    ctx.drawImage(mask, 0, 0, PREV_SIZE, PREV_SIZE)
+    ctx.drawImage(mask, 0, 0, PREV_W, PREV_H)
     ctx.globalCompositeOperation = 'source-over'
   }, [photoNatSize, photoZoom, photoOffset])
 
@@ -158,7 +164,7 @@ export default function PhotoGlobeCuorePage() {
     setPhotoZoom(1); setPhotoOffset({ x: 0, y: 0 }); setPhotoNatSize(null)
     // Pulisci canvas
     const ctx = canvasRef.current?.getContext('2d')
-    if (ctx) ctx.clearRect(0, 0, PREV_SIZE, PREV_SIZE)
+    if (ctx) ctx.clearRect(0, 0, PREV_W, PREV_H)
   }, [photoUrl])
 
   // ─── Add to cart con canvas render ad alta risoluzione ────────────────────
@@ -170,18 +176,17 @@ export default function PhotoGlobeCuorePage() {
       setIsRendering(true)
       try {
         const canvas = document.createElement('canvas')
-        canvas.width = OUT_SIZE; canvas.height = OUT_SIZE
+        canvas.width = OUT_W; canvas.height = OUT_H
         const ctx = canvas.getContext('2d')
         if (ctx && maskImgRef.current) {
-          const containScale = Math.min(PREV_SIZE / photoNatSize.w, PREV_SIZE / photoNatSize.h)
+          const containScale = Math.min(PREV_W / photoNatSize.w, PREV_H / photoNatSize.h)
           const w = photoNatSize.w * containScale * photoZoom
           const h = photoNatSize.h * containScale * photoZoom
-          const x = (PREV_SIZE - w) / 2 + photoOffset.x
-
-          const y = (PREV_SIZE - h) / 2 + photoOffset.y
-          ctx.drawImage(photoImgRef.current, x * SCALE, y * SCALE, w * SCALE, h * SCALE)
+          const x = (PREV_W - w) / 2 + photoOffset.x
+          const y = (PREV_H - h) / 2 + photoOffset.y
+          ctx.drawImage(photoImgRef.current, x * SCALE_X, y * SCALE_Y, w * SCALE_X, h * SCALE_Y)
           ctx.globalCompositeOperation = 'destination-out'
-          ctx.drawImage(maskImgRef.current, 0, 0, OUT_SIZE, OUT_SIZE)
+          ctx.drawImage(maskImgRef.current, 0, 0, OUT_W, OUT_H)
           ctx.globalCompositeOperation = 'source-over'
 
           const blob = await new Promise<Blob | null>(r => canvas.toBlob(b => r(b), 'image/png'))
@@ -264,12 +269,11 @@ export default function PhotoGlobeCuorePage() {
 
           {/* Canvas preview */}
           <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <div style={{ position: 'relative', width: PREV_SIZE, height: PREV_SIZE }}>
-              {/* Sfondo grigio visibile fuori dalla sagoma */}
+            <div style={{ position: 'relative', width: PREV_W, height: PREV_H }}>
               <canvas
                 ref={canvasRef}
-                width={PREV_SIZE}
-                height={PREV_SIZE}
+                width={PREV_W}
+                height={PREV_H}
                 style={{
                   display: 'block',
                   cursor: photoUrl ? 'grab' : 'default',
