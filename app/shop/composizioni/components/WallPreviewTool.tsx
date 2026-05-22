@@ -482,28 +482,40 @@ function SuggestionCard({ composizione, imgs, roomImg, label }: {
 
 // ─── PricePanel ───────────────────────────────────────────────────────────────
 
+const PRINT_TYPES = [
+  { id: 'foto',       label: 'Carta Fotografica', desc: 'Lucida, colori brillanti',   extraPerPanel: 0  },
+  { id: 'hahnemuhle', label: 'Hahnemühle',         desc: 'Fine art, opaca, premium',   extraPerPanel: 8  },
+]
+
 function PricePanel({ composizione }: { composizione: Composizione }) {
   const sizes = composizione.dimensioni.map(d => d.label)
-  const [materiale, setMateriale] = useState(MATERIALI[0])
-  const [sizeIdx,   setSizeIdx]   = useState(0)
-  const [added,     setAdded]     = useState(false)
+  const [materiale,   setMateriale]   = useState(MATERIALI[0])
+  const [sizeIdx,     setSizeIdx]     = useState(0)
+  const [printTypeId, setPrintTypeId] = useState('foto')
+  const [added,       setAdded]       = useState(false)
   const { addItem } = useCart()
-  // reset sizeIdx when composizione changes
-  const safeIdx = Math.min(sizeIdx, sizes.length - 1)
-  const total = getTotal(sizes[safeIdx], materiale)
+
+  const safeIdx   = Math.min(sizeIdx, sizes.length - 1)
+  const baseTotal = getTotal(sizes[safeIdx], materiale)
   const variantInfo = getVariantInfo(sizes[safeIdx], materiale)
+  const isCornice = materiale === 'Stampa con cornice'
+  const printType = PRINT_TYPES.find(p => p.id === printTypeId) ?? PRINT_TYPES[0]
+  const pannelli  = variantInfo?.quantity ?? composizione.slots.length
+  const extraTotal = isCornice ? printType.extraPerPanel * pannelli : 0
+  const total = baseTotal !== null ? baseTotal + extraTotal : null
 
   function handleAddToCart() {
-    if (!variantInfo) return
+    if (!variantInfo || total === null) return
+    const pricePerItem = variantInfo.priceCents + (isCornice ? printType.extraPerPanel * 100 : 0)
     addItem({
       productId:    variantInfo.productId,
       variantId:    variantInfo.variantId,
       quantity:     variantInfo.quantity,
       productName:  materiale,
-      variantLabel: `${sizes[safeIdx]} — ${composizione.nome}`,
-      price:        variantInfo.priceCents,
+      variantLabel: `${sizes[safeIdx]} — ${composizione.nome}${isCornice ? ` · ${printType.label}` : ''}`,
+      price:        pricePerItem,
       image:        MAT_IMAGE[materiale] ?? '',
-      notes:        `Composizione: ${composizione.nome} (${composizione.slots.length} pannell${composizione.slots.length === 1 ? 'o' : 'i'})`,
+      notes:        `Composizione: ${composizione.nome} (${pannelli} pannell${pannelli === 1 ? 'o' : 'i'})${isCornice ? ` · Stampa: ${printType.label}` : ''}`,
     })
     setAdded(true)
     setTimeout(() => setAdded(false), 2500)
@@ -528,6 +540,29 @@ function PricePanel({ composizione }: { composizione: Composizione }) {
         ))}
       </div>
 
+      {/* Tipo stampa (solo cornice) */}
+      {isCornice && (
+        <div style={{ marginBottom: 12 }}>
+          <p style={{ fontSize: '10px', color: '#888', margin: '0 0 6px', fontWeight: 700 }}>Tipo di stampa</p>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {PRINT_TYPES.map(pt => (
+              <button key={pt.id} onClick={() => setPrintTypeId(pt.id)} style={{
+                flex: 1, padding: '8px 10px', borderRadius: 10, cursor: 'pointer', textAlign: 'left',
+                border: `1.5px solid ${printTypeId === pt.id ? AC : BORDER}`,
+                background: printTypeId === pt.id ? `${AC}18` : '#fafaf8',
+                transition: 'all .12s',
+              }}>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: printTypeId === pt.id ? AC : '#333', marginBottom: 2 }}>{pt.label}</div>
+                <div style={{ fontSize: '10px', color: '#aaa' }}>{pt.desc}</div>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: printTypeId === pt.id ? AC : '#666', marginTop: 2 }}>
+                  {pt.extraPerPanel === 0 ? 'Inclusa' : `+€${pt.extraPerPanel}/pannello`}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Dimensioni */}
       <p style={{ fontSize: '10px', color: '#888', margin: '0 0 6px', fontWeight: 700 }}>Dimensioni</p>
       <select value={sizeIdx} onChange={e => setSizeIdx(Number(e.target.value))} style={{
@@ -547,10 +582,15 @@ function PricePanel({ composizione }: { composizione: Composizione }) {
       {/* Totale */}
       {total !== null && variantInfo ? (
         <>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: isCornice && extraTotal > 0 ? 4 : 12 }}>
             <span style={{ fontSize: '28px', fontWeight: 800, color: '#1a1a1a', fontFamily: 'Poppins,sans-serif' }}>€{total}</span>
-            <span style={{ fontSize: '12px', color: '#aaa' }}>{variantInfo.quantity} pannell{variantInfo.quantity === 1 ? 'o' : 'i'} · €{variantInfo.priceCents / 100} cad.</span>
+            <span style={{ fontSize: '12px', color: '#aaa' }}>{pannelli} pannell{pannelli === 1 ? 'o' : 'i'}</span>
           </div>
+          {isCornice && extraTotal > 0 && (
+            <p style={{ fontSize: '11px', color: '#aaa', margin: '0 0 12px' }}>
+              Cornice €{baseTotal} + Hahnemühle €{extraTotal}
+            </p>
+          )}
           <button
             onClick={handleAddToCart}
             style={{
