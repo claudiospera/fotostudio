@@ -277,6 +277,8 @@ function SuggestionCard({ composizione, imgs, roomImg, label }: {
 
 // ─── WallPreviewTool ───────────────────────────────────────────────────────────
 
+type ActiveLayer = 'foto' | 'testo'
+
 export function WallPreviewTool() {
   const [mode,       setMode]       = useState<'single' | 'multi'>('single')
   const [selectedId, setSelectedId] = useState(COMPOSIZIONI[0].id)
@@ -285,19 +287,26 @@ export function WallPreviewTool() {
   const [multiImgs,  setMultiImgs]  = useState<(HTMLImageElement | null)[]>([])
   const [isLoading,  setIsLoading]  = useState(false)
 
-  // Zoom / pan
+  // Livello attivo: foto o testo
+  const [activeLayer, setActiveLayer] = useState<ActiveLayer>('foto')
+
+  // Zoom / pan foto
   const [zoom, setZoom] = useState(1)
   const [panX, setPanX] = useState(0)
   const [panY, setPanY] = useState(0)
-  const isDragging  = useRef(false)
-  const dragStart   = useRef<{ mx: number; my: number; px: number; py: number } | null>(null)
+
+  // Drag generico (foto o testo)
+  const isDragging      = useRef(false)
+  const dragStart       = useRef<{ mx: number; my: number; px: number; py: number } | null>(null)
+  const draggingTextIdx = useRef<number | null>(null)
 
   // Testo
-  const [texts,       setTexts]       = useState<TextOverlay[]>([])
-  const [pendingText, setPendingText] = useState('')
-  const [textSize,    setTextSize]    = useState(32)
-  const [textColor,   setTextColor]   = useState('#ffffff')
-  const [addingText,  setAddingText]  = useState(false)
+  const [texts,          setTexts]          = useState<TextOverlay[]>([])
+  const [pendingText,    setPendingText]     = useState('')
+  const [textSize,       setTextSize]        = useState(40)
+  const [textColor,      setTextColor]       = useState('#ffffff')
+  const [addingText,     setAddingText]      = useState(false)
+  const [selectedTextIdx, setSelectedTextIdx] = useState<number | null>(null)
 
   // Impaginatore
   const [adviceImgs,  setAdviceImgs]  = useState<(HTMLImageElement | null)[]>(Array(6).fill(null))
@@ -319,17 +328,17 @@ export function WallPreviewTool() {
 
   useEffect(() => { setMultiImgs(Array(slotCount).fill(null)) }, [slotCount])
 
-  // Wheel zoom (passive:false non supportato da JSX, uso addEventListener)
+  // Wheel zoom sul canvas (solo livello foto)
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
+    const canvas = canvasRef.current; if (!canvas) return
     const handler = (e: WheelEvent) => {
+      if (activeLayer !== 'foto') return
       e.preventDefault()
       setZoom(z => Math.max(0.5, Math.min(4, z - e.deltaY * 0.001)))
     }
     canvas.addEventListener('wheel', handler, { passive: false })
     return () => canvas.removeEventListener('wheel', handler)
-  }, [])
+  }, [activeLayer])
 
   const activeImgs: (HTMLImageElement | null)[] =
     mode === 'single'
@@ -387,24 +396,63 @@ export function WallPreviewTool() {
     })
   }
 
+  // ── Trova il testo più vicino al click (coordinate canvas) ──────────────────
+  function findNearestText(cx: number, cy: number): number | null {
+    const HIT = 60 // pixel canvas
+    let best = -1, bestD = HIT
+    texts.forEach((t, i) => {
+      const d = Math.hypot(cx - t.x, cy - t.y)
+      if (d < bestD) { bestD = d; best = i }
+    })
+    return best >= 0 ? best : null
+  }
+
   // ── Canvas mouse handlers ──────────────────────────────────────────────────
 
   function onMouseDown(e: React.MouseEvent<HTMLCanvasElement>) {
     if (addingText) return
-    isDragging.current = true
-    dragStart.current = { mx: e.clientX, my: e.clientY, px: panX, py: panY }
+    const canvas = canvasRef.current; if (!canvas) return
+    const { x, y } = toCvCoords(canvas, e)
+
+    if (activeLayer === 'testo') {
+      const idx = findNearestText(x, y)
+      if (idx !== null) {
+        draggingTextIdx.current = idx
+        setSelectedTextIdx(idx)
+        dragStart.current = { mx: e.clientX, my: e.clientY, px: texts[idx].x, py: texts[idx].y }
+      } else {
+        setSelectedTextIdx(null)
+        draggingTextIdx.current = null
+      }
+    } else {
+      // layer foto
+      isDragging.current = true
+      dragStart.current = { mx: e.clientX, my: e.clientY, px: panX, py: panY }
+    }
   }
 
   function onMouseMove(e: React.MouseEvent<HTMLCanvasElement>) {
-    if (!isDragging.current || !dragStart.current) return
-    const canvas = canvasRef.current; if (!canvas) return
+    const canvas = canvasRef.current; if (!canvas || !dragStart.current) return
     const r = canvas.getBoundingClientRect()
     const s = canvas.width / r.width
-    setPanX(dragStart.current.px + (e.clientX - dragStart.current.mx) * s)
-    setPanY(dragStart.current.py + (e.clientY - dragStart.current.my) * s)
+    const dx = (e.clientX - dragStart.current.mx) * s
+    const dy = (e.clientY - dragStart.current.my) * s
+
+    if (activeLayer === 'testo' && draggingTextIdx.current !== null) {
+      const i = draggingTextIdx.current
+      setTexts(prev => prev.map((t, j) => j === i
+        ? { ...t, x: dragStart.current!.px + dx, y: dragStart.current!.py + dy }
+        : t))
+    } else if (activeLayer === 'foto' && isDragging.current) {
+      setPanX(dragStart.current.px + dx)
+      setPanY(dragStart.current.py + dy)
+    }
   }
 
-  function onMouseUp() { isDragging.current = false }
+  function onMouseUp() {
+    isDragging.current = false
+    draggingTextIdx.current = null
+  }
 
   function onCanvasClick(e: React.MouseEvent<HTMLCanvasElement>) {
     if (!addingText || !pendingText.trim()) return
@@ -412,6 +460,7 @@ export function WallPreviewTool() {
     const { x, y } = toCvCoords(canvas, e)
     setTexts(prev => [...prev, { x, y, content: pendingText.trim(), size: textSize, color: textColor }])
     setAddingText(false)
+    setActiveLayer('testo') // switcha al layer testo dopo aver piazzato
   }
 
   function handleDownload() {
@@ -424,7 +473,10 @@ export function WallPreviewTool() {
 
   function resetView() { setZoom(1); setPanX(0); setPanY(0) }
 
-  const canvasCursor = addingText ? 'crosshair' : isDragging.current ? 'grabbing' : hasAny ? 'grab' : 'default'
+  const canvasCursor = addingText ? 'crosshair'
+    : activeLayer === 'testo' && texts.length > 0 ? 'move'
+    : hasAny ? 'grab'
+    : 'default'
 
   return (
     <>
@@ -522,93 +574,147 @@ export function WallPreviewTool() {
                 <p style={{ fontSize: '12px', color: '#aaa', marginTop: 6 }}>{slotCount} {slotCount === 1 ? 'pannello' : 'pannelli'} · {composizione.materiale}</p>
               </div>
 
-              {/* ── Zoom & Pan ── */}
+              {/* ── Selettore livello + controlli ── */}
               {hasAny && (
                 <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 12, padding: '14px 16px' }}>
+
+                  {/* Layer toggle */}
                   <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#888', margin: '0 0 10px' }}>
-                    Regola inquadratura
+                    Cosa vuoi modificare?
                   </p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                    <button onClick={() => setZoom(z => Math.max(0.5, z - 0.1))} style={{ padding: '6px', borderRadius: 8, border: `1px solid ${BORDER}`, background: '#fafaf8', cursor: 'pointer', display: 'flex' }}>
-                      <ZoomOut size={14} color="#555" />
-                    </button>
-                    <input type="range" min={50} max={400} value={Math.round(zoom * 100)}
-                      onChange={e => setZoom(Number(e.target.value) / 100)}
-                      style={{ flex: 1, accentColor: AC }} />
-                    <button onClick={() => setZoom(z => Math.min(4, z + 0.1))} style={{ padding: '6px', borderRadius: 8, border: `1px solid ${BORDER}`, background: '#fafaf8', cursor: 'pointer', display: 'flex' }}>
-                      <ZoomIn size={14} color="#555" />
-                    </button>
-                    <span style={{ fontSize: '11px', color: '#999', minWidth: 32, textAlign: 'right' }}>{Math.round(zoom * 100)}%</span>
-                  </div>
-                  <p style={{ fontSize: '11px', color: '#aaa', margin: '0 0 8px' }}>Trascina sulla preview per spostare · Rotella per zoomare</p>
-                  <button onClick={resetView} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 8, border: `1px solid ${BORDER}`, background: '#fafaf8', cursor: 'pointer', fontSize: '11px', color: '#666', fontFamily: 'Montserrat,sans-serif' }}>
-                    <RotateCcw size={11} /> Reset
-                  </button>
-                </div>
-              )}
-
-              {/* ── Testo ── */}
-              {hasAny && (
-                <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 12, padding: '14px 16px' }}>
-                  <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#888', margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Type size={12} /> Aggiungi testo
-                  </p>
-                  <input
-                    value={pendingText}
-                    onChange={e => setPendingText(e.target.value)}
-                    placeholder="Es. Sempre insieme..."
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1.5px solid ${BORDER}`, fontSize: '13px', color: '#1a1a1a', marginBottom: 8, boxSizing: 'border-box' }}
-                  />
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ fontSize: '10px', color: '#aaa', margin: '0 0 4px' }}>Dimensione</p>
-                      <input type="range" min={16} max={80} value={textSize}
-                        onChange={e => setTextSize(Number(e.target.value))}
-                        style={{ width: '100%', accentColor: AC }} />
-                    </div>
-                    <div>
-                      <p style={{ fontSize: '10px', color: '#aaa', margin: '0 0 4px' }}>Colore</p>
-                      <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)}
-                        style={{ width: 36, height: 28, borderRadius: 6, border: `1px solid ${BORDER}`, cursor: 'pointer', padding: 2 }} />
-                    </div>
-                  </div>
-
-                  {addingText ? (
-                    <div style={{ background: `${AC}18`, border: `1.5px solid ${AC}`, borderRadius: 8, padding: '8px 12px', textAlign: 'center' }}>
-                      <p style={{ fontSize: '12px', color: AC, fontWeight: 700, margin: '0 0 6px' }}>Clicca sulla preview dove vuoi posizionare il testo</p>
-                      <button onClick={() => setAddingText(false)} style={{ fontSize: '11px', color: '#888', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Annulla</button>
-                    </div>
-                  ) : (
-                    <button
-                      disabled={!pendingText.trim()}
-                      onClick={() => setAddingText(true)}
-                      style={{
-                        width: '100%', padding: '9px', borderRadius: 8, border: 'none', cursor: pendingText.trim() ? 'pointer' : 'default',
-                        background: pendingText.trim() ? AC : '#ddd', color: '#fff',
-                        fontSize: '12px', fontWeight: 700, fontFamily: 'Montserrat,sans-serif',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  <div style={{ display: 'flex', border: `1.5px solid ${BORDER}`, borderRadius: 8, overflow: 'hidden', marginBottom: 16 }}>
+                    {([
+                      { key: 'foto'  as const, icon: '🖼️', label: 'Foto' },
+                      { key: 'testo' as const, icon: '✏️', label: 'Testo' },
+                    ]).map(({ key, icon, label }) => (
+                      <button key={key} onClick={() => { setActiveLayer(key); setAddingText(false) }} style={{
+                        flex: 1, padding: '8px 6px', border: 'none', cursor: 'pointer',
+                        fontSize: '12px', fontWeight: activeLayer === key ? 700 : 500,
+                        background: activeLayer === key ? AC : 'transparent',
+                        color: activeLayer === key ? '#fff' : '#666',
+                        transition: 'all .15s', fontFamily: 'Montserrat,sans-serif',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
                       }}>
-                      <Type size={13} /> Posiziona sul canvas
-                    </button>
+                        <span>{icon}</span>{label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Livello FOTO */}
+                  {activeLayer === 'foto' && (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                        <button onClick={() => setZoom(z => Math.max(0.5, z - 0.1))} style={{ padding: '6px', borderRadius: 8, border: `1px solid ${BORDER}`, background: '#fafaf8', cursor: 'pointer', display: 'flex', flexShrink: 0 }}>
+                          <ZoomOut size={14} color="#555" />
+                        </button>
+                        <input type="range" min="50" max="400" step="1" value={Math.round(zoom * 100)}
+                          onChange={e => setZoom(Number(e.target.value) / 100)}
+                          style={{ flex: 1, accentColor: AC, minWidth: 0 }} />
+                        <button onClick={() => setZoom(z => Math.min(4, z + 0.1))} style={{ padding: '6px', borderRadius: 8, border: `1px solid ${BORDER}`, background: '#fafaf8', cursor: 'pointer', display: 'flex', flexShrink: 0 }}>
+                          <ZoomIn size={14} color="#555" />
+                        </button>
+                        <span style={{ fontSize: '11px', color: '#999', minWidth: 36, textAlign: 'right', flexShrink: 0 }}>{Math.round(zoom * 100)}%</span>
+                      </div>
+                      <p style={{ fontSize: '11px', color: '#aaa', margin: '0 0 8px' }}>Trascina sulla preview per spostare · Rotella per zoomare</p>
+                      <button onClick={resetView} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 8, border: `1px solid ${BORDER}`, background: '#fafaf8', cursor: 'pointer', fontSize: '11px', color: '#666', fontFamily: 'Montserrat,sans-serif' }}>
+                        <RotateCcw size={11} /> Reset
+                      </button>
+                    </>
                   )}
 
-                  {/* Lista testi */}
-                  {texts.length > 0 && (
-                    <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      {texts.map((t, i) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', background: '#f7f4ef', borderRadius: 6 }}>
-                          <div style={{ width: 12, height: 12, borderRadius: '50%', background: t.color, border: '1px solid #ccc', flexShrink: 0 }} />
-                          <span style={{ fontSize: '11px', color: '#555', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.content}</span>
-                          <button onClick={() => setTexts(prev => prev.filter((_, j) => j !== i))}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: '#bbb' }}>
-                            <X size={12} />
+                  {/* Livello TESTO */}
+                  {activeLayer === 'testo' && (
+                    <>
+                      <input
+                        value={pendingText}
+                        onChange={e => setPendingText(e.target.value)}
+                        placeholder="Es. Sempre insieme..."
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1.5px solid ${BORDER}`, fontSize: '13px', color: '#1a1a1a', marginBottom: 10, boxSizing: 'border-box', display: 'block' }}
+                      />
+
+                      {/* Dimensione */}
+                      <div style={{ marginBottom: 10 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                          <p style={{ fontSize: '10px', color: '#888', margin: 0, fontWeight: 700 }}>Dimensione testo</p>
+                          <span style={{ fontSize: '10px', color: AC, fontWeight: 700 }}>{textSize}px</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="20"
+                          max="120"
+                          step="1"
+                          value={textSize}
+                          onChange={e => {
+                            const v = Number(e.target.value)
+                            setTextSize(v)
+                            // aggiorna anche il testo selezionato se esiste
+                            if (selectedTextIdx !== null) {
+                              setTexts(prev => prev.map((t, i) => i === selectedTextIdx ? { ...t, size: v } : t))
+                            }
+                          }}
+                          style={{ width: '100%', accentColor: AC, display: 'block' }}
+                        />
+                      </div>
+
+                      {/* Colore */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                        <p style={{ fontSize: '10px', color: '#888', margin: 0, fontWeight: 700 }}>Colore</p>
+                        <input type="color" value={textColor} onChange={e => {
+                          setTextColor(e.target.value)
+                          if (selectedTextIdx !== null) {
+                            setTexts(prev => prev.map((t, i) => i === selectedTextIdx ? { ...t, color: e.target.value } : t))
+                          }
+                        }}
+                          style={{ width: 40, height: 30, borderRadius: 6, border: `1px solid ${BORDER}`, cursor: 'pointer', padding: 2 }} />
+                        <div style={{ display: 'flex', gap: 4 }}>
+                          {['#ffffff', '#000000', '#C9A96E', '#7D9B76'].map(c => (
+                            <button key={c} onClick={() => { setTextColor(c); if (selectedTextIdx !== null) setTexts(prev => prev.map((t, i) => i === selectedTextIdx ? { ...t, color: c } : t)) }}
+                              style={{ width: 20, height: 20, borderRadius: '50%', background: c, border: `2px solid ${textColor === c ? '#555' : BORDER}`, cursor: 'pointer', padding: 0 }} />
+                          ))}
+                        </div>
+                      </div>
+
+                      {addingText ? (
+                        <div style={{ background: `${AC}18`, border: `1.5px solid ${AC}`, borderRadius: 8, padding: '8px 12px', textAlign: 'center' }}>
+                          <p style={{ fontSize: '12px', color: AC, fontWeight: 700, margin: '0 0 6px' }}>Clicca sulla preview dove vuoi il testo</p>
+                          <button onClick={() => setAddingText(false)} style={{ fontSize: '11px', color: '#888', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Annulla</button>
+                        </div>
+                      ) : (
+                        <button disabled={!pendingText.trim()} onClick={() => setAddingText(true)} style={{
+                          width: '100%', padding: '9px', borderRadius: 8, border: 'none',
+                          cursor: pendingText.trim() ? 'pointer' : 'default',
+                          background: pendingText.trim() ? AC : '#ddd', color: '#fff',
+                          fontSize: '12px', fontWeight: 700, fontFamily: 'Montserrat,sans-serif',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                        }}>
+                          <Type size={13} /> Posiziona sul canvas
+                        </button>
+                      )}
+
+                      {/* Lista testi */}
+                      {texts.length > 0 && (
+                        <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <p style={{ fontSize: '10px', color: '#aaa', margin: '4px 0 4px', fontStyle: 'italic' }}>
+                            Seleziona un testo e trascinalo per spostarlo
+                          </p>
+                          {texts.map((t, i) => (
+                            <div key={i} onClick={() => { setSelectedTextIdx(i); setTextSize(t.size); setTextColor(t.color) }}
+                              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px', background: selectedTextIdx === i ? `${AC}18` : '#f7f4ef', borderRadius: 6, cursor: 'pointer', border: `1.5px solid ${selectedTextIdx === i ? AC : 'transparent'}` }}>
+                              <div style={{ width: 12, height: 12, borderRadius: '50%', background: t.color, border: '1px solid #ccc', flexShrink: 0 }} />
+                              <span style={{ fontSize: '11px', color: '#555', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.content}</span>
+                              <span style={{ fontSize: '10px', color: '#bbb', flexShrink: 0 }}>{t.size}px</span>
+                              <button onClick={ev => { ev.stopPropagation(); setTexts(prev => prev.filter((_, j) => j !== i)); if (selectedTextIdx === i) setSelectedTextIdx(null) }}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: '#bbb' }}>
+                                <X size={12} />
+                              </button>
+                            </div>
+                          ))}
+                          <button onClick={() => { setTexts([]); setSelectedTextIdx(null) }} style={{ fontSize: '11px', color: '#bbb', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '2px 0' }}>
+                            Rimuovi tutti
                           </button>
                         </div>
-                      ))}
-                      <button onClick={() => setTexts([])} style={{ fontSize: '11px', color: '#bbb', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '2px 0' }}>
-                        Rimuovi tutti
-                      </button>
-                    </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}
