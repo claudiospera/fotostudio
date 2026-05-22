@@ -61,6 +61,46 @@ const PAPERS: PaperType[] = [
     description: '100% cotone · Grammatura 200 g/m² · Superficie opaca naturale · Ottimo rapporto qualità/prezzo · Ideale per stampe in serie',
     color: '#6b4c8a',
   },
+  {
+    id: 'to285',
+    label: 'Torchon 285',
+    gsm: 285,
+    shortDesc: 'Texture ruvida tipo acquarello, α-cellulosa',
+    description: '100% α-cellulosa · Grammatura 285 g/m² · Superficie fortemente strutturata tipo acquarello · Bianco brillante · Disponibile fino a 30×40 cm',
+    color: '#b5651d',
+  },
+]
+
+// Formati disponibili per Torchon (max 30×40)
+const TORCHON_MAX_SIDE = 40
+
+// Consigli d'uso per ogni carta
+const PAPER_DETAILS: { id: string; tags: string[]; tip: string }[] = [
+  {
+    id: 'pr308',
+    tags: ['Ritratti', 'Matrimoni', 'Famiglia', 'Paesaggi', 'B&N morbido'],
+    tip: 'La superficie opaca vellutata esalta le tonalità calde e i toni di pelle. Perfetta per i reportage di matrimonio: colori naturali, zero riflessi.',
+  },
+  {
+    id: 'me350',
+    tags: ['Arte', 'Paesaggi pittoreschi', 'Architettura', 'Riproduzioni'],
+    tip: 'La texture acquarello aggiunge profondità e tridimensionalità. Ideale quando vuoi che la stampa sembri un\'opera d\'arte più che una foto.',
+  },
+  {
+    id: 'pmb308',
+    tags: ['B&N contrastato', 'Street', 'Moda', 'Ritratti drammatici'],
+    tip: 'La finitura semi-lucida baryta richiama la camera oscura analogica. Neri profondi e altissima densità ottica: la scelta dei fotogiornalisti e dei puristi del B&N.',
+  },
+  {
+    id: 'mf200',
+    tags: ['Stampe in serie', 'Decorazione', 'Regali', 'Portfolio'],
+    tip: 'Più leggera delle altre carte cotone, è la scelta economica senza rinunciare alla qualità Fine Art. Ottima per stampe multiple o album da regalare.',
+  },
+  {
+    id: 'to285',
+    tags: ['Paesaggi naturali', 'Architettura', 'Texture', 'Macro', 'Reportage'],
+    tip: 'La grana ruvida del Torchon accentua la tridimensionalità e dona un carattere pittorico unico. Disponibile fino a 30×40 cm.',
+  },
 ]
 
 const FORMATS: FormatPrice[] = [
@@ -97,6 +137,7 @@ function getPrice(f: FormatPrice, paperId: string): number {
     case 'me350':  return f.me
     case 'pmb308': return f.pmb
     case 'mf200':  return f.mf
+    case 'to285':  return f.me  // stesso prezzo del Museum Etching
     default: return f.pr
   }
 }
@@ -303,6 +344,14 @@ export default function HahnemuhlePage() {
 
   const [paper,      setPaper]      = useState<PaperType>(PAPERS[0])
   const [format,     setFormat]     = useState<FormatPrice | null>(null)
+
+  // Quando si seleziona Torchon, resetta il formato se fuori range
+  const handleSetPaper = (p: PaperType) => {
+    setPaper(p)
+    if (p.id === 'to285' && format && (format.w > TORCHON_MAX_SIDE || format.h > TORCHON_MAX_SIDE)) {
+      setFormat(null)
+    }
+  }
   const [qty,        setQty]        = useState(1)
   const [added,      setAdded]      = useState(false)
   const [showDesc,   setShowDesc]   = useState(false)
@@ -615,37 +664,59 @@ export default function HahnemuhlePage() {
             <div style={{ background: '#fff', border: '1px solid #e8e8e8', borderRadius: 16, overflow: 'hidden' }}>
               <div style={{ padding: '16px 20px', borderBottom: '1px solid #f0f0f0' }}>
                 <p style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '.12em' }}>
-                  Schede tecniche carte
+                  Schede tecniche &amp; consigli d&apos;uso
                 </p>
               </div>
-              {PAPERS.map(p => (
-                <div
-                  key={p.id}
-                  onClick={() => setPaper(p)}
-                  style={{
-                    padding: '14px 20px', borderBottom: '1px solid #f5f5f5',
-                    cursor: 'pointer',
-                    background: paper.id === p.id ? `${p.color}08` : '#fff',
-                    transition: 'background .15s',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: p.color, flexShrink: 0 }} />
-                    <p style={{ fontSize: '13px', fontWeight: 700, color: paper.id === p.id ? p.color : '#0a0a0a' }}>
-                      {p.label}
+              {PAPER_DETAILS.map(pd => {
+                const p = PAPERS.find(x => x.id === pd.id)!
+                const isActive = paper.id === pd.id
+                return (
+                  <div
+                    key={pd.id}
+                    onClick={() => handleSetPaper(p)}
+                    style={{
+                      padding: '16px 20px', borderBottom: '1px solid #f5f5f5',
+                      cursor: 'pointer',
+                      background: isActive ? `${p.color}08` : '#fff',
+                      transition: 'background .15s',
+                    }}
+                  >
+                    {/* Intestazione */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                      <div style={{ width: 10, height: 10, borderRadius: '50%', background: p.color, flexShrink: 0 }} />
+                      <p style={{ fontSize: '13px', fontWeight: 700, color: isActive ? p.color : '#0a0a0a', flex: 1 }}>
+                        {p.label}
+                      </p>
+                      <span style={{ fontSize: '10px', fontWeight: 600, color: '#fff', background: p.color, borderRadius: 6, padding: '2px 7px' }}>
+                        {p.gsm} g/m²
+                      </span>
+                    </div>
+
+                    {/* Dati tecnici */}
+                    <p style={{ fontSize: '11px', color: '#888', paddingLeft: 20, lineHeight: 1.6, marginBottom: 10 }}>
+                      {p.description}
                     </p>
-                    <span style={{
-                      marginLeft: 'auto', fontSize: '10px', fontWeight: 600, color: '#fff',
-                      background: p.color, borderRadius: 6, padding: '2px 7px',
-                    }}>
-                      {p.gsm} g/m²
-                    </span>
+
+                    {/* Consigli */}
+                    <div style={{ paddingLeft: 20 }}>
+                      <p style={{ fontSize: '10px', fontWeight: 700, color: p.color, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 6 }}>
+                        Ideale per
+                      </p>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 8 }}>
+                        {pd.tags.map(tag => (
+                          <span key={tag} style={{
+                            fontSize: '10px', fontWeight: 600, padding: '3px 9px', borderRadius: 20,
+                            background: `${p.color}14`, color: p.color, border: `1px solid ${p.color}30`,
+                          }}>{tag}</span>
+                        ))}
+                      </div>
+                      <p style={{ fontSize: '11px', color: '#666', lineHeight: 1.65, fontStyle: 'italic' }}>
+                        💡 {pd.tip}
+                      </p>
+                    </div>
                   </div>
-                  <p style={{ fontSize: '12px', color: '#888', paddingLeft: 20, lineHeight: 1.55 }}>
-                    {p.description}
-                  </p>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
 
@@ -676,7 +747,7 @@ export default function HahnemuhlePage() {
                   return (
                     <button
                       key={p.id}
-                      onClick={() => setPaper(p)}
+                      onClick={() => handleSetPaper(p)}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 12,
                         padding: '12px 14px', borderRadius: 10, cursor: 'pointer',
@@ -704,8 +775,13 @@ export default function HahnemuhlePage() {
               <p style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 14 }}>
                 Formato
               </p>
+              {paper.id === 'to285' && (
+                <p style={{ fontSize: '11px', color: '#b5651d', fontWeight: 600, marginBottom: 10 }}>
+                  Disponibile fino a 30×40 cm
+                </p>
+              )}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
-                {FORMATS.map(f => {
+                {(paper.id === 'to285' ? FORMATS.filter(f => f.w <= TORCHON_MAX_SIDE && f.h <= TORCHON_MAX_SIDE) : FORMATS).map(f => {
                   const active = format?.fmt === f.fmt
                   const p = getPrice(f, paper.id)
                   return (
