@@ -270,10 +270,10 @@ export default function ServiziPage() {
           gap: 'clamp(10px,1.5vw,20px)',
         }} className="reel-grid">
           {[
-            { url: 'https://www.instagram.com/reel/C89h_8sonFN/', cover: 'https://pub-53356d483eb74822990977c0e5c21f6c.r2.dev/images/galleria/matrimoni/real-weddings/FRANCO%20E%20ANTONIO/_DSF8816.jpg' },
-            { url: 'https://www.instagram.com/reel/DIJhGRToSmR/', cover: null },
-            { url: 'https://www.instagram.com/reel/C_yQ_f9Ild8/', cover: null },
-            { url: 'https://www.instagram.com/reel/C_Q3B8xoBiV/', cover: null },
+            { url: 'https://www.instagram.com/reel/C89h_8sonFN/', cover: `${R2}/images/galleria/matrimoni/real-weddings/FRANCO%20E%20ANTONIO/_DSF8816.jpg` },
+            { url: 'https://www.instagram.com/reel/DIJhGRToSmR/', cover: `${R2}/images/galleria/matrimoni/real-weddings/FABIO%20E%20ANGELA/ALCUNE%20SEL/DSCF3312.jpg` },
+            { url: 'https://www.instagram.com/reel/C_yQ_f9Ild8/', cover: `${R2}/images/galleria/matrimoni/real-weddings/mario%20e%20marianna/DSCF5680-Migliorato-NR.jpg` },
+            { url: 'https://www.instagram.com/reel/C_Q3B8xoBiV/', cover: `${R2}/images/galleria/reels/reel-4-cover.png` },
           ].map(({ url: reelUrl, cover }) => (
             <a
               key={reelUrl}
