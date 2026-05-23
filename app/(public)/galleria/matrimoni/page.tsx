@@ -147,7 +147,7 @@ export default function MatrimoniPage() {
               }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="https://pub-53356d483eb74822990977c0e5c21f6c.r2.dev/images/galleria/matrimoni/real-weddings/stefano%20e%20teodora/036b.jpg"
+                  src="https://pub-53356d483eb74822990977c0e5c21f6c.r2.dev/images/galleria/matrimoni/real-weddings/mario%20e%20marianna/DSCF4629.jpg"
                   alt="Real Weddings"
                   style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .7s ease' }}
                 />

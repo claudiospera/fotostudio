@@ -62,29 +62,28 @@ export default function ServiziPage() {
 
       {/* ── HERO ── */}
       <section style={{
-        paddingTop: 'clamp(120px,14vw,180px)',
+        paddingTop: 'clamp(80px,8vw,110px)',
         paddingBottom: 0,
-        paddingLeft: 'clamp(48px,7vw,96px)',
+        paddingLeft: 'clamp(24px,5vw,64px)',
         paddingRight: 'clamp(24px,5vw,64px)',
-        minHeight: '90vh',
-        display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+        display: 'flex', flexDirection: 'column', justifyContent: 'center',
       }}>
-        <div>
+        <div style={{ textAlign: 'center' }}>
           <div style={{ lineHeight: 1.05 }}>
             <div style={{
               fontFamily: "'Cormorant Garamond', Georgia, serif",
               fontStyle: 'italic', fontWeight: 400,
-              fontSize: 'clamp(68px,9vw,118px)', color: INK,
+              fontSize: 'clamp(60px,8vw,110px)', color: INK,
             }}>Storie</div>
             <div style={{
-              fontFamily: "'Wedding', cursive",
-              fontSize: 'clamp(56px,7.5vw,98px)',
-              color: INK, opacity: 0.8, marginLeft: '10px', lineHeight: 1,
+              fontFamily: "'Great Vibes', cursive",
+              fontSize: 'clamp(64px,8.5vw,112px)',
+              color: INK, opacity: 0.65, lineHeight: 1,
             }}>vere</div>
             <div style={{
               fontFamily: "'Cormorant Garamond', Georgia, serif",
               fontStyle: 'italic', fontWeight: 400,
-              fontSize: 'clamp(68px,9vw,118px)', color: INK,
+              fontSize: 'clamp(60px,8vw,110px)', color: INK,
             }}>da raccontare</div>
           </div>
         </div>
