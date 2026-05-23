@@ -177,7 +177,7 @@ export default async function ServizioPage({ params }: { params: Promise<{ slug:
           Claudio Spera · Fotografo
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(20px,3vw,40px)' }}>
-          {['Servizi', 'Galleria', 'Chi sono', 'Contatti'].map(label => (
+          {['Servizi', 'Chi sono', 'Contatti'].map(label => (
             <Link key={label} href={`/${label.toLowerCase().replace(' ', '-')}`} style={{
               fontFamily: "'Jost', sans-serif", fontWeight: 300,
               fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase',

@@ -16,7 +16,6 @@ const BORDER = 'rgba(26,22,18,0.12)'
 
 const NAV_LINKS = [
   { label: 'Servizi Fotografici', href: '/servizi' },
-  { label: 'Galleria',            href: '/galleria' },
   { label: 'Chi sono',            href: '/chi-sono' },
   { label: 'Contatti',            href: '/contatti' },
 ]

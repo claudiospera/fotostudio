@@ -185,7 +185,6 @@ export default function ContattiPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(20px,3vw,40px)' }}>
           {[
             { label: 'Servizi Fotografici', href: '/servizi' },
-            { label: 'Galleria',            href: '/galleria' },
             { label: 'Chi sono',            href: '/chi-sono' },
             { label: 'Contatti',            href: '/contatti' },
           ].map(({ label, href }) => (
