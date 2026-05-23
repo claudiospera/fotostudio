@@ -117,7 +117,6 @@ export default function GalleriaPage() {
                       width: '100%', height: '100%', objectFit: 'cover',
                       transition: 'transform .6s ease',
                     }}
-                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
                   />
                   <div style={{
                     position: 'absolute', inset: 0,
