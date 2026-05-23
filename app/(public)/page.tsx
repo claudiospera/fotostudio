@@ -83,10 +83,11 @@ export default function HomePage() {
             </div>
             <div style={{
               fontFamily: "'Wedding', cursive",
-              fontSize: 'clamp(80px,11vw,140px)',
-              color: INK, opacity: 0.75,
-              lineHeight: 0.9,
-              marginLeft: '8px',
+              fontSize: 'clamp(160px,22vw,280px)',
+              color: INK, opacity: 0.7,
+              lineHeight: 0.75,
+              marginLeft: '4px',
+              marginTop: '-8px',
             }}>
               vere
             </div>

@@ -42,7 +42,7 @@
   --r2:    10px;
 }
 
-html, body { height: 100%; overflow-x: hidden; }
+html, body { height: 100%; }
 
 body {
   font-family: 'DM Sans', sans-serif;
