@@ -84,8 +84,10 @@ export default function AdminPage() {
   const totalPhotos = weddings.reduce((n, w) => n + w.photos.length, 0)
   const selCount    = selected.size
 
+  if (!mounted) return null
+
   return (
-    {!mounted ? null : <div style={{ background: BG, minHeight: '100vh', color: TX, fontFamily: "'DM Sans', sans-serif", paddingBottom: selCount ? 80 : 0 }}>
+    <div style={{ background: BG, minHeight: '100vh', color: TX, fontFamily: "'DM Sans', sans-serif", paddingBottom: selCount ? 80 : 0 }}>
 
       {/* ── Header ── */}
       <div style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '20px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -268,6 +270,6 @@ export default function AdminPage() {
         </div>
       )}
 
-    </div>}
+    </div>
   )
 }
