@@ -426,7 +426,7 @@ export const PRODUCTS: Product[] = [
     status: 'available',
     images: ['/images/shop/gadget/borraccia-alluminio.png'],
     variants: [
-      { id: 'bor-alu-std', label: 'Standard', price: 1200 },
+      { id: 'bor-alu-std', label: 'Standard', price: 1500 },
     ],
     featured: false,
     createdAt: '2026-01-01T00:00:00Z',

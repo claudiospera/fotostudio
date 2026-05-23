@@ -13,7 +13,7 @@ function fmt(cents: number) {
   return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(cents / 100)
 }
 
-const PRICE = 1200
+const PRICE = 1500
 
 // ─── Dimensioni ───────────────────────────────────────────────────────────────
 const PREV_W = 400                                  // preview px larghezza
