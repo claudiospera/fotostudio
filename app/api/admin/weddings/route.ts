@@ -21,7 +21,8 @@ function parseWeddings() {
   const B_VAL    = R2_VAL + (bMatch?.[1] ?? '')
 
   // Estrai i blocchi dei singoli matrimoni
-  const blockRe = /\{\s*slug:\s*'([^']+)'[^}]*?title:\s*'([^']+)'[^}]*?(?:location:\s*'([^']+)'[^}]*?)?(?:date:\s*'([^']+)'[^}]*?)?cover:\s*`([^`]+)`[^}]*?photos:\s*\[([\s\S]*?)\]\s*,?\s*\}/g
+  // [^}]* — permette commenti e spazi tra { e slug:
+  const blockRe = /\{[^}]*?slug:\s*'([^']+)'[^}]*?title:\s*'([^']+)'[^}]*?(?:location:\s*'([^']+)'[^}]*?)?(?:date:\s*'([^']+)'[^}]*?)?cover:\s*`([^`]+)`[^}]*?photos:\s*\[([\s\S]*?)\]\s*,?\s*\}/g
 
   const weddings = []
   let m
