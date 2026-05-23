@@ -1,15 +1,13 @@
 'use client'
-// app/admin/page.tsx
-// Pannello admin locale — gestione foto Real Weddings
-// Accessibile solo su http://localhost:3000/admin
+// app/admin/page.tsx — pannello admin locale Real Weddings
 
 import { useEffect, useState, useCallback } from 'react'
 
 interface Wedding {
   slug:      string
   title:     string
-  location?: string
-  date?:     string
+  location?: string | null
+  date?:     string | null
   cover:     string
   photos:    string[]
 }
@@ -26,15 +24,16 @@ const RED   = '#d97070'
 const AMBER = '#c9a05a'
 
 export default function AdminPage() {
-  const [weddings, setWeddings]   = useState<Wedding[]>([])
-  const [loading, setLoading]     = useState(true)
-  const [status, setStatus]       = useState<string | null>(null)
-  const [deleting, setDeleting]   = useState<string | null>(null)
-  const [confirm, setConfirm]     = useState<{ url: string; wedding: string } | null>(null)
+  const [weddings, setWeddings] = useState<Wedding[]>([])
+  const [loading, setLoading]   = useState(true)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [deleting, setDeleting] = useState(false)
+  const [status, setStatus]     = useState<{ msg: string; ok: boolean } | null>(null)
+  const [confirm, setConfirm]   = useState(false)
 
   const fetchWeddings = useCallback(async () => {
     setLoading(true)
-    const res = await fetch('/api/admin/weddings', { cache: 'no-store' })
+    const res  = await fetch('/api/admin/weddings', { cache: 'no-store' })
     const data = await res.json()
     setWeddings(data)
     setLoading(false)
@@ -42,244 +41,223 @@ export default function AdminPage() {
 
   useEffect(() => { fetchWeddings() }, [fetchWeddings])
 
-  const handleDelete = async (photoUrl: string) => {
-    setConfirm(null)
-    setDeleting(photoUrl)
+  const toggle = (url: string) =>
+    setSelected(prev => {
+      const next = new Set(prev)
+      next.has(url) ? next.delete(url) : next.add(url)
+      return next
+    })
+
+  const toggleAll = (photos: string[]) =>
+    setSelected(prev => {
+      const next    = new Set(prev)
+      const allSel  = photos.every(u => next.has(u))
+      photos.forEach(u => allSel ? next.delete(u) : next.add(u))
+      return next
+    })
+
+  const handleDelete = async () => {
+    setConfirm(false)
+    setDeleting(true)
     setStatus(null)
     try {
-      const res = await fetch('/api/admin/photo', {
+      const res  = await fetch('/api/admin/photo', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ photoUrl }),
+        body: JSON.stringify({ photoUrls: [...selected] }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      setStatus(`✅ Foto rimossa. Ora fai git push per aggiornare il sito.`)
+      setStatus({ msg: `✅ ${data.deleted} foto eliminate. Fai git push per aggiornare il sito.`, ok: true })
+      setSelected(new Set())
       await fetchWeddings()
     } catch (err) {
-      setStatus(`❌ Errore: ${err}`)
+      setStatus({ msg: `❌ Errore: ${err}`, ok: false })
     } finally {
-      setDeleting(null)
+      setDeleting(false)
     }
   }
 
   const totalPhotos = weddings.reduce((n, w) => n + w.photos.length, 0)
+  const selCount    = selected.size
 
   return (
-    <div style={{ background: BG, minHeight: '100vh', color: TX, fontFamily: "'DM Sans', sans-serif" }}>
+    <div style={{ background: BG, minHeight: '100vh', color: TX, fontFamily: "'DM Sans', sans-serif", paddingBottom: selCount ? 80 : 0 }}>
 
-      {/* Header */}
-      <div style={{
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
-        padding: '24px 40px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      }}>
+      {/* ── Header ── */}
+      <div style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '20px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h1 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 22, margin: 0 }}>
+          <h1 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 20, margin: 0 }}>
             Admin — Real Weddings
           </h1>
-          <p style={{ color: T3, fontSize: 13, margin: '4px 0 0' }}>
+          <p style={{ color: T3, fontSize: 12, margin: '3px 0 0' }}>
             {loading ? '...' : `${weddings.length} matrimoni · ${totalPhotos} foto`}
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{
-            background: 'rgba(201,160,90,0.15)', color: AMBER,
-            fontSize: 11, fontWeight: 500, padding: '4px 10px', borderRadius: 6,
-            letterSpacing: '0.06em',
-          }}>
+          <span style={{ background: 'rgba(201,160,90,0.15)', color: AMBER, fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 5, letterSpacing: '0.06em' }}>
             SOLO LOCALE
           </span>
-          <a href="/" style={{ color: T2, fontSize: 13, textDecoration: 'none' }}>← Sito</a>
+          <a href="/" style={{ color: T2, fontSize: 12, textDecoration: 'none' }}>← Sito</a>
         </div>
       </div>
 
-      {/* Status bar */}
+      {/* ── Status ── */}
       {status && (
         <div style={{
-          margin: '16px 40px 0',
-          padding: '12px 16px',
-          borderRadius: 8,
-          background: status.startsWith('✅') ? 'rgba(142,201,176,0.12)' : 'rgba(217,112,112,0.12)',
-          color: status.startsWith('✅') ? AC : RED,
-          fontSize: 13,
+          margin: '12px 32px 0', padding: '10px 14px', borderRadius: 7,
+          background: status.ok ? 'rgba(142,201,176,0.12)' : 'rgba(217,112,112,0.12)',
+          color: status.ok ? AC : RED, fontSize: 13,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
-          <span>{status}</span>
-          {status.startsWith('✅') && (
-            <code style={{ background: S2, padding: '2px 8px', borderRadius: 4, fontSize: 12, color: T2 }}>
-              git push
-            </code>
-          )}
+          <span>{status.msg}</span>
+          {status.ok && <code style={{ background: S2, padding: '2px 7px', borderRadius: 4, fontSize: 11, color: T2 }}>git push</code>}
         </div>
       )}
 
-      {/* Content */}
-      <div style={{ padding: '32px 40px' }}>
+      {/* ── Hint ── */}
+      {!loading && selCount === 0 && (
+        <p style={{ color: T3, fontSize: 11, margin: '10px 32px 0', letterSpacing: '0.04em' }}>
+          Clicca le foto per selezionarle, poi premi "Elimina selezionate"
+        </p>
+      )}
+
+      {/* ── Content ── */}
+      <div style={{ padding: '20px 32px' }}>
         {loading ? (
-          <p style={{ color: T3, fontSize: 14 }}>Caricamento...</p>
-        ) : (
-          weddings.map(w => (
-            <section key={w.slug} style={{ marginBottom: 48 }}>
+          <p style={{ color: T3, fontSize: 13 }}>Caricamento...</p>
+        ) : weddings.map(w => {
+          const allSel = w.photos.length > 0 && w.photos.every(u => selected.has(u))
+          const someSel = w.photos.some(u => selected.has(u))
+          return (
+            <section key={w.slug} style={{ marginBottom: 40 }}>
               {/* Wedding header */}
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 16 }}>
-                <h2 style={{
-                  fontFamily: "'Syne', sans-serif", fontWeight: 700,
-                  fontSize: 16, margin: 0, color: TX,
-                }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14, margin: 0, color: TX }}>
                   {w.title}
                 </h2>
-                {w.location && (
-                  <span style={{ color: T3, fontSize: 12 }}>{w.location}</span>
-                )}
-                {w.date && (
-                  <span style={{ color: T3, fontSize: 12 }}>· {w.date}</span>
-                )}
-                <span style={{
-                  marginLeft: 'auto', color: T3, fontSize: 12,
-                }}>
-                  {w.photos.length} foto
-                </span>
+                {w.location && <span style={{ color: T3, fontSize: 11 }}>{w.location}</span>}
+                {w.date     && <span style={{ color: T3, fontSize: 11 }}>· {w.date}</span>}
+                <span style={{ color: T3, fontSize: 11, marginLeft: 'auto' }}>{w.photos.length} foto</span>
+                <button
+                  onClick={() => toggleAll(w.photos)}
+                  style={{
+                    background: allSel ? 'rgba(217,112,112,0.15)' : someSel ? 'rgba(201,160,90,0.15)' : S2,
+                    color: allSel ? RED : someSel ? AMBER : T2,
+                    border: 'none', borderRadius: 5, padding: '4px 10px',
+                    fontSize: 10, fontWeight: 600, cursor: 'pointer', letterSpacing: '0.05em',
+                  }}
+                >
+                  {allSel ? 'Deseleziona tutto' : 'Seleziona tutto'}
+                </button>
               </div>
 
-              {/* Photo grid */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-                gap: 8,
-              }}>
+              {/* Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: 4 }}>
                 {w.photos.map(url => {
-                  const isCover  = url === w.cover
-                  const isDeleting = deleting === url
-                  const filename = decodeURIComponent(url.split('/').pop() ?? url)
+                  const isSel   = selected.has(url)
+                  const isCover = url === w.cover
+                  const name    = decodeURIComponent(url.split('/').pop() ?? '')
                   return (
                     <div
                       key={url}
+                      onClick={() => toggle(url)}
+                      title={name}
                       style={{
-                        position: 'relative',
-                        aspectRatio: '2/3',
-                        background: S2,
-                        borderRadius: 8,
-                        overflow: 'hidden',
-                        border: isCover ? `2px solid ${AMBER}` : '2px solid transparent',
-                        opacity: isDeleting ? 0.4 : 1,
-                        transition: 'opacity 0.2s',
+                        position: 'relative', aspectRatio: '2/3',
+                        background: S2, borderRadius: 5, overflow: 'hidden', cursor: 'pointer',
+                        outline: isSel ? `2px solid ${RED}` : 'none',
+                        outlineOffset: '-2px',
+                        opacity: isSel ? 0.7 : 1,
+                        transition: 'opacity 0.15s, outline 0.15s',
                       }}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={url}
-                        alt={filename}
+                        alt={name}
                         loading="lazy"
+                        decoding="async"
                         style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                       />
-
-                      {/* Cover badge */}
                       {isCover && (
                         <span style={{
-                          position: 'absolute', top: 6, left: 6,
+                          position: 'absolute', top: 3, left: 3,
                           background: AMBER, color: '#1a1612',
-                          fontSize: 9, fontWeight: 700, padding: '2px 6px',
-                          borderRadius: 4, letterSpacing: '0.06em',
-                        }}>
-                          COVER
-                        </span>
+                          fontSize: 7, fontWeight: 700, padding: '1px 4px', borderRadius: 3,
+                        }}>C</span>
                       )}
-
-                      {/* Hover overlay with delete */}
-                      <div style={{
-                        position: 'absolute', inset: 0,
-                        background: 'rgba(17,18,16,0.7)',
-                        display: 'flex', flexDirection: 'column',
-                        alignItems: 'center', justifyContent: 'center',
-                        gap: 6, opacity: 0,
-                        transition: 'opacity 0.18s',
-                      }}
-                        className="photo-overlay"
-                        onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
-                        onMouseLeave={e => (e.currentTarget.style.opacity = '0')}
-                      >
-                        <p style={{
-                          color: T2, fontSize: 10, textAlign: 'center',
-                          padding: '0 8px', wordBreak: 'break-all', lineHeight: 1.4,
-                          maxHeight: 40, overflow: 'hidden',
+                      {isSel && (
+                        <div style={{
+                          position: 'absolute', inset: 0,
+                          background: 'rgba(217,112,112,0.25)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
                         }}>
-                          {filename}
-                        </p>
-                        <button
-                          disabled={isDeleting}
-                          onClick={() => setConfirm({ url, wedding: w.title })}
-                          style={{
-                            background: RED, color: '#fff',
-                            border: 'none', borderRadius: 6,
-                            fontSize: 12, fontWeight: 500,
-                            padding: '6px 14px', cursor: 'pointer',
-                          }}
-                        >
-                          {isDeleting ? '...' : 'Elimina'}
-                        </button>
-                      </div>
+                          <span style={{ fontSize: 20, color: '#fff', lineHeight: 1 }}>✕</span>
+                        </div>
+                      )}
                     </div>
                   )
                 })}
               </div>
             </section>
-          ))
-        )}
+          )
+        })}
       </div>
 
-      {/* Confirm dialog */}
-      {confirm && (
+      {/* ── Barra elimina fissa in basso ── */}
+      {selCount > 0 && (
         <div style={{
-          position: 'fixed', inset: 0,
-          background: 'rgba(0,0,0,0.7)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 100,
-        }}
-          onClick={() => setConfirm(null)}
+          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
+          background: S1, borderTop: '1px solid rgba(255,255,255,0.08)',
+          padding: '14px 32px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <span style={{ color: T2, fontSize: 13 }}>
+            <strong style={{ color: RED }}>{selCount}</strong> foto selezionate
+          </span>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button
+              onClick={() => setSelected(new Set())}
+              style={{ background: S3, color: T2, border: 'none', borderRadius: 6, padding: '8px 16px', fontSize: 12, cursor: 'pointer' }}
+            >
+              Annulla
+            </button>
+            <button
+              disabled={deleting}
+              onClick={() => setConfirm(true)}
+              style={{
+                background: RED, color: '#fff', border: 'none', borderRadius: 6,
+                padding: '8px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                opacity: deleting ? 0.6 : 1,
+              }}
+            >
+              {deleting ? 'Eliminando...' : `Elimina ${selCount} foto`}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Dialog conferma ── */}
+      {confirm && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}
+          onClick={() => setConfirm(false)}
         >
           <div
-            style={{
-              background: S1, borderRadius: 12, padding: 28,
-              width: 360, border: '1px solid rgba(255,255,255,0.08)',
-            }}
+            style={{ background: S1, borderRadius: 12, padding: 28, width: 340, border: '1px solid rgba(255,255,255,0.08)' }}
             onClick={e => e.stopPropagation()}
           >
-            <h3 style={{ margin: '0 0 8px', fontFamily: "'Syne', sans-serif", fontSize: 16 }}>
-              Elimina foto
-            </h3>
-            <p style={{ color: T2, fontSize: 13, marginBottom: 6 }}>
-              {confirm.wedding}
+            <h3 style={{ margin: '0 0 10px', fontFamily: "'Syne', sans-serif", fontSize: 16 }}>Conferma eliminazione</h3>
+            <p style={{ color: T2, fontSize: 14, marginBottom: 8 }}>
+              Stai per eliminare <strong style={{ color: RED }}>{selCount} foto</strong> da R2 e da <code style={{ fontSize: 12 }}>_data.ts</code>.
             </p>
-            <p style={{
-              color: T3, fontSize: 11, wordBreak: 'break-all',
-              background: S2, padding: '8px 10px', borderRadius: 6, marginBottom: 20,
-            }}>
-              {decodeURIComponent(confirm.url.split('/').pop() ?? confirm.url)}
-            </p>
-            <p style={{ color: RED, fontSize: 12, marginBottom: 20 }}>
-              La foto verrà cancellata da R2 e rimossa da _data.ts.
-              L&apos;operazione non è reversibile.
-            </p>
+            <p style={{ color: T3, fontSize: 12, marginBottom: 24 }}>L&apos;operazione non è reversibile.</p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-              <button
-                onClick={() => setConfirm(null)}
-                style={{
-                  background: S3, color: T2, border: 'none',
-                  borderRadius: 6, padding: '8px 18px',
-                  fontSize: 13, cursor: 'pointer',
-                }}
-              >
+              <button onClick={() => setConfirm(false)} style={{ background: S3, color: T2, border: 'none', borderRadius: 6, padding: '8px 16px', fontSize: 13, cursor: 'pointer' }}>
                 Annulla
               </button>
-              <button
-                onClick={() => handleDelete(confirm.url)}
-                style={{
-                  background: RED, color: '#fff', border: 'none',
-                  borderRadius: 6, padding: '8px 18px',
-                  fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                }}
-              >
+              <button onClick={handleDelete} style={{ background: RED, color: '#fff', border: 'none', borderRadius: 6, padding: '8px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
                 Elimina
               </button>
             </div>
