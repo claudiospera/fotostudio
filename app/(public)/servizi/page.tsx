@@ -270,11 +270,11 @@ export default function ServiziPage() {
           gap: 'clamp(10px,1.5vw,20px)',
         }} className="reel-grid">
           {[
-            'https://www.instagram.com/reel/C89h_8sonFN/',
-            'https://www.instagram.com/reel/DIJhGRToSmR/',
-            'https://www.instagram.com/reel/C_yQ_f9Ild8/',
-            'https://www.instagram.com/reel/C_Q3B8xoBiV/',
-          ].map(reelUrl => (
+            { url: 'https://www.instagram.com/reel/C89h_8sonFN/', cover: 'https://pub-53356d483eb74822990977c0e5c21f6c.r2.dev/images/galleria/matrimoni/real-weddings/FRANCO%20E%20ANTONIO/_DSF8816.jpg' },
+            { url: 'https://www.instagram.com/reel/DIJhGRToSmR/', cover: null },
+            { url: 'https://www.instagram.com/reel/C_yQ_f9Ild8/', cover: null },
+            { url: 'https://www.instagram.com/reel/C_Q3B8xoBiV/', cover: null },
+          ].map(({ url: reelUrl, cover }) => (
             <a
               key={reelUrl}
               href={reelUrl}
@@ -282,7 +282,7 @@ export default function ServiziPage() {
               style={{
                 display: 'block', textDecoration: 'none',
                 aspectRatio: '9/16',
-                background: 'rgba(26,22,18,0.06)',
+                background: cover ? `url(${cover}) center/cover no-repeat` : 'rgba(26,22,18,0.06)',
                 position: 'relative', overflow: 'hidden',
               }}
               className="reel-card"
