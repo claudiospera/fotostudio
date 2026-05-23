@@ -7,6 +7,18 @@ const isPublicRoute = createRouteMatcher([
   '/cliente(.*)',
   '/api/public(.*)',
   '/api/preventivi-pubblici/(.*)',
+  // ── Sito pubblico ──────────────────────────────────────────────────
+  '/servizi(.*)',
+  '/galleria(.*)',
+  '/chi-sono(.*)',
+  '/contatti(.*)',
+  '/shop(.*)',
+  '/link(.*)',
+  '/p(.*)',
+  '/provino(.*)',
+  // ── Admin locale ───────────────────────────────────────────────────
+  '/admin(.*)',
+  '/api/admin(.*)',
 ])
 
 export default clerkMiddleware(async (auth, request) => {

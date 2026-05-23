@@ -12,6 +12,16 @@ const isPublicRoute = createRouteMatcher([
   '/api/shop/orders',
   '/api/shop/stripe-webhook',
   '/api/shop/presign-photo',
+  // Sito pubblico
+  '/servizi(.*)',
+  '/galleria(.*)',
+  '/chi-sono(.*)',
+  '/contatti(.*)',
+  '/link(.*)',
+  '/provino(.*)',
+  // Admin locale
+  '/admin(.*)',
+  '/api/admin(.*)',
   // Shop pubblico — /shop/admin resta protetto
   '/shop',
   '/shop/carrello',
