@@ -269,10 +269,15 @@ export default function ServiziPage() {
           gridTemplateColumns: 'repeat(4, 1fr)',
           gap: 'clamp(10px,1.5vw,20px)',
         }} className="reel-grid">
-          {[1,2,3,4].map(i => (
+          {[
+            'https://www.instagram.com/reel/DXuO8r6CCUn/',
+            'https://www.instagram.com/reel/DIJhGRToSmR/',
+            'https://www.instagram.com/reel/C_yQ_f9Ild8/',
+            'https://www.instagram.com/reel/C_Q3B8xoBiV/',
+          ].map(reelUrl => (
             <a
-              key={i}
-              href="https://www.instagram.com/claudiosperafotografo/reels/"
+              key={reelUrl}
+              href={reelUrl}
               target="_blank" rel="noopener noreferrer"
               style={{
                 display: 'block', textDecoration: 'none',
