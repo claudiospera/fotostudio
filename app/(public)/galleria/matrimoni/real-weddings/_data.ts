@@ -164,7 +164,7 @@ export const WEDDINGS: Wedding[] = [
   {
     slug:  'enza-e-elena',
     title: 'Enza & Elena',
-    cover: `${B}/ENZA%20E%20ELENA/_DSF0118.jpg`,
+    cover: `${B}/ENZA%20E%20ELENA/_DSF6436f.jpg`,
     photos: [
       `${B}/ENZA%20E%20ELENA/_DSF0118.jpg`,
       `${B}/ENZA%20E%20ELENA/_DSF4887.jpg`,
@@ -455,7 +455,7 @@ export const WEDDINGS: Wedding[] = [
   {
     slug:  'loredana-e-umberto',
     title: 'Loredana & Umberto',
-    cover: `${B}/LOREDANA%20E%20UMBERTO/DSCF2433.jpg`,
+    cover: `${B}/LOREDANA%20E%20UMBERTO/DSCF3583.jpg`,
     photos: [
       `${B}/LOREDANA%20E%20UMBERTO/DSCF2433.jpg`,
       `${B}/LOREDANA%20E%20UMBERTO/DSCF2494.jpg`,
@@ -683,7 +683,7 @@ export const WEDDINGS: Wedding[] = [
   {
     slug:  'mario-e-marianna',
     title: 'Mario & Marianna',
-    cover: `${B}/mario%20e%20marianna/DSCF4578.jpg`,
+    cover: `${B}/mario%20e%20marianna/DSCF4604.jpg`,
     photos: [
       `${B}/mario%20e%20marianna/DSCF0225.jpg`,
       `${B}/mario%20e%20marianna/DSCF0420.jpg`,
