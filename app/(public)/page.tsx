@@ -82,12 +82,11 @@ export default function HomePage() {
               Storie
             </div>
             <div style={{
-              fontFamily: "'Wedding', cursive",
-              fontSize: 'clamp(160px,22vw,280px)',
-              color: INK, opacity: 0.7,
-              lineHeight: 0.75,
-              marginLeft: '4px',
-              marginTop: '-8px',
+              fontFamily: "'Great Vibes', cursive",
+              fontSize: 'clamp(72px,9.5vw,124px)',
+              color: INK, opacity: 0.65,
+              lineHeight: 1,
+              marginLeft: '6px',
             }}>
               vere
             </div>
