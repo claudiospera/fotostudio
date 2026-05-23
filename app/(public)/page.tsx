@@ -15,13 +15,15 @@ const GOLD = '#C9A96E'
 const SAGE = '#7D9B76'
 const BORDER = 'rgba(26,22,18,0.12)'
 
+const R2 = 'https://pub-53356d483eb74822990977c0e5c21f6c.r2.dev'
+
 const SERVIZI = [
-  { n: '01', nome: 'Matrimoni',                 loc: 'Campania · e dintorni',   slug: 'matrimoni' },
-  { n: '02', nome: 'Battesimi & Prima infanzia', loc: 'Studio · Esterno',        slug: 'battesimi-prima-infanzia' },
-  { n: '03', nome: 'Comunioni & Cresime',        loc: 'Chiesa · Ricevimento',    slug: 'comunioni-cresime' },
-  { n: '04', nome: 'Maternità & Gravidanza',     loc: 'Studio · Natura',         slug: 'maternita-gravidanza' },
-  { n: '05', nome: 'Compleanni & Feste',         loc: 'Location · Esterno',      slug: 'compleanni-feste' },
-  { n: '06', nome: 'Ritratti & Famiglie',        loc: 'Studio · Esterno',        slug: 'ritratti-famiglie' },
+  { n: '01', nome: 'Matrimoni',                 loc: 'Campania · e dintorni',   href: '/galleria/matrimoni',             cover: `${R2}/images/galleria/matrimoni/real-weddings/stefano%20e%20teodora/036b.jpg` },
+  { n: '02', nome: 'Battesimi & Prima infanzia', loc: 'Studio · Esterno',        href: '/servizi/battesimi-prima-infanzia', cover: null },
+  { n: '03', nome: 'Comunioni & Cresime',        loc: 'Chiesa · Ricevimento',    href: '/servizi/comunioni-cresime',       cover: null },
+  { n: '04', nome: 'Maternità & Gravidanza',     loc: 'Studio · Natura',         href: '/servizi/maternita-gravidanza',    cover: null },
+  { n: '05', nome: 'Compleanni & Feste',         loc: 'Location · Esterno',      href: '/servizi/compleanni-feste',        cover: null },
+  { n: '06', nome: 'Ritratti & Famiglie',        loc: 'Studio · Esterno',        href: '/servizi/ritratti-famiglie',       cover: null },
 ]
 
 export default function HomePage() {
@@ -46,7 +48,7 @@ export default function HomePage() {
         </Link>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(20px,3vw,40px)' }}>
-          {['Servizi', 'Galleria', 'Chi sono', 'Contatti'].map(label => (
+          {['Servizi', 'Chi sono', 'Contatti'].map(label => (
             <Link key={label} href={`/${label.toLowerCase().replace(' ', '-')}`} style={{
               fontFamily: "'Jost', sans-serif", fontWeight: 300,
               fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase',
@@ -152,8 +154,8 @@ export default function HomePage() {
         }}>
           {SERVIZI.map((s, i) => (
             <Link
-              key={s.slug}
-              href={`/servizi/${s.slug}`}
+              key={s.nome}
+              href={s.href}
               style={{
                 display: 'block',
                 borderRight: (i + 1) % 3 !== 0 ? `1px solid ${BORDER}` : 'none',
@@ -173,12 +175,20 @@ export default function HomePage() {
                   {s.n}
                 </div>
 
-                {/* Placeholder immagine */}
+                {/* Immagine / placeholder */}
                 <div style={{
                   aspectRatio: '3/2',
                   background: `rgba(26,22,18,0.06)`,
                   marginBottom: 18,
-                }} />
+                  overflow: 'hidden',
+                  position: 'relative',
+                }}>
+                  {s.cover && (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={s.cover} alt={s.nome}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                  )}
+                </div>
 
                 {/* Nome */}
                 <div style={{
