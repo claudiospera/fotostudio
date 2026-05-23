@@ -4,8 +4,8 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Storie da Raccontare — Fotografo a Napoli',
-  description: 'Matrimoni, ritratti e maternità a Napoli. Raccontiamo la tua storia attraverso immagini che durano per sempre.',
+  title: 'Storie da Raccontare — Fotografo Mirabella Eclano',
+  description: 'Matrimoni, ritratti e maternità a Mirabella Eclano. Raccontiamo la tua storia attraverso immagini che durano per sempre.',
 }
 
 const SAGE    = '#7d9b76'
@@ -127,7 +127,7 @@ export default function LinkPage() {
             overflow: 'hidden',
             border: `3px solid ${SAGE}`,
             marginBottom: 20,
-            background: `${SAGE}22`,
+            background: '#ffffff',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -135,11 +135,11 @@ export default function LinkPage() {
           }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/images/profilo.jpg"
+              src="/logo.png"
               alt="Storie da Raccontare"
               width={96}
               height={96}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              style={{ width: '90%', height: '90%', objectFit: 'contain', display: 'block' }}
             />
           </div>
 
@@ -166,7 +166,7 @@ export default function LinkPage() {
             textAlign: 'center',
             marginBottom: 14,
           }}>
-            Fotografo a Napoli · Matrimoni · Ritratti · Maternità
+            Fotografo Mirabella Eclano · Matrimoni · Ritratti · Maternità
           </p>
 
           {/* Bio */}
