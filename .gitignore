@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# immagini locali (troppo pesanti per git — usare CDN/storage in produzione)
+/public/images/
