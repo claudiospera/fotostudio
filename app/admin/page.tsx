@@ -24,12 +24,15 @@ const RED   = '#d97070'
 const AMBER = '#c9a05a'
 
 export default function AdminPage() {
+  const [mounted, setMounted]   = useState(false)
   const [weddings, setWeddings] = useState<Wedding[]>([])
   const [loading, setLoading]   = useState(true)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [deleting, setDeleting] = useState(false)
   const [status, setStatus]     = useState<{ msg: string; ok: boolean } | null>(null)
   const [confirm, setConfirm]   = useState(false)
+
+  useEffect(() => { setMounted(true) }, [])
 
   const fetchWeddings = useCallback(async () => {
     setLoading(true)
@@ -39,7 +42,7 @@ export default function AdminPage() {
     setLoading(false)
   }, [])
 
-  useEffect(() => { fetchWeddings() }, [fetchWeddings])
+  useEffect(() => { if (mounted) fetchWeddings() }, [mounted, fetchWeddings])
 
   const toggle = (url: string) =>
     setSelected(prev => {
@@ -82,7 +85,7 @@ export default function AdminPage() {
   const selCount    = selected.size
 
   return (
-    <div suppressHydrationWarning style={{ background: BG, minHeight: '100vh', color: TX, fontFamily: "'DM Sans', sans-serif", paddingBottom: selCount ? 80 : 0 }}>
+    {!mounted ? null : <div style={{ background: BG, minHeight: '100vh', color: TX, fontFamily: "'DM Sans', sans-serif", paddingBottom: selCount ? 80 : 0 }}>
 
       {/* ── Header ── */}
       <div style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '20px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -265,6 +268,6 @@ export default function AdminPage() {
         </div>
       )}
 
-    </div>
+    </div>}
   )
 }
