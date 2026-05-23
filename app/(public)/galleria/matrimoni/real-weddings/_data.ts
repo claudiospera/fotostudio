@@ -555,7 +555,7 @@ export const WEDDINGS: Wedding[] = [
   {
     slug:  'michele-e-cassandra',
     title: 'Michele & Cassandra',
-    cover: `${B}/MICHELE%20E%20CASSANDRA/_DSF0001.jpg`,
+    cover: `${B}/MICHELE%20E%20CASSANDRA/_DSF0968.jpg`,
     photos: [
       `${B}/MICHELE%20E%20CASSANDRA/_DSF0001.jpg`,
       `${B}/MICHELE%20E%20CASSANDRA/_DSF0173.jpg`,
