@@ -27,9 +27,16 @@ const isPublicRoute = createRouteMatcher([
   '/shop/carrello',
   '/shop/checkout',
   '/shop/ordine-confermato',
+  '/shop/accedi',
+  '/shop/registrati',
+  '/shop/composizioni',
+  '/shop/cookie-policy',
+  '/shop/privacy-policy',
+  '/shop/termini-e-condizioni',
+  '/shop/diritto-di-recesso',
   '/shop/stampe(.*)',
   '/shop/decorazioni(.*)',
-  '/shop/[categoria](.*)',
+  '/shop/gadget(.*)',
 ])
 
 export default clerkMiddleware(async (auth, request) => {
