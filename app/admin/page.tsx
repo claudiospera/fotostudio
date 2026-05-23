@@ -82,7 +82,7 @@ export default function AdminPage() {
   const selCount    = selected.size
 
   return (
-    <div style={{ background: BG, minHeight: '100vh', color: TX, fontFamily: "'DM Sans', sans-serif", paddingBottom: selCount ? 80 : 0 }}>
+    <div suppressHydrationWarning style={{ background: BG, minHeight: '100vh', color: TX, fontFamily: "'DM Sans', sans-serif", paddingBottom: selCount ? 80 : 0 }}>
 
       {/* ── Header ── */}
       <div style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '20px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
