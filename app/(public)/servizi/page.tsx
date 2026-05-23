@@ -270,7 +270,7 @@ export default function ServiziPage() {
           gap: 'clamp(10px,1.5vw,20px)',
         }} className="reel-grid">
           {[
-            'https://www.instagram.com/reel/DXuO8r6CCUn/',
+            'https://www.instagram.com/reel/C89h_8sonFN/',
             'https://www.instagram.com/reel/DIJhGRToSmR/',
             'https://www.instagram.com/reel/C_yQ_f9Ild8/',
             'https://www.instagram.com/reel/C_Q3B8xoBiV/',
