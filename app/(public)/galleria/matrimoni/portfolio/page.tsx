@@ -22,7 +22,8 @@ const NAV_LINKS = [
   { label: 'Contatti',            href: '/contatti' },
 ]
 
-const BASE = '/images/galleria/matrimoni/portfolio'
+const R2 = 'https://pub-53356d483eb74822990977c0e5c21f6c.r2.dev'
+const BASE = `${R2}/images/galleria/matrimoni/portfolio`
 
 const PHOTOS: string[] = [
   `${BASE}/_DSF0254.jpg`,

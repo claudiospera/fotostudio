@@ -16,7 +16,8 @@ export interface Wedding {
   photos:    string[]        // paths relativi a /public, in ordine
 }
 
-const B = '/images/galleria/matrimoni/real-weddings'
+const R2 = 'https://pub-53356d483eb74822990977c0e5c21f6c.r2.dev'
+const B = `${R2}/images/galleria/matrimoni/real-weddings`
 
 export const WEDDINGS: Wedding[] = [
   {
