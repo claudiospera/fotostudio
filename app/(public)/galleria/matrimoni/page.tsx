@@ -115,7 +115,6 @@ export default function MatrimoniPage() {
                   src="/images/galleria/matrimoni/portfolio-cover.jpg"
                   alt="Portfolio"
                   style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .7s ease' }}
-                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
                 />
                 {/* overlay hover */}
                 <div style={{
@@ -152,7 +151,6 @@ export default function MatrimoniPage() {
                   src="/images/galleria/matrimoni/real-weddings-cover.jpg"
                   alt="Real Weddings"
                   style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .7s ease' }}
-                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
                 />
                 <div style={{
                   position: 'absolute', inset: 0,
