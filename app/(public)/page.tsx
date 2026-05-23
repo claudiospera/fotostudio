@@ -62,7 +62,6 @@ export default function HomePage() {
       </nav>
 
       {/* ── HERO ─────────────────────────────────────────────────────────────── */}
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Pinyon+Script&display=swap');`}</style>
       <section style={{
         paddingTop: 'clamp(120px,14vw,180px)',
         paddingBottom: 0,
@@ -83,11 +82,11 @@ export default function HomePage() {
               Storie
             </div>
             <div style={{
-              fontFamily: "'Pinyon Script', cursive",
-              fontSize: 'clamp(72px,10vw,128px)',
+              fontFamily: "'Wedding', cursive",
+              fontSize: 'clamp(80px,11vw,140px)',
               color: INK, opacity: 0.75,
-              lineHeight: 1,
-              marginLeft: '4px',
+              lineHeight: 0.9,
+              marginLeft: '8px',
             }}>
               vere
             </div>
