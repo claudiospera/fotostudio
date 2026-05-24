@@ -23,7 +23,7 @@ export const WEDDINGS: Wedding[] = [
   {
     slug:  'cesare-e-maria',
     title: 'Cesare & Maria',
-    cover: `${B}/cesare%20e%20maria/DSC_2447.jpg`,
+    cover: `${B}/cesare%20e%20maria/DSCF5652.jpg`,
     photos: [
       `${B}/cesare%20e%20maria/DSC_2447.jpg`,
       `${B}/cesare%20e%20maria/DSCF5561.jpg`,
@@ -275,7 +275,7 @@ export const WEDDINGS: Wedding[] = [
     // Foto nella sottocartella "ALCUNE SEL"
     slug:  'fabio-e-angela',
     title: 'Fabio & Angela',
-    cover: `${B}/FABIO%20E%20ANGELA/ALCUNE%20SEL/DSCF2007.jpg`,
+    cover: `${B}/FABIO%20E%20ANGELA/ALCUNE%20SEL/DSCF6498.jpg`,
     photos: [
       `${B}/FABIO%20E%20ANGELA/ALCUNE%20SEL/angela%20e%20fabio%203.jpg`,
       `${B}/FABIO%20E%20ANGELA/ALCUNE%20SEL/DSCF2007.jpg`,
