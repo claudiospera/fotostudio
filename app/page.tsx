@@ -60,6 +60,54 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* ── REEL INSTAGRAM ── */}
+      <section style={{ padding: 'clamp(48px, 7vw, 88px) clamp(24px, 5vw, 60px)', background: '#ffffff', borderTop: '1px solid #e8e8e8' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
+            <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.2em', textTransform: 'uppercase', color: '#00c1de', margin: 0 }}>Reel &amp; Stories</p>
+            <a href="https://www.instagram.com/claudiosperafotografo/" target="_blank" rel="noopener noreferrer"
+              style={{ fontSize: '11px', color: '#999', textDecoration: 'none', letterSpacing: '.04em' }}>
+              @claudiosperafotografo →
+            </a>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }} className="reel-home-grid">
+            {[
+              { url: 'https://www.instagram.com/reel/C89h_8sonFN/', cover: 'https://pub-53356d483eb74822990977c0e5c21f6c.r2.dev/images/galleria/matrimoni/real-weddings/FRANCO%20E%20ANTONIO/_DSF8816.jpg' },
+              { url: 'https://www.instagram.com/reel/DIJhGRToSmR/', cover: 'https://pub-53356d483eb74822990977c0e5c21f6c.r2.dev/images/galleria/matrimoni/real-weddings/FABIO%20E%20ANGELA/ALCUNE%20SEL/DSCF3312.jpg' },
+              { url: 'https://www.instagram.com/reel/C_yQ_f9Ild8/', cover: 'https://pub-53356d483eb74822990977c0e5c21f6c.r2.dev/images/galleria/matrimoni/real-weddings/mario%20e%20marianna/DSCF5680-Migliorato-NR.jpg' },
+              { url: 'https://www.instagram.com/reel/C_Q3B8xoBiV/', cover: 'https://pub-53356d483eb74822990977c0e5c21f6c.r2.dev/images/galleria/reels/reel-4-cover.png' },
+            ].map(({ url, cover }) => (
+              <a key={url} href={url} target="_blank" rel="noopener noreferrer"
+                style={{
+                  display: 'block', textDecoration: 'none',
+                  aspectRatio: '9/16', borderRadius: 12, overflow: 'hidden',
+                  background: `url(${cover}) center/cover no-repeat #f3f3f3`,
+                  position: 'relative',
+                }} className="reel-home-card">
+                <div className="reel-home-overlay" style={{
+                  position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  opacity: 0, transition: 'opacity .2s',
+                }}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── FILOSOFIA ── */}
+      <section style={{ padding: 'clamp(64px, 9vw, 110px) clamp(24px, 5vw, 60px)', background: '#ffffff', borderTop: '1px solid #e8e8e8' }}>
+        <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center' }}>
+          <div style={{ display: 'inline-block', width: 3, height: 48, background: '#00c1de', borderRadius: 4, marginBottom: 32 }} />
+          <blockquote style={{ fontFamily: 'Poppins, sans-serif', fontStyle: 'italic', fontSize: 'clamp(20px, 3vw, 30px)', fontWeight: 600, color: '#0a0a0a', lineHeight: 1.5, letterSpacing: '-0.015em', marginBottom: 24 }}>
+            &ldquo;Non fotografo eventi. Racconto emozioni, sguardi, silenzi — tutto cio che le parole non riescono a dire.&rdquo;
+          </blockquote>
+          <p style={{ fontSize: '13px', color: '#00c1de', fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase' }}>Claudio Spera</p>
+        </div>
+      </section>
+
       {/* ── SHOP ── */}
       <section id="shop" style={{ padding: 'clamp(64px, 9vw, 110px) clamp(24px, 5vw, 60px)', background: '#f3f3f3', borderTop: '1px solid #e8e8e8' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
@@ -92,17 +140,6 @@ export default async function HomePage() {
               Esplora tutto lo shop →
             </Link>
           </div>
-        </div>
-      </section>
-
-      {/* ── FILOSOFIA ── */}
-      <section style={{ padding: 'clamp(64px, 9vw, 110px) clamp(24px, 5vw, 60px)', background: '#ffffff', borderTop: '1px solid #e8e8e8' }}>
-        <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center' }}>
-          <div style={{ display: 'inline-block', width: 3, height: 48, background: '#00c1de', borderRadius: 4, marginBottom: 32 }} />
-          <blockquote style={{ fontFamily: 'Poppins, sans-serif', fontStyle: 'italic', fontSize: 'clamp(20px, 3vw, 30px)', fontWeight: 600, color: '#0a0a0a', lineHeight: 1.5, letterSpacing: '-0.015em', marginBottom: 24 }}>
-            &ldquo;Non fotografo eventi. Racconto emozioni, sguardi, silenzi — tutto cio che le parole non riescono a dire.&rdquo;
-          </blockquote>
-          <p style={{ fontSize: '13px', color: '#00c1de', fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase' }}>Claudio Spera</p>
         </div>
       </section>
 
@@ -144,6 +181,8 @@ export default async function HomePage() {
         .nav-link:hover { color: #0a0a0a !important; background: #f3f3f3; }
         .nav-cta:hover  { background: #009ab3 !important; }
         .shop-card:hover { box-shadow: 0 8px 28px rgba(0,193,222,0.12); transform: translateY(-2px); }
+        .reel-home-card:hover .reel-home-overlay { opacity: 1 !important; }
+        @media (max-width: 600px) { .reel-home-grid { grid-template-columns: repeat(2,1fr) !important; } }
       `}</style>
     </div>
   )
