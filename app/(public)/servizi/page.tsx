@@ -159,69 +159,6 @@ export default function ServiziPage() {
         </div>
       </section>
 
-      {/* ── VIDEO YOUTUBE ── */}
-      <section style={{
-        borderTop: `1px solid ${BORDER}`,
-        padding: 'clamp(64px,8vw,112px) clamp(24px,5vw,64px)',
-      }}>
-        <div style={{
-          fontFamily: "'Jost', sans-serif", fontWeight: 300,
-          fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase',
-          color: INK, opacity: 0.5, marginBottom: 8,
-        }}>I miei video</div>
-        <div style={{
-          fontFamily: "'Cormorant Garamond', Georgia, serif",
-          fontStyle: 'italic', fontWeight: 400,
-          fontSize: 'clamp(32px,4vw,52px)', color: INK,
-          marginBottom: 'clamp(32px,4vw,56px)', lineHeight: 1.1,
-        }}>Storie in movimento</div>
-
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: 'clamp(12px,2vw,24px)',
-        }} className="yt-grid">
-          {[
-            'bDfScTRhpF4',
-            '7DqSmrzF_1Y',
-            'OXJ7zhnbk3E',
-            'LK8Jfbwlvoo',
-            'zOSsRKT0e-I',
-            '3ipNuTJeEDw',
-            'SyZns9Hh2j8',
-          ].map(id => (
-            <div key={id} style={{ position: 'relative', aspectRatio: '16/9', background: '#000' }}>
-              <iframe
-                src={`https://www.youtube.com/embed/${id}`}
-                title={`Video ${id}`}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                style={{
-                  position: 'absolute', inset: 0,
-                  width: '100%', height: '100%',
-                  border: 'none',
-                }}
-              />
-            </div>
-          ))}
-        </div>
-
-        <div style={{ marginTop: 'clamp(32px,4vw,48px)', textAlign: 'center' }}>
-          <a
-            href="https://www.claudiospera.com/video"
-            target="_blank" rel="noopener noreferrer"
-            style={{
-              fontFamily: "'Jost', sans-serif", fontWeight: 300,
-              fontSize: 9, letterSpacing: '0.22em', textTransform: 'uppercase',
-              background: INK, color: '#F5F0E8', padding: '13px 32px',
-              textDecoration: 'none', display: 'inline-block',
-            }}
-          >
-            Vedi tutti i video
-          </a>
-        </div>
-      </section>
-
       {/* ── REEL INSTAGRAM ── */}
       <section style={{
         borderTop: `1px solid ${BORDER}`,
@@ -337,6 +274,69 @@ export default function ServiziPage() {
             }}
           >
             Guarda i Reel
+          </a>
+        </div>
+      </section>
+
+      {/* ── VIDEO YOUTUBE ── */}
+      <section style={{
+        borderTop: `1px solid ${BORDER}`,
+        padding: 'clamp(64px,8vw,112px) clamp(24px,5vw,64px)',
+      }}>
+        <div style={{
+          fontFamily: "'Jost', sans-serif", fontWeight: 300,
+          fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase',
+          color: INK, opacity: 0.5, marginBottom: 8,
+        }}>I miei video</div>
+        <div style={{
+          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontStyle: 'italic', fontWeight: 400,
+          fontSize: 'clamp(32px,4vw,52px)', color: INK,
+          marginBottom: 'clamp(32px,4vw,56px)', lineHeight: 1.1,
+        }}>Storie in movimento</div>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: 'clamp(12px,2vw,24px)',
+        }} className="yt-grid">
+          {[
+            'bDfScTRhpF4',
+            '7DqSmrzF_1Y',
+            'OXJ7zhnbk3E',
+            'LK8Jfbwlvoo',
+            'zOSsRKT0e-I',
+            '3ipNuTJeEDw',
+            'SyZns9Hh2j8',
+          ].map(id => (
+            <div key={id} style={{ position: 'relative', aspectRatio: '16/9', background: '#000' }}>
+              <iframe
+                src={`https://www.youtube.com/embed/${id}`}
+                title={`Video ${id}`}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                style={{
+                  position: 'absolute', inset: 0,
+                  width: '100%', height: '100%',
+                  border: 'none',
+                }}
+              />
+            </div>
+          ))}
+        </div>
+
+        <div style={{ marginTop: 'clamp(32px,4vw,48px)', textAlign: 'center' }}>
+          <a
+            href="https://www.claudiospera.com/video"
+            target="_blank" rel="noopener noreferrer"
+            style={{
+              fontFamily: "'Jost', sans-serif", fontWeight: 300,
+              fontSize: 9, letterSpacing: '0.22em', textTransform: 'uppercase',
+              background: INK, color: '#F5F0E8', padding: '13px 32px',
+              textDecoration: 'none', display: 'inline-block',
+            }}
+          >
+            Vedi tutti i video
           </a>
         </div>
       </section>
