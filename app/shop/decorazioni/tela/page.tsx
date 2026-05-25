@@ -30,6 +30,7 @@ const VARIANTS: TelaVariant[] = [
   { id: 'tel-30x40',  label: '30×40 cm',  price:  3500, widthCm: 30,  heightCm: 40  },
   { id: 'tel-30x50',  label: '30×50 cm',  price:  4000, widthCm: 30,  heightCm: 50  },
   { id: 'tel-40x40',  label: '40×40 cm',  price:  4000, widthCm: 40,  heightCm: 40  },
+  { id: 'tel-30x60',  label: '30×60 cm',  price:  4200, widthCm: 30,  heightCm: 60  },
   { id: 'tel-40x50',  label: '40×50 cm',  price:  4500, widthCm: 40,  heightCm: 50  },
   { id: 'tel-40x60',  label: '40×60 cm',  price:  4700, widthCm: 40,  heightCm: 60  },
   { id: 'tel-50x70',  label: '50×70 cm',  price:  6000, widthCm: 50,  heightCm: 70  },
