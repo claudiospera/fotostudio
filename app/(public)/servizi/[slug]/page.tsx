@@ -9,6 +9,12 @@ import GalleryLightbox from './GalleryLightbox'
 
 const R2 = 'https://pub-53356d483eb74822990977c0e5c21f6c.r2.dev'
 
+interface Categoria {
+  nome: string
+  href: string
+  cover?: string
+}
+
 interface ServizioData {
   nome: string
   location: string
@@ -17,6 +23,7 @@ interface ServizioData {
   include: string[]
   cover?: string
   gallery?: string[]
+  categorie?: Categoria[]
 }
 
 const SERVIZI: Record<string, ServizioData> = {
@@ -42,6 +49,11 @@ const SERVIZI: Record<string, ServizioData> = {
     nome: 'Battesimi, Compleanni e Feste',
     location: 'Studio · Esterno',
     quote: 'I primi giorni, le prime ore. Il tempo non aspetta, ma le fotografie si.',
+    categorie: [
+      { nome: 'Battesimi',  href: '/servizi/battesimi-prima-infanzia/battesimi',  cover: undefined },
+      { nome: 'Compleanni', href: '/servizi/battesimi-prima-infanzia/compleanni', cover: undefined },
+      { nome: 'Smash Cake', href: '/servizi/battesimi-prima-infanzia/smash-cake', cover: undefined },
+    ],
     descrizione: 'I primi mesi di vita scorrono in fretta. Fotografare un neonato significa fermare un tempo che non tornera: la piccola mano che stringe un dito, il respiro tranquillo, i tratti ancora morbidi. Per il battesimo seguo la cerimonia in chiesa, le emozioni dei genitori, il momento del Sacramento, e poi la festa con la famiglia. In studio creo un ambiente caldo e sicuro, adatto ai bambini piccolissimi, con luce naturale o artificiale morbida.',
     include: [
       'Sessione in studio o esterno',
@@ -284,6 +296,52 @@ export default async function ServizioPage({ params }: { params: Promise<{ slug:
           </div>
         </div>
       </section>
+
+      {/* ── CATEGORIE ─────────────────────────────────────────────────────── */}
+      {servizio.categorie && (
+        <section style={{
+          padding: '0 clamp(24px,5vw,64px) clamp(56px,8vw,96px)',
+        }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: `repeat(${servizio.categorie.length}, 1fr)`,
+            gap: 'clamp(16px,3vw,40px)',
+            alignItems: 'end',
+          }}>
+            {servizio.categorie.map((cat, i) => (
+              <Link key={cat.href} href={cat.href} style={{ textDecoration: 'none', color: 'inherit' }}>
+                <article>
+                  <div style={{
+                    aspectRatio: '3/4',
+                    background: 'rgba(26,22,18,0.07)',
+                    borderRadius: 14,
+                    overflow: 'hidden',
+                    marginBottom: 18,
+                    position: 'relative',
+                    marginTop: i === 0 ? 'clamp(24px,6vw,80px)' : 0,
+                  }}>
+                    {cat.cover && (
+                      <img
+                        src={cat.cover}
+                        alt={cat.nome}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .7s ease' }}
+                      />
+                    )}
+                  </div>
+                  <p style={{
+                    fontFamily: "'Cormorant Garamond', Georgia, serif",
+                    fontStyle: 'italic', fontWeight: 400,
+                    fontSize: 'clamp(20px,2.2vw,28px)',
+                    color: INK, letterSpacing: '0.01em',
+                  }}>
+                    {cat.nome}
+                  </p>
+                </article>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── GALLERIA COMPLETA ─────────────────────────────────────────────── */}
       {servizio.gallery && <GalleryLightbox photos={servizio.gallery} />}
