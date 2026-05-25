@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { use } from 'react'
 
 interface Voce { desc: string; prezzo: number }
@@ -38,6 +38,9 @@ export default function PreventivoClientePage({ params }: { params: Promise<{ sl
   const [error, setError] = useState<string | null>(null)
   const [firma, setFirma] = useState('')
   const [firmato, setFirmato] = useState(false)
+  const [note, setNote] = useState('')
+  const [noteSaved, setNoteSaved] = useState(false)
+  const noteSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     fetch(`/api/preventivo-sessioni/${slug}`)
@@ -46,10 +49,26 @@ export default function PreventivoClientePage({ params }: { params: Promise<{ sl
         if (data.error) { setError(data.error); return }
         setSessione(data)
         setSelected(Array.isArray(data.selected) ? data.selected : [])
+        if (data.note) setNote(data.note)
       })
       .catch(() => setError('Errore di connessione'))
       .finally(() => setLoading(false))
   }, [slug])
+
+  const handleNoteChange = (val: string) => {
+    setNote(val)
+    setNoteSaved(false)
+    if (noteSaveTimer.current) clearTimeout(noteSaveTimer.current)
+    noteSaveTimer.current = setTimeout(async () => {
+      await fetch(`/api/preventivo-sessioni/${slug}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note: val }),
+      })
+      setNoteSaved(true)
+      setTimeout(() => setNoteSaved(false), 2000)
+    }, 800)
+  }
 
   const toggle = useCallback(async (i: number) => {
     const next = selected.includes(i)
@@ -312,6 +331,40 @@ export default function PreventivoClientePage({ params }: { params: Promise<{ sl
               </p>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* ── NOTE SUL MATRIMONIO ── */}
+      <div style={{ maxWidth: 800, margin: '0 auto', padding: '0 24px 80px' }}>
+        <div style={{ paddingTop: 48, borderTop: '1px solid #eee' }}>
+          <h2 style={{ fontSize: 22, fontWeight: 800, margin: '0 0 6px', letterSpacing: '-0.01em' }}>Note per il fotografo</h2>
+          <p style={{ fontSize: 14, color: '#777', marginBottom: 20, lineHeight: 1.6 }}>
+            Condividi dettagli importanti sul vostro matrimonio: orari, location, momenti speciali, tipologia di musica, uscita dalla chiesa, fuochi d&apos;artificio, lancio dei palloncini, ospiti speciali da non perdere... tutto ciò che vuoi che sappiamo in anticipo.
+          </p>
+          <div style={{ position: 'relative' }}>
+            <textarea
+              value={note}
+              onChange={e => handleNoteChange(e.target.value)}
+              placeholder="Es: Cerimonia alle 16:00 nella Chiesa di San Marco. Uscita con lancio di petali. Band live durante il ricevimento. Fuochi d'artificio alle 23:30. La nonna di lei è molto anziana, ci teniamo molto ad averla nelle foto..."
+              rows={8}
+              style={{
+                width: '100%', padding: '16px', fontSize: 15,
+                border: '1px solid #ddd', borderRadius: 10,
+                outline: 'none', resize: 'vertical', lineHeight: 1.7,
+                fontFamily: '"Helvetica Neue", Arial, sans-serif',
+                color: '#222', background: '#fafafa',
+                boxSizing: 'border-box',
+              }}
+            />
+            {noteSaved && (
+              <span style={{
+                position: 'absolute', bottom: 12, right: 12,
+                fontSize: 11, color: '#2e7d5e', fontWeight: 600,
+              }}>
+                ✓ Salvato
+              </span>
+            )}
+          </div>
         </div>
       </div>
 

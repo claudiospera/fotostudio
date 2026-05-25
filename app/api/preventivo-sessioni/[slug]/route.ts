@@ -22,13 +22,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const body = await req.json()
-  const { selected, firma, firmato_at } = body
+  const { selected, firma, firmato_at, note } = body
 
   if (selected !== undefined && !Array.isArray(selected)) {
     return NextResponse.json({ error: 'selected deve essere un array' }, { status: 400 })
   }
 
-  // Aggiorna solo i campi presenti nel body
   if (firma !== undefined && firmato_at !== undefined) {
     const rows = await sql`
       UPDATE preventivo_sessioni
@@ -41,6 +40,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ sl
     `
     if (rows.length === 0) return NextResponse.json({ error: 'Non trovato o scaduto' }, { status: 404 })
     return NextResponse.json({ ok: true, firma: rows[0].firma, firmato_at: rows[0].firmato_at })
+  }
+
+  if (note !== undefined) {
+    const rows = await sql`
+      UPDATE preventivo_sessioni
+      SET note = ${note}
+      WHERE slug = ${slug} AND expires_at > now()
+      RETURNING *
+    `
+    if (rows.length === 0) return NextResponse.json({ error: 'Non trovato o scaduto' }, { status: 404 })
+    return NextResponse.json({ ok: true })
   }
 
   if (selected !== undefined) {

@@ -34,6 +34,7 @@ interface Sessione {
   voci: { desc: string; prezzo: number }[]
   firma: string | null
   firmato_at: string | null
+  note: string | null
   created_at: string
   expires_at: string
 }
@@ -140,6 +141,11 @@ export const TemplatesView = ({ onUseTemplate }: TemplatesViewProps) => {
                       {' · '}
                       Scade il {new Date(s.expires_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </p>
+                    {s.note && (
+                      <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--t2)', lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                        📝 {s.note}
+                      </p>
+                    )}
                   </div>
                   {totale > 0 && (
                     <span style={{ fontSize: 13, fontWeight: 700, color: s.colore, flexShrink: 0 }}>
