@@ -778,7 +778,7 @@ const ContrattiView = ({ sessioni, loading, deletingSlug, onDelete }: {
           <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--tx)' }}>{s.template_nome}</p>
           <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--t3)' }}>
             Inviato il {new Date(s.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}
-            {' · '}Scade il {new Date(s.expires_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}
+            {!firmato && <>{' · '}Scade il {new Date(s.expires_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}</>}
           </p>
           {s.note && (
             <p style={{ margin: '5px 0 0', fontSize: 12, color: 'var(--t2)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
@@ -803,12 +803,11 @@ const ContrattiView = ({ sessioni, loading, deletingSlug, onDelete }: {
           Copia link
         </button>
         <button
-          onClick={() => onDelete(s.slug)}
+          onClick={() => { if (confirm('Eliminare questo preventivo?')) onDelete(s.slug) }}
           disabled={deletingSlug === s.slug}
-          style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid rgba(255,255,255,0.08)', background: 'var(--s3)', color: 'var(--red)', cursor: 'pointer', flexShrink: 0, display: 'grid', placeItems: 'center', opacity: deletingSlug === s.slug ? 0.5 : 1 }}
-          title="Elimina"
+          style={{ padding: '4px 10px', borderRadius: 6, fontSize: 11, border: '1px solid rgba(209,112,112,0.3)', background: 'rgba(209,112,112,0.08)', color: 'var(--red)', cursor: 'pointer', flexShrink: 0, opacity: deletingSlug === s.slug ? 0.5 : 1 }}
         >
-          <X size={12} />
+          {deletingSlug === s.slug ? '...' : 'Elimina'}
         </button>
       </div>
     )
