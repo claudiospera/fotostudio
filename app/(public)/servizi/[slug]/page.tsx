@@ -6,12 +6,15 @@ import type { Metadata } from 'next'
 
 // ─── Dati servizi ─────────────────────────────────────────────────────────────
 
+const R2 = 'https://pub-53356d483eb74822990977c0e5c21f6c.r2.dev'
+
 interface ServizioData {
   nome: string
   location: string
   quote: string
   descrizione: string
   include: string[]
+  gallery?: [string, string, string]  // [grande, top-destra, bottom-destra]
 }
 
 const SERVIZI: Record<string, ServizioData> = {
@@ -74,6 +77,11 @@ const SERVIZI: Record<string, ServizioData> = {
     location: 'Studio · Natura',
     quote: 'Il corpo che accoglie. La luce che trasforma. Un momento che dura per sempre.',
     descrizione: 'La gravidanza e una delle forme piu belle della femminilita. Ogni sessione e pensata per valorizzare il corpo della donna in attesa, con una luce calda, ambienti naturali o di studio, e un approccio rispettoso e delicato. Il momento ideale per la sessione e tra la 28a e la 34a settimana, quando il pancione e tondo e ben visibile ma la mobilita e ancora buona. Posso includere il partner e i bambini gia nati per un ritratto di famiglia in attesa.',
+    gallery: [
+      `${R2}/images/servizi/maternita/gallery/DSCF0224.jpg`,
+      `${R2}/images/servizi/maternita/gallery/DSCF0176.jpg`,
+      `${R2}/images/servizi/maternita/gallery/DSCF0127.jpg`,
+    ],
     include: [
       'Sessione in studio o in natura',
       'Consulenza pre-sessione su abiti e location',
@@ -261,17 +269,25 @@ export default async function ServizioPage({ params }: { params: Promise<{ slug:
       </section>
 
       {/* ── GALLERIA ASIMMETRICA ───────────────────────────────────────────── */}
-      <section style={{
-        padding: '0 clamp(24px,5vw,64px)',
-        display: 'grid',
-        gridTemplateColumns: '2fr 1fr',
-        gridTemplateRows: '1fr 1fr',
-        gap: 4,
-      }}>
-        <div style={{ gridRow: '1 / 3', aspectRatio: '4/3', background: 'rgba(26,22,18,0.07)' }} />
-        <div style={{ aspectRatio: '3/2', background: 'rgba(26,22,18,0.05)' }} />
-        <div style={{ aspectRatio: '3/2', background: 'rgba(26,22,18,0.09)' }} />
-      </section>
+      {servizio.gallery && (
+        <section style={{
+          padding: '0 clamp(24px,5vw,64px)',
+          display: 'grid',
+          gridTemplateColumns: '2fr 1fr',
+          gridTemplateRows: '1fr 1fr',
+          gap: 4,
+        }}>
+          <div style={{ gridRow: '1 / 3', aspectRatio: '4/3', overflow: 'hidden', background: 'rgba(26,22,18,0.07)' }}>
+            <img src={servizio.gallery[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          </div>
+          <div style={{ aspectRatio: '3/2', overflow: 'hidden', background: 'rgba(26,22,18,0.05)' }}>
+            <img src={servizio.gallery[1]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          </div>
+          <div style={{ aspectRatio: '3/2', overflow: 'hidden', background: 'rgba(26,22,18,0.09)' }}>
+            <img src={servizio.gallery[2]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          </div>
+        </section>
+      )}
 
       {/* ── IL SERVIZIO COMPRENDE ──────────────────────────────────────────── */}
       <section style={{
