@@ -295,7 +295,7 @@ export const PreventiviDashboard = () => {
         )}
 
         {activeTab === 'risorse' && (
-          <ComingSoon label="Risorse" description="Guide, template di email e materiali utili." />
+          <RisorseView />
         )}
       </div>
 
@@ -308,6 +308,258 @@ export const PreventiviDashboard = () => {
         onSave={handleSavePreventivo}
       />
     </>
+  )
+}
+
+/* ─── Risorse View ─── */
+const GUIDE_PREZZI = [
+  {
+    id: 'matrimonio',
+    titolo: 'Matrimonio',
+    colore: '#2e7d5e',
+    emoji: '💍',
+    hero: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=800&q=80',
+    foto: [
+      'https://images.unsplash.com/photo-1606216794074-735e91aa2c92?w=400&q=80',
+      'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=400&q=80',
+    ],
+    pacchetti: [
+      { nome: 'Essential', prezzo: 1800, ore: 8, desc: 'Cerimonia + Ricevimento · 500 foto consegnate · Galleria privata online' },
+      { nome: 'Classic', prezzo: 2500, ore: 10, desc: 'Preparativi + Cerimonia + Ricevimento · 800 foto · Album 24×30 incluso' },
+      { nome: 'Premium', prezzo: 3500, ore: 'tutto il giorno', desc: '2 Fotografi · Drone · Album 30×40 · Video Highlights · 1200 foto' },
+    ],
+  },
+  {
+    id: 'promessa',
+    titolo: 'Promessa di Matrimonio',
+    colore: '#7c5cbf',
+    emoji: '💜',
+    hero: 'https://images.unsplash.com/photo-1529634806980-85c3dd6d34ac?w=800&q=80',
+    foto: [
+      'https://images.unsplash.com/photo-1550005809-91ad75fb315f?w=400&q=80',
+      'https://images.unsplash.com/photo-1469371670807-013ccf25f16a?w=400&q=80',
+    ],
+    pacchetti: [
+      { nome: 'Base', prezzo: 900, ore: 4, desc: 'Cerimonia + momento conviviale · 300 foto · Galleria online' },
+      { nome: 'Completo', prezzo: 1400, ore: 6, desc: 'Preparativi + Cerimonia + Ricevimento · 500 foto · Mini album' },
+    ],
+  },
+  {
+    id: 'battesimo',
+    titolo: 'Battesimo',
+    colore: '#1a7abf',
+    emoji: '🕊️',
+    hero: 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=800&q=80',
+    foto: [
+      'https://images.unsplash.com/photo-1612532275214-e4ca76d0e4d1?w=400&q=80',
+      'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=400&q=80',
+    ],
+    pacchetti: [
+      { nome: 'Essenziale', prezzo: 400, ore: 3, desc: 'Cerimonia + foto di gruppo · 200 foto · Galleria online' },
+      { nome: 'Completo', prezzo: 650, ore: 5, desc: 'Preparativi + Cerimonia + Pranzo · 400 foto · Album 20×20' },
+    ],
+  },
+  {
+    id: 'comunione',
+    titolo: 'Comunione / Cresima',
+    colore: '#c9a05a',
+    emoji: '✝️',
+    hero: 'https://images.unsplash.com/photo-1504439904031-93ded9f93e4e?w=800&q=80',
+    foto: [
+      'https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=400&q=80',
+      'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&q=80',
+    ],
+    pacchetti: [
+      { nome: 'Base', prezzo: 350, ore: 3, desc: 'Cerimonia + foto ricordo · 200 foto · Galleria online' },
+      { nome: 'Premium', prezzo: 550, ore: 5, desc: 'Preparativi + Cerimonia + Pranzo · 350 foto · Album 20×20' },
+    ],
+  },
+  {
+    id: '18anni',
+    titolo: '18 Anni',
+    colore: '#d97070',
+    emoji: '🎂',
+    hero: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=800&q=80',
+    foto: [
+      'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80',
+      'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=400&q=80',
+    ],
+    pacchetti: [
+      { nome: 'Party', prezzo: 300, ore: 3, desc: 'Festa + foto di gruppo · 200 foto · Galleria online' },
+      { nome: 'Full Day', prezzo: 500, ore: 6, desc: 'Shooting + Festa · 350 foto · Album 20×30' },
+    ],
+  },
+  {
+    id: '1anno',
+    titolo: '1° Anno / Smash Cake',
+    colore: '#e07aa0',
+    emoji: '🎈',
+    hero: 'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=800&q=80',
+    foto: [
+      'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400&q=80',
+      'https://images.unsplash.com/photo-1504184006757-bc80e19e0b96?w=400&q=80',
+    ],
+    pacchetti: [
+      { nome: 'Mini', prezzo: 200, ore: 1.5, desc: 'Sessione studio · 80 foto consegnate · Galleria online' },
+      { nome: 'Smash Cake', prezzo: 320, ore: 2.5, desc: 'Sessione studio + torta · 150 foto · Album 20×20' },
+    ],
+  },
+  {
+    id: 'anniversario',
+    titolo: 'Anniversario',
+    colore: '#b35c8a',
+    emoji: '💑',
+    hero: 'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=800&q=80',
+    foto: [
+      'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=400&q=80',
+      'https://images.unsplash.com/photo-1620434880200-d6be1f59a7ad?w=400&q=80',
+    ],
+    pacchetti: [
+      { nome: 'Shooting', prezzo: 350, ore: 2, desc: 'Sessione outdoor · 150 foto · Galleria online' },
+      { nome: 'Celebrazione', prezzo: 600, ore: 4, desc: 'Shooting + Cena/Evento · 300 foto · Album 24×30' },
+    ],
+  },
+  {
+    id: 'shooting',
+    titolo: 'Shooting Fotografico',
+    colore: '#4a9e8a',
+    emoji: '📸',
+    hero: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=800&q=80',
+    foto: [
+      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&q=80',
+      'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=400&q=80',
+    ],
+    pacchetti: [
+      { nome: 'Mini', prezzo: 150, ore: 1, desc: '1 location · 50 foto consegnate · Galleria online' },
+      { nome: 'Standard', prezzo: 280, ore: 2, desc: '2 location · 120 foto · Galleria online' },
+      { nome: 'Premium', prezzo: 450, ore: 4, desc: 'Location illimitate · 250 foto · Album incluso' },
+    ],
+  },
+]
+
+function RisorseView() {
+  const [aperto, setAperto] = useState<string | null>(null)
+
+  const handleStampa = (id: string) => {
+    const el = document.getElementById(`guida-${id}`)
+    if (!el) return
+    const w = window.open('', '_blank')
+    if (!w) return
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Guida Prezzi</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #111; background: #fff; }
+        @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+      </style></head><body>${el.innerHTML}</body></html>`)
+    w.document.close()
+    setTimeout(() => w.print(), 300)
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div>
+        <h2 style={{ margin: 0, fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 20 }}>Guide Prezzi</h2>
+        <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--t3)' }}>Seleziona un servizio per visualizzare e stampare la tua guida prezzi personalizzata.</p>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
+        {GUIDE_PREZZI.map(g => (
+          <div
+            key={g.id}
+            onClick={() => setAperto(aperto === g.id ? null : g.id)}
+            style={{
+              background: 'var(--s1)', border: aperto === g.id ? `1px solid ${g.colore}` : '1px solid rgba(255,255,255,0.07)',
+              borderRadius: 'var(--r)', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.15s',
+            }}
+          >
+            <div style={{ height: 3, background: g.colore }} />
+            <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 22 }}>{g.emoji}</span>
+              <div>
+                <p style={{ margin: 0, fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 14, color: 'var(--tx)' }}>{g.titolo}</p>
+                <p style={{ margin: 0, fontSize: 11, color: 'var(--t3)' }}>{g.pacchetti.length} pacchetti</p>
+              </div>
+              <div style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--t3)' }}>{aperto === g.id ? '▲' : '▼'}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Preview + stampa */}
+      {aperto && (() => {
+        const g = GUIDE_PREZZI.find(x => x.id === aperto)!
+        return (
+          <div style={{ background: 'var(--s1)', border: `1px solid rgba(255,255,255,0.1)`, borderRadius: 'var(--r)', overflow: 'hidden' }}>
+            <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 15 }}>Anteprima — {g.titolo}</span>
+              <button
+                onClick={() => handleStampa(g.id)}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 'var(--r2)', background: g.colore, color: '#fff', border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+              >
+                🖨️ Stampa / PDF
+              </button>
+            </div>
+
+            {/* Template stampabile */}
+            <div id={`guida-${g.id}`} style={{ background: '#fff', color: '#111', fontFamily: '"Helvetica Neue", Arial, sans-serif' }}>
+              {/* Hero */}
+              <div style={{ position: 'relative', height: 320, overflow: 'hidden' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={g.hero} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.65))` }} />
+                <div style={{ position: 'absolute', bottom: 32, left: 40, right: 40 }}>
+                  <p style={{ margin: '0 0 6px', fontSize: 11, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.2em', textTransform: 'uppercase' }}>Storie da Raccontare · Claudio Spera</p>
+                  <h1 style={{ margin: 0, fontSize: 42, fontWeight: 900, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1 }}>
+                    {g.emoji} {g.titolo}
+                  </h1>
+                  <p style={{ margin: '8px 0 0', fontSize: 14, color: 'rgba(255,255,255,0.8)' }}>Guida ai Prezzi 2026</p>
+                </div>
+              </div>
+
+              {/* Pacchetti */}
+              <div style={{ padding: '40px 40px 24px' }}>
+                <h2 style={{ margin: '0 0 24px', fontSize: 13, fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.15em' }}>I Pacchetti</h2>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {g.pacchetti.map((p, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 20, padding: '20px 24px', border: `2px solid ${i === 1 ? g.colore : '#eee'}`, borderRadius: 12, background: i === 1 ? `${g.colore}08` : '#fff' }}>
+                      <div style={{ flexShrink: 0, textAlign: 'center' }}>
+                        <p style={{ margin: 0, fontSize: 28, fontWeight: 900, color: g.colore }}>€{p.prezzo.toLocaleString('it-IT')}</p>
+                        <p style={{ margin: '2px 0 0', fontSize: 10, color: '#999', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{typeof p.ore === 'number' ? `${p.ore}h` : p.ore}</p>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 800, color: '#111' }}>{p.nome}</p>
+                        <p style={{ margin: 0, fontSize: 13, color: '#555', lineHeight: 1.6 }}>{p.desc}</p>
+                      </div>
+                      {i === 1 && <span style={{ fontSize: 10, padding: '3px 8px', borderRadius: 20, background: g.colore, color: '#fff', fontWeight: 700, flexShrink: 0 }}>POPOLARE</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Gallery placeholder */}
+              <div style={{ padding: '0 40px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                {g.foto.map((src, i) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={i} src={src} alt="" style={{ width: '100%', height: 200, objectFit: 'cover', borderRadius: 10, display: 'block' }} />
+                ))}
+              </div>
+
+              {/* Footer */}
+              <div style={{ padding: '20px 40px 32px', borderTop: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#111' }}>Storie da Raccontare</p>
+                  <p style={{ margin: '2px 0 0', fontSize: 12, color: '#999' }}>Claudio Spera · Fotografo · Mirabella Eclano (AV)</p>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <p style={{ margin: 0, fontSize: 12, color: '#999' }}>storiedaraccontare.it</p>
+                  <p style={{ margin: '2px 0 0', fontSize: 12, color: '#999' }}>+39 389 785 5581</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+    </div>
   )
 }
 
