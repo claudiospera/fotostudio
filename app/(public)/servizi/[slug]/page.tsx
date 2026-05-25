@@ -14,7 +14,8 @@ interface ServizioData {
   quote: string
   descrizione: string
   include: string[]
-  gallery?: [string, string, string]  // [grande, top-destra, bottom-destra]
+  cover?: string
+  gallery?: string[]
 }
 
 const SERVIZI: Record<string, ServizioData> = {
@@ -77,11 +78,13 @@ const SERVIZI: Record<string, ServizioData> = {
     location: 'Studio · Natura',
     quote: 'Il corpo che accoglie. La luce che trasforma. Un momento che dura per sempre.',
     descrizione: 'La gravidanza e una delle forme piu belle della femminilita. Ogni sessione e pensata per valorizzare il corpo della donna in attesa, con una luce calda, ambienti naturali o di studio, e un approccio rispettoso e delicato. Il momento ideale per la sessione e tra la 28a e la 34a settimana, quando il pancione e tondo e ben visibile ma la mobilita e ancora buona. Posso includere il partner e i bambini gia nati per un ritratto di famiglia in attesa.',
+    cover: `${R2}/images/servizi/maternita/gallery/DSCF0224.jpg`,
     gallery: [
-      `${R2}/images/servizi/maternita/gallery/DSCF0224.jpg`,
-      `${R2}/images/servizi/maternita/gallery/DSCF0176.jpg`,
-      `${R2}/images/servizi/maternita/gallery/DSCF0127.jpg`,
-    ],
+      'DSCF0127', 'DSCF0176', 'DSCF0184', 'DSCF0207', 'DSCF0224',
+      'DSCF0243', 'DSCF0252', 'DSCF0273', 'DSCF1067h', 'DSCF1127',
+      'DSCF1256', 'DSCF1259', 'DSCF1310', 'DSCF4857', 'DSCF4869',
+      'DSCF4882', 'DSCF4918', 'DSCF5363', 'DSCF5369',
+    ].map(n => `${R2}/images/servizi/maternita/gallery/${n}.jpg`),
     include: [
       'Sessione in studio o in natura',
       'Consulenza pre-sessione su abiti e location',
@@ -216,6 +219,12 @@ export default async function ServizioPage({ params }: { params: Promise<{ slug:
         background: 'rgba(26,22,18,0.08)',
         overflow: 'hidden',
       }}>
+        {servizio.cover && (
+          <img src={servizio.cover} alt="" style={{
+            position: 'absolute', inset: 0,
+            width: '100%', height: '100%', objectFit: 'cover',
+          }} />
+        )}
         <div style={{
           position: 'absolute', inset: 0,
           background: 'linear-gradient(to top, rgba(26,22,18,0.72) 0%, rgba(26,22,18,0.18) 55%, transparent 100%)',
@@ -268,23 +277,19 @@ export default async function ServizioPage({ params }: { params: Promise<{ slug:
         </div>
       </section>
 
-      {/* ── GALLERIA ASIMMETRICA ───────────────────────────────────────────── */}
-      {servizio.gallery && (
-        <section style={{
-          padding: '0 clamp(24px,5vw,64px)',
-          display: 'grid',
-          gridTemplateColumns: '2fr 1fr',
-          gridTemplateRows: '1fr 1fr',
-          gap: 4,
-        }}>
-          <div style={{ gridRow: '1 / 3', aspectRatio: '4/3', overflow: 'hidden', background: 'rgba(26,22,18,0.07)' }}>
-            <img src={servizio.gallery[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          </div>
-          <div style={{ aspectRatio: '3/2', overflow: 'hidden', background: 'rgba(26,22,18,0.05)' }}>
-            <img src={servizio.gallery[1]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          </div>
-          <div style={{ aspectRatio: '3/2', overflow: 'hidden', background: 'rgba(26,22,18,0.09)' }}>
-            <img src={servizio.gallery[2]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      {/* ── GALLERIA COMPLETA ─────────────────────────────────────────────── */}
+      {servizio.gallery && servizio.gallery.length > 0 && (
+        <section style={{ padding: '0 clamp(24px,5vw,64px)' }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: 4,
+          }}>
+            {servizio.gallery.map((src, i) => (
+              <div key={i} style={{ aspectRatio: '3/2', overflow: 'hidden', background: 'rgba(26,22,18,0.07)' }}>
+                <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+            ))}
           </div>
         </section>
       )}
