@@ -483,8 +483,8 @@ function SuggestionCard({ composizione, imgs, roomImg, label }: {
 // ─── PricePanel ───────────────────────────────────────────────────────────────
 
 const PRINT_TYPES = [
-  { id: 'foto',       label: 'Carta Fotografica', desc: 'Lucida, colori brillanti',   extraPerPanel: 0  },
-  { id: 'hahnemuhle', label: 'Hahnemühle',         desc: 'Fine art, opaca, premium',   extraPerPanel: 8  },
+  { id: 'foto',       label: 'Carta Fotografica', desc: 'Lucida, colori brillanti',   extraPerPanel: 10 },
+  { id: 'hahnemuhle', label: 'Hahnemühle',         desc: 'Fine art, opaca, premium',   extraPerPanel: 18 },
 ]
 
 function PricePanel({ composizione }: { composizione: Composizione }) {
@@ -555,7 +555,7 @@ function PricePanel({ composizione }: { composizione: Composizione }) {
                 <div style={{ fontSize: '12px', fontWeight: 700, color: printTypeId === pt.id ? AC : '#333', marginBottom: 2 }}>{pt.label}</div>
                 <div style={{ fontSize: '10px', color: '#aaa' }}>{pt.desc}</div>
                 <div style={{ fontSize: '11px', fontWeight: 700, color: printTypeId === pt.id ? AC : '#666', marginTop: 2 }}>
-                  {pt.extraPerPanel === 0 ? 'Inclusa' : `+€${pt.extraPerPanel}/pannello`}
+                  +€{pt.extraPerPanel}/pannello
                 </div>
               </button>
             ))}
