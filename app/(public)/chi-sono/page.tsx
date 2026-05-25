@@ -180,11 +180,10 @@ export default function ChiSonoPage() {
             lineHeight: 1.85,
             margin: '0 0 clamp(20px,2.5vw,32px)',
           }}>
-            Il mio stile è documentaristico ed emozionale: cerco la luce
-            naturale, i sorrisi spontanei, gli sguardi complici. Non costruisco
-            scene, le accompagno. La mia fotocamera è discreta quanto basta
-            per non disturbare il momento, presente quanto serve per non
-            perderne nemmeno uno.
+            Ho imparato a leggere le situazioni prima ancora di alzare la
+            fotocamera. Osservo, mi avvicino, guido quando serve — con la luce
+            naturale, i dettagli che contano, le emozioni che emergono. Il modo
+            in cui lavoro cambia con la storia che ho davanti.
           </p>
 
           <p style={{
