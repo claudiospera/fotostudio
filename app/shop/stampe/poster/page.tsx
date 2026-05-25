@@ -28,6 +28,7 @@ const VARIANTS: Variant[] = [
   { id: 'pos-40x40', label: '40×40 cm', wCm: 40, hCm: 40, price: 1600 },
   { id: 'pos-35x50', label: '35×50 cm', wCm: 35, hCm: 50, price: 1600 },
   { id: 'pos-40x50', label: '40×50 cm', wCm: 40, hCm: 50, price: 1700 },
+  { id: 'pos-30x60', label: '30×60 cm', wCm: 30, hCm: 60, price: 1700 },
   { id: 'pos-40x60', label: '40×60 cm', wCm: 40, hCm: 60, price: 1900 },
   { id: 'pos-50x50', label: '50×50 cm', wCm: 50, hCm: 50, price: 2000 },
   { id: 'pos-50x60', label: '50×60 cm', wCm: 50, hCm: 60, price: 2300 },
