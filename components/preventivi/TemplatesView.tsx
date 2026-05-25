@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Clock, Copy, FileText, Pencil, Plus, Trash2, RotateCcw, Send, Printer, X } from 'lucide-react'
+import { Clock, Copy, FileText, Pencil, Plus, Trash2, RotateCcw, Send, Printer } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { PREVENTIVO_TEMPLATES, SERVICE_TYPES_CERIMONIE } from '@/lib/constants'
 import type { PreventivoTemplate, ServiceType, VocePreventivo } from '@/lib/types'
@@ -21,48 +21,24 @@ function saveCustomTemplates(custom: Record<string, PreventivoTemplate>) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(custom))
 }
 
+interface Sessione {
+  id: string; slug: string; template_nome: string; colore: string
+  selected: number[]; voci: { desc: string; prezzo: number }[]
+  firma: string | null; firmato_at: string | null; note: string | null
+  created_at: string; expires_at: string
+}
+
 interface TemplatesViewProps {
   onUseTemplate: (template: PreventivoTemplate) => void
+  onSessioneCreata: (s: Sessione) => void
 }
 
-interface Sessione {
-  id: string
-  slug: string
-  template_nome: string
-  colore: string
-  selected: number[]
-  voci: { desc: string; prezzo: number }[]
-  firma: string | null
-  firmato_at: string | null
-  note: string | null
-  created_at: string
-  expires_at: string
-}
-
-export const TemplatesView = ({ onUseTemplate }: TemplatesViewProps) => {
+export const TemplatesView = ({ onUseTemplate, onSessioneCreata }: TemplatesViewProps) => {
   const [filterServizio, setFilterServizio] = useState<ServiceType | 'tutti'>('tutti')
   const [preview, setPreview] = useState<PreventivoTemplate | null>(null)
   const [editing, setEditing] = useState<PreventivoTemplate | null>(null)
   const [interattivo, setInterattivo] = useState<PreventivoTemplate | null>(null)
   const [custom, setCustom] = useState<Record<string, PreventivoTemplate>>({})
-  const [sessioni, setSessioni] = useState<Sessione[]>([])
-  const [loadingSessioni, setLoadingSessioni] = useState(true)
-  const [deletingSlug, setDeletingSlug] = useState<string | null>(null)
-
-  useEffect(() => {
-    fetch('/api/preventivo-sessioni')
-      .then(r => r.ok ? r.json() : [])
-      .then(setSessioni)
-      .catch(() => {})
-      .finally(() => setLoadingSessioni(false))
-  }, [])
-
-  const handleDeleteSessione = async (slug: string) => {
-    setDeletingSlug(slug)
-    await fetch(`/api/preventivo-sessioni/${slug}`, { method: 'DELETE' })
-    setSessioni(prev => prev.filter(s => s.slug !== slug))
-    setDeletingSlug(null)
-  }
 
   useEffect(() => {
     setCustom(loadCustomTemplates())
@@ -95,119 +71,6 @@ export const TemplatesView = ({ onUseTemplate }: TemplatesViewProps) => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* ── Preventivi inviati ── */}
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-          <h3 style={{ margin: 0, fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 15 }}>
-            Preventivi inviati
-          </h3>
-          {!loadingSessioni && sessioni.length > 0 && (
-            <span style={{ fontSize: 11, color: 'var(--t3)' }}>
-              {sessioni.filter(s => s.firma).length} firmati su {sessioni.length}
-            </span>
-          )}
-        </div>
-
-        {loadingSessioni ? (
-          <p style={{ color: 'var(--t3)', fontSize: 13 }}>Caricamento…</p>
-        ) : sessioni.length === 0 ? (
-          <p style={{ color: 'var(--t3)', fontSize: 13 }}>Nessun preventivo inviato ancora.</p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {sessioni.map(s => {
-              const firmato = !!s.firma
-              const totale = Array.isArray(s.voci) && Array.isArray(s.selected)
-                ? s.voci.filter((_, i) => s.selected.includes(i)).reduce((acc, v) => acc + v.prezzo, 0)
-                : 0
-              const appUrl = typeof window !== 'undefined' ? window.location.origin : ''
-              return (
-                <div
-                  key={s.id}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap',
-                    padding: '12px 16px',
-                    background: firmato ? 'rgba(142,201,176,0.08)' : 'var(--s2)',
-                    border: firmato ? '1px solid rgba(142,201,176,0.3)' : '1px solid rgba(255,255,255,0.06)',
-                    borderRadius: 'var(--r2)',
-                  }}
-                >
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: s.colore, flexShrink: 0 }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--tx)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {s.template_nome}
-                    </p>
-                    <p style={{ margin: 0, fontSize: 11, color: 'var(--t3)' }}>
-                      Inviato il {new Date(s.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}
-                      {' · '}
-                      Scade il {new Date(s.expires_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    </p>
-                    {s.note && (
-                      <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--t2)', lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                        📝 {s.note}
-                      </p>
-                    )}
-                  </div>
-                  {totale > 0 && (
-                    <span style={{ fontSize: 13, fontWeight: 700, color: s.colore, flexShrink: 0 }}>
-                      €{totale.toLocaleString('it-IT')}
-                    </span>
-                  )}
-                  {firmato ? (
-                    <div style={{ flexShrink: 0, textAlign: 'right' }}>
-                      <span style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 5,
-                        padding: '3px 10px', borderRadius: 20,
-                        background: 'rgba(142,201,176,0.18)', border: '1px solid rgba(142,201,176,0.4)',
-                        color: 'var(--ac)', fontSize: 11, fontWeight: 700,
-                      }}>
-                        ✓ Firmato da {s.firma}
-                      </span>
-                      <p style={{ margin: '3px 0 0', fontSize: 10, color: 'var(--t3)', textAlign: 'right' }}>
-                        {new Date(s.firmato_at!).toLocaleString('it-IT', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
-                  ) : (
-                    <span style={{
-                      padding: '3px 10px', borderRadius: 20,
-                      background: 'var(--s3)', border: '1px solid rgba(255,255,255,0.08)',
-                      color: 'var(--t3)', fontSize: 11, fontWeight: 600, flexShrink: 0,
-                    }}>
-                      In attesa
-                    </span>
-                  )}
-                  <button
-                    onClick={() => navigator.clipboard.writeText(`${appUrl}/p/${s.slug}`)}
-                    style={{
-                      padding: '4px 10px', borderRadius: 6, fontSize: 11,
-                      border: '1px solid rgba(255,255,255,0.08)', background: 'var(--s3)',
-                      color: 'var(--t2)', cursor: 'pointer', flexShrink: 0,
-                    }}
-                    title="Copia link"
-                  >
-                    Copia link
-                  </button>
-                  <button
-                    onClick={() => handleDeleteSessione(s.slug)}
-                    disabled={deletingSlug === s.slug}
-                    style={{
-                      width: 28, height: 28, borderRadius: 6,
-                      border: '1px solid rgba(255,255,255,0.08)', background: 'var(--s3)',
-                      color: 'var(--red)', cursor: 'pointer', flexShrink: 0,
-                      display: 'grid', placeItems: 'center', opacity: deletingSlug === s.slug ? 0.5 : 1,
-                    }}
-                    title="Elimina"
-                  >
-                    <X size={12} />
-                  </button>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
-
-      <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 4 }} />
-
       {/* Filter bar */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <FilterChip
@@ -263,6 +126,7 @@ export const TemplatesView = ({ onUseTemplate }: TemplatesViewProps) => {
         <PreventivoInterattivoModal
           template={interattivo}
           onClose={() => setInterattivo(null)}
+          onSessioneCreata={onSessioneCreata}
         />
       )}
 
@@ -822,9 +686,11 @@ const VoceRow = ({ voce, formatEuro, last }: { voce: VocePreventivo; formatEuro:
 const PreventivoInterattivoModal = ({
   template: t,
   onClose,
+  onSessioneCreata,
 }: {
   template: PreventivoTemplate
   onClose: () => void
+  onSessioneCreata: (s: Sessione) => void
 }) => {
   const [slug, setSlug] = useState<string | null>(null)
   const [selected, setSelected] = useState<number[]>([])
@@ -847,9 +713,27 @@ const PreventivoInterattivoModal = ({
       }),
     })
       .then(r => r.json())
-      .then(d => { if (d.slug) setSlug(d.slug) })
+      .then(d => {
+        if (d.slug) {
+          setSlug(d.slug)
+          // notifica il parent così appare subito in Contratti
+          onSessioneCreata({
+            id: d.id ?? d.slug,
+            slug: d.slug,
+            template_nome: t.nome,
+            colore: t.colore,
+            selected: [],
+            voci: t.voci as { desc: string; prezzo: number }[],
+            firma: null,
+            firmato_at: null,
+            note: null,
+            created_at: new Date().toISOString(),
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          })
+        }
+      })
       .finally(() => setCreating(false))
-  }, [t.id, t.nome, t.colore, t.voci])
+  }, [t.id, t.nome, t.colore, t.voci, onSessioneCreata])
 
   // Polling ogni 3 secondi per vedere le selezioni del cliente
   useEffect(() => {

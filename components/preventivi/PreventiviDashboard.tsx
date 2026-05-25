@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
-  FileText, FileSignature, LayoutTemplate, Users2, Wallet, BookOpen, Plus, Search, UserPlus,
+  FileText, FileSignature, LayoutTemplate, Users2, Wallet, BookOpen, Plus, Search, UserPlus, X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { PreventiviCalendar } from './PreventiviCalendar'
@@ -11,6 +11,20 @@ import { PreventiviStats } from './PreventiviStats'
 import { TemplatesView } from './TemplatesView'
 import { NuovaPropostaModal } from './NuovaProposta'
 import type { Preventivo, PreventivoTemplate, Cliente } from '@/lib/types'
+
+interface Sessione {
+  id: string
+  slug: string
+  template_nome: string
+  colore: string
+  selected: number[]
+  voci: { desc: string; prezzo: number }[]
+  firma: string | null
+  firmato_at: string | null
+  note: string | null
+  created_at: string
+  expires_at: string
+}
 
 
 type Tab = 'proposte' | 'contratti' | 'templates' | 'referrals' | 'acconti' | 'risorse'
@@ -39,6 +53,9 @@ export const PreventiviDashboard = () => {
   const [activeTemplate, setActiveTemplate] = useState<PreventivoTemplate | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [loadingPreventivi, setLoadingPreventivi] = useState(true)
+  const [sessioni, setSessioni] = useState<Sessione[]>([])
+  const [loadingSessioni, setLoadingSessioni] = useState(true)
+  const [deletingSlug, setDeletingSlug] = useState<string | null>(null)
 
   useEffect(() => {
     Promise.all([
@@ -49,6 +66,25 @@ export const PreventiviDashboard = () => {
       setClienti(clienti)
     }).catch(() => {}).finally(() => setLoadingPreventivi(false))
   }, [])
+
+  useEffect(() => {
+    fetch('/api/preventivo-sessioni')
+      .then(r => r.ok ? r.json() : [])
+      .then(setSessioni)
+      .catch(() => {})
+      .finally(() => setLoadingSessioni(false))
+  }, [])
+
+  const handleDeleteSessione = async (slug: string) => {
+    setDeletingSlug(slug)
+    await fetch(`/api/preventivo-sessioni/${slug}`, { method: 'DELETE' })
+    setSessioni(prev => prev.filter(s => s.slug !== slug))
+    setDeletingSlug(null)
+  }
+
+  const handleSessioneCreata = (nuova: Sessione) => {
+    setSessioni(prev => [nuova, ...prev])
+  }
 
   const handleSavePreventivo = async (data: Omit<Preventivo, 'id' | 'user_id' | 'created_at'>) => {
     try {
@@ -235,11 +271,19 @@ export const PreventiviDashboard = () => {
         )}
 
         {activeTab === 'templates' && (
-          <TemplatesView onUseTemplate={handleUseTemplate} />
+          <TemplatesView
+            onUseTemplate={handleUseTemplate}
+            onSessioneCreata={handleSessioneCreata}
+          />
         )}
 
         {activeTab === 'contratti' && (
-          <ComingSoon label="Contratti" description="Gestisci contratti firmati e in attesa di firma." />
+          <ContrattiView
+            sessioni={sessioni}
+            loading={loadingSessioni}
+            deletingSlug={deletingSlug}
+            onDelete={handleDeleteSessione}
+          />
         )}
 
         {activeTab === 'referrals' && (
@@ -264,6 +308,109 @@ export const PreventiviDashboard = () => {
         onSave={handleSavePreventivo}
       />
     </>
+  )
+}
+
+/* ─── Contratti View ─── */
+const ContrattiView = ({ sessioni, loading, deletingSlug, onDelete }: {
+  sessioni: Sessione[]
+  loading: boolean
+  deletingSlug: string | null
+  onDelete: (slug: string) => void
+}) => {
+  const firmati = sessioni.filter(s => !!s.firma)
+  const inAttesa = sessioni.filter(s => !s.firma)
+  const appUrl = typeof window !== 'undefined' ? window.location.origin : ''
+
+  if (loading) return <p style={{ color: 'var(--t3)', fontSize: 13, padding: '24px 0' }}>Caricamento…</p>
+
+  if (sessioni.length === 0) return (
+    <EmptyState
+      title="Nessun preventivo inviato"
+      description="Invia un preventivo interattivo da un template — apparirà qui quando il cliente lo accetta."
+    />
+  )
+
+  const SessioneRow = ({ s }: { s: Sessione }) => {
+    const totale = Array.isArray(s.voci) && Array.isArray(s.selected)
+      ? s.voci.filter((_, i) => s.selected.includes(i)).reduce((acc, v) => acc + v.prezzo, 0)
+      : 0
+    const firmato = !!s.firma
+    return (
+      <div style={{
+        display: 'flex', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap',
+        padding: '14px 18px',
+        background: firmato ? 'rgba(142,201,176,0.06)' : 'transparent',
+        border: 'none',
+        borderBottom: '1px solid rgba(255,255,255,0.05)',
+      }}>
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: s.colore, flexShrink: 0, marginTop: 5 }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--tx)' }}>{s.template_nome}</p>
+          <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--t3)' }}>
+            Inviato il {new Date(s.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}
+            {' · '}Scade il {new Date(s.expires_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}
+          </p>
+          {s.note && (
+            <p style={{ margin: '5px 0 0', fontSize: 12, color: 'var(--t2)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+              📝 {s.note}
+            </p>
+          )}
+          {firmato && (
+            <p style={{ margin: '5px 0 0', fontSize: 11, color: 'var(--ac)' }}>
+              ✓ Firmato da <strong>{s.firma}</strong> il {new Date(s.firmato_at!).toLocaleString('it-IT', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+            </p>
+          )}
+        </div>
+        {totale > 0 && (
+          <span style={{ fontSize: 14, fontWeight: 700, color: s.colore, flexShrink: 0 }}>
+            €{totale.toLocaleString('it-IT')}
+          </span>
+        )}
+        <button
+          onClick={() => navigator.clipboard.writeText(`${appUrl}/p/${s.slug}`)}
+          style={{ padding: '4px 10px', borderRadius: 6, fontSize: 11, border: '1px solid rgba(255,255,255,0.08)', background: 'var(--s3)', color: 'var(--t2)', cursor: 'pointer', flexShrink: 0 }}
+        >
+          Copia link
+        </button>
+        <button
+          onClick={() => onDelete(s.slug)}
+          disabled={deletingSlug === s.slug}
+          style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid rgba(255,255,255,0.08)', background: 'var(--s3)', color: 'var(--red)', cursor: 'pointer', flexShrink: 0, display: 'grid', placeItems: 'center', opacity: deletingSlug === s.slug ? 0.5 : 1 }}
+          title="Elimina"
+        >
+          <X size={12} />
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* Firmati */}
+      {firmati.length > 0 && (
+        <div style={{ background: 'var(--s1)', border: '1px solid rgba(142,201,176,0.2)', borderRadius: 'var(--r)', overflow: 'hidden' }}>
+          <div style={{ padding: '12px 18px', borderBottom: '1px solid rgba(142,201,176,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 14, color: 'var(--ac)' }}>
+              ✓ Firmati ({firmati.length})
+            </span>
+          </div>
+          {firmati.map(s => <SessioneRow key={s.id} s={s} />)}
+        </div>
+      )}
+
+      {/* In attesa */}
+      {inAttesa.length > 0 && (
+        <div style={{ background: 'var(--s1)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 'var(--r)', overflow: 'hidden' }}>
+          <div style={{ padding: '12px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 14, color: 'var(--t2)' }}>
+              In attesa di firma ({inAttesa.length})
+            </span>
+          </div>
+          {inAttesa.map(s => <SessioneRow key={s.id} s={s} />)}
+        </div>
+      )}
+    </div>
   )
 }
 
