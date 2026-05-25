@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
+import GalleryLightbox from './GalleryLightbox'
 
 // ─── Dati servizi ─────────────────────────────────────────────────────────────
 
@@ -278,21 +279,7 @@ export default async function ServizioPage({ params }: { params: Promise<{ slug:
       </section>
 
       {/* ── GALLERIA COMPLETA ─────────────────────────────────────────────── */}
-      {servizio.gallery && servizio.gallery.length > 0 && (
-        <section style={{ padding: '0 clamp(24px,5vw,64px)' }}>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: 4,
-          }}>
-            {servizio.gallery.map((src, i) => (
-              <div key={i} style={{ aspectRatio: '3/2', overflow: 'hidden', background: 'rgba(26,22,18,0.07)' }}>
-                <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      {servizio.gallery && <GalleryLightbox photos={servizio.gallery} />}
 
       {/* ── IL SERVIZIO COMPRENDE ──────────────────────────────────────────── */}
       <section style={{
