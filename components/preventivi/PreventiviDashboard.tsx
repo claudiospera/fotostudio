@@ -291,7 +291,7 @@ export const PreventiviDashboard = () => {
         )}
 
         {activeTab === 'acconti' && (
-          <ComingSoon label="Acconti" description="Monitora i pagamenti e gli acconti ricevuti." />
+          <AccontiView clienti={clienti} loading={loadingPreventivi} />
         )}
 
         {activeTab === 'risorse' && (
@@ -308,6 +308,124 @@ export const PreventiviDashboard = () => {
         onSave={handleSavePreventivo}
       />
     </>
+  )
+}
+
+/* ─── Acconti View ─── */
+const AccontiView = ({ clienti, loading }: { clienti: Cliente[]; loading: boolean }) => {
+  const router = useRouter()
+
+  if (loading) return <p style={{ color: 'var(--t3)', fontSize: 13, padding: '24px 0' }}>Caricamento…</p>
+
+  const conPagamenti = clienti.filter(c => Number(c.importo_totale) > 0)
+
+  if (conPagamenti.length === 0) return (
+    <EmptyState
+      title="Nessun cliente con importo"
+      description="Aggiungi importo totale e acconti alle schede cliente per vederli qui."
+    />
+  )
+
+  const totaleImporti = conPagamenti.reduce((s, c) => s + Number(c.importo_totale ?? 0), 0)
+  const totaleAcconti = conPagamenti.reduce((s, c) => s + Number(c.acconto ?? 0), 0)
+  const totaleSaldi   = conPagamenti.reduce((s, c) => s + Math.max(0, Number(c.importo_totale ?? 0) - Number(c.acconto ?? 0)), 0)
+
+  const fmt = (n: number) => `€${n.toLocaleString('it-IT', { minimumFractionDigits: 2 })}`
+
+  // Ordina: prima chi ha saldo aperto con data_evento più vicina
+  const sorted = [...conPagamenti].sort((a, b) => {
+    const saldoA = Number(a.importo_totale ?? 0) - Number(a.acconto ?? 0)
+    const saldoB = Number(b.importo_totale ?? 0) - Number(b.acconto ?? 0)
+    if (saldoA > 0 && saldoB <= 0) return -1
+    if (saldoB > 0 && saldoA <= 0) return 1
+    return (a.data_evento ?? '').localeCompare(b.data_evento ?? '')
+  })
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+      {/* KPI row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+        {[
+          { label: 'Totale contratti', value: fmt(totaleImporti), color: 'var(--tx)' },
+          { label: 'Acconti incassati', value: fmt(totaleAcconti), color: 'var(--ac)' },
+          { label: 'Saldi da incassare', value: fmt(totaleSaldi), color: totaleSaldi > 0 ? 'var(--amber)' : 'var(--t3)' },
+        ].map(k => (
+          <div key={k.label} style={{ background: 'var(--s1)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 'var(--r)', padding: '14px 18px' }}>
+            <p style={{ margin: 0, fontSize: 11, color: 'var(--t3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{k.label}</p>
+            <p style={{ margin: 0, fontSize: 22, fontWeight: 800, color: k.color, fontFamily: 'Syne, sans-serif' }}>{k.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Tabella clienti */}
+      <div style={{ background: 'var(--s1)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 'var(--r)', overflow: 'hidden' }}>
+        {/* Header */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 110px 110px 110px 80px', gap: 8, padding: '10px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'var(--s2)' }}>
+          {['Cliente', 'Evento', 'Totale', 'Acconto', 'Saldo', 'Stato'].map(h => (
+            <span key={h} style={{ fontSize: 10, fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{h}</span>
+          ))}
+        </div>
+
+        {sorted.map(c => {
+          const saldo = Math.max(0, Number(c.importo_totale ?? 0) - Number(c.acconto ?? 0))
+          const saldato = saldo === 0
+          const nomeCliente = [c.nome1, c.nome2].filter(Boolean).join(' & ')
+          const accontiList: { importo: number; data: string; nota?: string }[] = c.extra?.acconti ?? []
+
+          return (
+            <div
+              key={c.id}
+              onClick={() => router.push(`/clienti?apri=${c.id}`)}
+              style={{ cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.04)', transition: 'background 0.12s' }}
+              onMouseEnter={e => ((e.currentTarget as HTMLDivElement).style.background = 'var(--s2)')}
+              onMouseLeave={e => ((e.currentTarget as HTMLDivElement).style.background = 'transparent')}
+            >
+              {/* Riga principale */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 110px 110px 110px 80px', gap: 8, padding: '12px 18px', alignItems: 'center' }}>
+                <div>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--tx)' }}>{nomeCliente}</p>
+                  <p style={{ margin: 0, fontSize: 11, color: 'var(--t3)' }}>{c.categoria}</p>
+                </div>
+                <span style={{ fontSize: 12, color: 'var(--t2)' }}>
+                  {c.data_evento ? new Date(c.data_evento).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: '2-digit' }) : '—'}
+                </span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--tx)' }}>{fmt(Number(c.importo_totale ?? 0))}</span>
+                <div>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ac)' }}>{fmt(Number(c.acconto ?? 0))}</span>
+                  {accontiList.length > 1 && (
+                    <span style={{ display: 'block', fontSize: 10, color: 'var(--t3)' }}>{accontiList.length} rate</span>
+                  )}
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 700, color: saldato ? 'var(--t3)' : 'var(--amber)' }}>
+                  {saldato ? '—' : fmt(saldo)}
+                </span>
+                <span style={{
+                  fontSize: 10, padding: '3px 8px', borderRadius: 20, fontWeight: 700,
+                  background: saldato ? 'rgba(142,201,176,0.14)' : 'rgba(201,160,90,0.14)',
+                  color: saldato ? 'var(--ac)' : 'var(--amber)',
+                  border: `1px solid ${saldato ? 'rgba(142,201,176,0.3)' : 'rgba(201,160,90,0.3)'}`,
+                  whiteSpace: 'nowrap',
+                }}>
+                  {saldato ? 'Saldato' : 'Da saldare'}
+                </span>
+              </div>
+
+              {/* Rata detail (se > 1 acconto) */}
+              {accontiList.length > 1 && (
+                <div style={{ padding: '0 18px 12px 32px', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {accontiList.map((a, i) => (
+                    <span key={i} style={{ fontSize: 11, color: 'var(--t3)', background: 'var(--s2)', padding: '2px 8px', borderRadius: 4, border: '1px solid rgba(255,255,255,0.05)' }}>
+                      {fmt(Number(a.importo))} · {a.data ? new Date(a.data).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' }) : '—'}{a.nota ? ` · ${a.nota}` : ''}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
   )
 }
 
