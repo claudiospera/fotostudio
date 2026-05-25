@@ -88,6 +88,12 @@ export default function PreventivoClientePage({ params }: { params: Promise<{ sl
 
   return (
     <div style={{ background: '#fff', fontFamily: '"Helvetica Neue", Arial, sans-serif', color: '#111', minHeight: '100vh' }}>
+      <style>{`
+        @media print {
+          .no-print { display: none !important; }
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+      `}</style>
 
       {/* Logo header */}
       <div style={{
@@ -233,6 +239,23 @@ export default function PreventivoClientePage({ params }: { params: Promise<{ sl
             </div>
           )}
 
+          {/* Stampa */}
+          {selected.length > 0 && (
+            <div style={{ marginBottom: 32, display: 'flex', justifyContent: 'flex-end' }} className="no-print">
+              <button
+                onClick={() => window.print()}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  padding: '10px 20px', borderRadius: 8,
+                  border: '1px solid #ddd', background: '#fff',
+                  fontSize: 14, fontWeight: 600, color: '#333', cursor: 'pointer',
+                }}
+              >
+                🖨️ Stampa / Salva PDF
+              </button>
+            </div>
+          )}
+
           {/* Firma digitale */}
           {!firmato ? (
             <div style={{ marginTop: 40, padding: '32px', background: '#f9f9f9', borderRadius: 12 }}>
@@ -306,7 +329,7 @@ export default function PreventivoClientePage({ params }: { params: Promise<{ sl
       </div>
 
       {/* Totale fisso in basso */}
-      <div style={{
+      <div className="no-print" style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
         background: '#fff', borderTop: '1px solid #e8e8e8',
         padding: '14px 24px',
