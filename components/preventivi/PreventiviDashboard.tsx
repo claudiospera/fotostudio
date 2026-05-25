@@ -314,6 +314,8 @@ export const PreventiviDashboard = () => {
 /* ─── Acconti View ─── */
 const AccontiView = ({ clienti, loading }: { clienti: Cliente[]; loading: boolean }) => {
   const router = useRouter()
+  const [search, setSearch] = useState('')
+  const [catFilter, setCatFilter] = useState<string>('tutti')
 
   if (loading) return <p style={{ color: 'var(--t3)', fontSize: 13, padding: '24px 0' }}>Caricamento…</p>
 
@@ -326,14 +328,25 @@ const AccontiView = ({ clienti, loading }: { clienti: Cliente[]; loading: boolea
     />
   )
 
-  const totaleImporti = conPagamenti.reduce((s, c) => s + Number(c.importo_totale ?? 0), 0)
-  const totaleAcconti = conPagamenti.reduce((s, c) => s + Number(c.acconto ?? 0), 0)
-  const totaleSaldi   = conPagamenti.reduce((s, c) => s + Math.max(0, Number(c.importo_totale ?? 0) - Number(c.acconto ?? 0)), 0)
-
   const fmt = (n: number) => `€${n.toLocaleString('it-IT', { minimumFractionDigits: 2 })}`
 
+  // Categorie disponibili
+  const categorie = ['tutti', ...Array.from(new Set(conPagamenti.map(c => c.categoria))).sort()]
+
+  // Filtri attivi
+  const filtrati = conPagamenti.filter(c => {
+    const nome = [c.nome1, c.nome2].filter(Boolean).join(' ').toLowerCase()
+    const matchSearch = search === '' || nome.includes(search.toLowerCase())
+    const matchCat = catFilter === 'tutti' || c.categoria === catFilter
+    return matchSearch && matchCat
+  })
+
+  const totaleImportiFiltrati = filtrati.reduce((s, c) => s + Number(c.importo_totale ?? 0), 0)
+  const totaleAccontiFiltrati = filtrati.reduce((s, c) => s + Number(c.acconto ?? 0), 0)
+  const totaleSaldiFiltrati   = filtrati.reduce((s, c) => s + Math.max(0, Number(c.importo_totale ?? 0) - Number(c.acconto ?? 0)), 0)
+
   // Ordina: prima chi ha saldo aperto con data_evento più vicina
-  const sorted = [...conPagamenti].sort((a, b) => {
+  const sorted = [...filtrati].sort((a, b) => {
     const saldoA = Number(a.importo_totale ?? 0) - Number(a.acconto ?? 0)
     const saldoB = Number(b.importo_totale ?? 0) - Number(b.acconto ?? 0)
     if (saldoA > 0 && saldoB <= 0) return -1
@@ -342,20 +355,66 @@ const AccontiView = ({ clienti, loading }: { clienti: Cliente[]; loading: boolea
   })
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
       {/* KPI row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
         {[
-          { label: 'Totale contratti', value: fmt(totaleImporti), color: 'var(--tx)' },
-          { label: 'Acconti incassati', value: fmt(totaleAcconti), color: 'var(--ac)' },
-          { label: 'Saldi da incassare', value: fmt(totaleSaldi), color: totaleSaldi > 0 ? 'var(--amber)' : 'var(--t3)' },
+          { label: 'Totale contratti', value: fmt(totaleImportiFiltrati), color: 'var(--tx)' },
+          { label: 'Acconti incassati', value: fmt(totaleAccontiFiltrati), color: 'var(--ac)' },
+          { label: 'Saldi da incassare', value: fmt(totaleSaldiFiltrati), color: totaleSaldiFiltrati > 0 ? 'var(--amber)' : 'var(--t3)' },
         ].map(k => (
           <div key={k.label} style={{ background: 'var(--s1)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 'var(--r)', padding: '14px 18px' }}>
             <p style={{ margin: 0, fontSize: 11, color: 'var(--t3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{k.label}</p>
             <p style={{ margin: 0, fontSize: 22, fontWeight: 800, color: k.color, fontFamily: 'Syne, sans-serif' }}>{k.value}</p>
           </div>
         ))}
+      </div>
+
+      {/* Ricerca + filtri categoria */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {/* Search */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px', height: 34, background: 'var(--s2)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--r2)', maxWidth: 320 }}>
+          <Search size={13} style={{ color: 'var(--t3)', flexShrink: 0 }} />
+          <input
+            placeholder="Cerca cliente…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ background: 'transparent', border: 'none', outline: 'none', color: 'var(--tx)', fontSize: 13, width: '100%' }}
+          />
+          {search && (
+            <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', color: 'var(--t3)', cursor: 'pointer', padding: 0, lineHeight: 1 }}>×</button>
+          )}
+        </div>
+
+        {/* Filtri categoria */}
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {categorie.map(cat => (
+            <button
+              key={cat}
+              onClick={() => setCatFilter(cat)}
+              style={{
+                padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                border: catFilter === cat ? '1px solid var(--ac)' : '1px solid rgba(255,255,255,0.08)',
+                background: catFilter === cat ? 'rgba(142,201,176,0.14)' : 'var(--s2)',
+                color: catFilter === cat ? 'var(--ac)' : 'var(--t3)',
+              }}
+            >
+              {cat === 'tutti' ? 'Tutti' : cat}
+              {cat !== 'tutti' && (
+                <span style={{ marginLeft: 4, opacity: 0.6 }}>
+                  ({conPagamenti.filter(c => c.categoria === cat).length})
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {filtrati.length !== conPagamenti.length && (
+          <p style={{ margin: 0, fontSize: 11, color: 'var(--t3)' }}>
+            {filtrati.length} su {conPagamenti.length} clienti
+          </p>
+        )}
       </div>
 
       {/* Tabella clienti */}
