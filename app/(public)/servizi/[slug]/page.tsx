@@ -49,6 +49,7 @@ const SERVIZI: Record<string, ServizioData> = {
     nome: 'Battesimi, Compleanni e Feste',
     location: 'Studio · Esterno',
     quote: 'I primi giorni, le prime ore. Il tempo non aspetta, ma le fotografie si.',
+    cover: `${R2}/images/servizi/battesimi/hero.jpg`,
     categorie: [
       { nome: 'Battesimi',  href: '/servizi/battesimi-prima-infanzia/battesimi',  cover: `${R2}/images/servizi/battesimi/gallery/DSCF3428-12.jpg` },
       { nome: 'Compleanni', href: '/servizi/battesimi-prima-infanzia/compleanni', cover: `${R2}/images/servizi/battesimi/compleanni/1%20anno%20Ginevra_01.jpg` },
