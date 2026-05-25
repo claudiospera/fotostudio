@@ -254,7 +254,15 @@ export default function PreventivoClientePage({ params }: { params: Promise<{ sl
                   }}
                 />
                 <button
-                  onClick={() => { if (firma.trim()) setFirmato(true) }}
+                  onClick={async () => {
+                    if (!firma.trim() || selected.length === 0) return
+                    await fetch(`/api/preventivo-sessioni/${slug}`, {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ firma: firma.trim(), firmato_at: new Date().toISOString() }),
+                    })
+                    setFirmato(true)
+                  }}
                   disabled={!firma.trim() || selected.length === 0}
                   style={{
                     padding: '12px 24px', background: firma.trim() && selected.length > 0 ? '#2e7d5e' : '#ccc',

@@ -683,6 +683,8 @@ const PreventivoInterattivoModal = ({
 }) => {
   const [slug, setSlug] = useState<string | null>(null)
   const [selected, setSelected] = useState<number[]>([])
+  const [firma, setFirmaState] = useState<string | null>(null)
+  const [firmatoAt, setFirmatoAt] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const [copied, setCopied] = useState(false)
 
@@ -711,6 +713,8 @@ const PreventivoInterattivoModal = ({
       const r = await fetch(`/api/preventivo-sessioni/${slug}`)
       const d = await r.json()
       if (Array.isArray(d.selected)) setSelected(d.selected)
+      if (d.firma) setFirmaState(d.firma)
+      if (d.firmato_at) setFirmatoAt(d.firmato_at)
     }, 3000)
     return () => clearInterval(interval)
   }, [slug])
@@ -772,12 +776,29 @@ const PreventivoInterattivoModal = ({
         {/* Header */}
         <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
           <div>
-            <h2 style={{ margin: 0, fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 18 }}>
-              Invia preventivo al cliente
-            </h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <h2 style={{ margin: 0, fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 18 }}>
+                Invia preventivo al cliente
+              </h2>
+              {firma && (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                  padding: '3px 10px', borderRadius: 20,
+                  background: 'rgba(142,201,176,0.18)', border: '1px solid rgba(142,201,176,0.4)',
+                  color: 'var(--ac)', fontSize: 11, fontWeight: 700, letterSpacing: '0.04em',
+                }}>
+                  ✓ Firmato da {firma}
+                </span>
+              )}
+            </div>
             <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--t3)' }}>
               {t.nome} — Il cliente seleziona le opzioni e vedi il totale in tempo reale
             </p>
+            {firmatoAt && (
+              <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--ac)' }}>
+                Accettato il {new Date(firmatoAt).toLocaleString('it-IT', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </p>
+            )}
           </div>
           <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid rgba(255,255,255,0.08)', background: 'var(--s2)', color: 'var(--t2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>×</button>
         </div>
