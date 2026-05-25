@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@clerk/nextjs/server'
 import { sql } from '@/lib/db'
 
 // GET — pubblica, legge la sessione (senza auth — per il cliente)
@@ -54,4 +55,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ sl
   }
 
   return NextResponse.json({ error: 'Nessun campo da aggiornare' }, { status: 400 })
+}
+
+// DELETE — rimuove la sessione (richiede auth)
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const { userId } = await auth()
+  if (!userId) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
+
+  const { slug } = await params
+  const rows = await sql`
+    DELETE FROM preventivo_sessioni
+    WHERE slug = ${slug} AND user_id = ${userId}
+    RETURNING id
+  `
+  if (rows.length === 0) return NextResponse.json({ error: 'Non trovato' }, { status: 404 })
+  return NextResponse.json({ ok: true })
 }

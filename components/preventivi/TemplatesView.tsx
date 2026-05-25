@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Clock, Copy, FileText, Pencil, Plus, Trash2, RotateCcw, Send, Printer } from 'lucide-react'
+import { Clock, Copy, FileText, Pencil, Plus, Trash2, RotateCcw, Send, Printer, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { PREVENTIVO_TEMPLATES, SERVICE_TYPES_CERIMONIE } from '@/lib/constants'
 import type { PreventivoTemplate, ServiceType, VocePreventivo } from '@/lib/types'
@@ -46,6 +46,7 @@ export const TemplatesView = ({ onUseTemplate }: TemplatesViewProps) => {
   const [custom, setCustom] = useState<Record<string, PreventivoTemplate>>({})
   const [sessioni, setSessioni] = useState<Sessione[]>([])
   const [loadingSessioni, setLoadingSessioni] = useState(true)
+  const [deletingSlug, setDeletingSlug] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/api/preventivo-sessioni')
@@ -54,6 +55,13 @@ export const TemplatesView = ({ onUseTemplate }: TemplatesViewProps) => {
       .catch(() => {})
       .finally(() => setLoadingSessioni(false))
   }, [])
+
+  const handleDeleteSessione = async (slug: string) => {
+    setDeletingSlug(slug)
+    await fetch(`/api/preventivo-sessioni/${slug}`, { method: 'DELETE' })
+    setSessioni(prev => prev.filter(s => s.slug !== slug))
+    setDeletingSlug(null)
+  }
 
   useEffect(() => {
     setCustom(loadCustomTemplates())
@@ -219,6 +227,21 @@ export const TemplatesView = ({ onUseTemplate }: TemplatesViewProps) => {
                     title="Copia link"
                   >
                     Copia link
+                  </button>
+
+                  {/* Elimina */}
+                  <button
+                    onClick={() => handleDeleteSessione(s.slug)}
+                    disabled={deletingSlug === s.slug}
+                    style={{
+                      width: 28, height: 28, borderRadius: 6, fontSize: 11,
+                      border: '1px solid rgba(255,255,255,0.08)', background: 'var(--s3)',
+                      color: 'var(--red)', cursor: 'pointer', flexShrink: 0,
+                      display: 'grid', placeItems: 'center', opacity: deletingSlug === s.slug ? 0.5 : 1,
+                    }}
+                    title="Elimina"
+                  >
+                    <X size={12} />
                   </button>
                 </div>
               )
