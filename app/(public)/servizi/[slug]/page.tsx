@@ -34,7 +34,7 @@ const SERVIZI: Record<string, ServizioData> = {
     ],
   },
   'battesimi-prima-infanzia': {
-    nome: 'Battesimi & Prima infanzia',
+    nome: 'Battesimi, Compleanni e Feste',
     location: 'Studio · Esterno',
     quote: 'I primi giorni, le prime ore. Il tempo non aspetta, ma le fotografie si.',
     descrizione: 'I primi mesi di vita scorrono in fretta. Fotografare un neonato significa fermare un tempo che non tornera: la piccola mano che stringe un dito, il respiro tranquillo, i tratti ancora morbidi. Per il battesimo seguo la cerimonia in chiesa, le emozioni dei genitori, il momento del Sacramento, e poi la festa con la famiglia. In studio creo un ambiente caldo e sicuro, adatto ai bambini piccolissimi, con luce naturale o artificiale morbida.',
@@ -70,7 +70,7 @@ const SERVIZI: Record<string, ServizioData> = {
     ],
   },
   'maternita-gravidanza': {
-    nome: 'Maternita & Gravidanza',
+    nome: 'Maternità',
     location: 'Studio · Natura',
     quote: 'Il corpo che accoglie. La luce che trasforma. Un momento che dura per sempre.',
     descrizione: 'La gravidanza e una delle forme piu belle della femminilita. Ogni sessione e pensata per valorizzare il corpo della donna in attesa, con una luce calda, ambienti naturali o di studio, e un approccio rispettoso e delicato. Il momento ideale per la sessione e tra la 28a e la 34a settimana, quando il pancione e tondo e ben visibile ma la mobilita e ancora buona. Posso includere il partner e i bambini gia nati per un ritratto di famiglia in attesa.',
@@ -87,7 +87,7 @@ const SERVIZI: Record<string, ServizioData> = {
     ],
   },
   'compleanni-feste': {
-    nome: 'Compleanni & Feste',
+    nome: '18 Anni',
     location: 'Location · Esterno',
     quote: 'La festa e un\'emozione collettiva. Il compito del fotografo e non farla sfuggire.',
     descrizione: 'Ogni compleanno e una storia a se: un primo anno di vita, un diciottesimo spensierato, un cinquantesimo pieno di gratitudine. Arrivo prima che inizino gli ospiti, seguo l\'allestimento, il taglio della torta, le risate, i brindisi. Mi muovo in modo discreto tra le persone, senza organizzare pose artificiali, per restituire la vera atmosfera della giornata. Sono disponibile per feste private, eventi in location, garden party e ricevimenti.',

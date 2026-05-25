@@ -16,10 +16,10 @@ const R2     = 'https://pub-53356d483eb74822990977c0e5c21f6c.r2.dev'
 
 const SERVIZI = [
   { n: '01', nome: 'Matrimoni',                 loc: 'Campania · e dintorni',   href: '/galleria/matrimoni',              cover: `${R2}/images/galleria/matrimoni/real-weddings/stefano%20e%20teodora/036b.jpg` },
-  { n: '02', nome: 'Battesimi & Prima infanzia', loc: 'Studio · Esterno',        href: '/servizi/battesimi-prima-infanzia', cover: null },
+  { n: '02', nome: 'Battesimi, Compleanni e Feste', loc: 'Studio · Esterno',    href: '/servizi/battesimi-prima-infanzia', cover: null },
   { n: '03', nome: 'Comunioni & Cresime',        loc: 'Chiesa · Ricevimento',    href: '/servizi/comunioni-cresime',        cover: null },
-  { n: '04', nome: 'Maternita & Gravidanza',     loc: 'Studio · Natura',         href: '/servizi/maternita-gravidanza',     cover: null },
-  { n: '05', nome: 'Compleanni & Feste',         loc: 'Location · Esterno',      href: '/servizi/compleanni-feste',         cover: null },
+  { n: '04', nome: 'Maternità',                  loc: 'Studio · Natura',         href: '/servizi/maternita-gravidanza',     cover: `${R2}/images/servizi/maternita/DSCF0224.jpg` },
+  { n: '05', nome: '18 Anni',                    loc: 'Location · Esterno',      href: '/servizi/compleanni-feste',         cover: null },
   { n: '06', nome: 'Ritratti & Famiglie',        loc: 'Studio · Esterno',        href: '/servizi/ritratti-famiglie',        cover: null },
 ]
 
