@@ -51,7 +51,7 @@ const SERVIZI: Record<string, ServizioData> = {
     quote: 'I primi giorni, le prime ore. Il tempo non aspetta, ma le fotografie si.',
     categorie: [
       { nome: 'Battesimi',  href: '/servizi/battesimi-prima-infanzia/battesimi',  cover: undefined },
-      { nome: 'Compleanni', href: '/servizi/battesimi-prima-infanzia/compleanni', cover: undefined },
+      { nome: 'Compleanni', href: '/servizi/battesimi-prima-infanzia/compleanni', cover: `${R2}/images/servizi/battesimi/compleanni/1%20anno%20Ginevra_01.jpg` },
       { nome: 'Smash Cake', href: '/servizi/battesimi-prima-infanzia/smash-cake', cover: undefined },
     ],
     descrizione: 'I primi mesi di vita scorrono in fretta. Fotografare un neonato significa fermare un tempo che non tornera: la piccola mano che stringe un dito, il respiro tranquillo, i tratti ancora morbidi. Per il battesimo seguo la cerimonia in chiesa, le emozioni dei genitori, il momento del Sacramento, e poi la festa con la famiglia. In studio creo un ambiente caldo e sicuro, adatto ai bambini piccolissimi, con luce naturale o artificiale morbida.',
