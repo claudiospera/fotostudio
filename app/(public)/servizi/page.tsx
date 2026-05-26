@@ -19,8 +19,8 @@ const SERVIZI = [
   { n: '02', nome: 'Battesimi, Compleanni e Feste', loc: 'Studio · Esterno',    href: '/servizi/battesimi-prima-infanzia', cover: `${R2}/images/servizi/battesimi/cover.jpg` },
   { n: '03', nome: 'Comunioni & Cresime',        loc: 'Chiesa · Ricevimento',    href: '/servizi/comunioni-cresime',        cover: null },
   { n: '04', nome: 'Maternità',                  loc: 'Studio · Natura',         href: '/servizi/maternita-gravidanza',     cover: `${R2}/images/servizi/maternita/DSCF0224.jpg` },
-  { n: '05', nome: '18 Anni',                    loc: 'Location · Esterno',      href: '/servizi/compleanni-feste',         cover: null },
-  { n: '06', nome: 'Ritratti & Famiglie',        loc: 'Studio · Esterno',        href: '/servizi/ritratti-famiglie',        cover: null },
+  { n: '05', nome: '18 Anni',                    loc: 'Location · Esterno',      href: '/servizi/compleanni-feste',         cover: `${R2}/images/servizi/18-anni/gallery/DSCF1721.jpg` },
+  { n: '06', nome: 'Ritratti & Famiglie',        loc: 'Studio · Esterno',        href: '/servizi/ritratti-famiglie',        cover: `${R2}/images/servizi/ritratti-famiglie/gallery/DSCF8132-21.jpg` },
 ]
 
 export default function ServiziPage() {

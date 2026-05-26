@@ -2,7 +2,6 @@
 // Pagina /chi-sono — bio editoriale di Claudio Spera
 
 import Link from 'next/link'
-import Image from 'next/image'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -115,12 +114,11 @@ export default function ChiSonoPage() {
           alignSelf: 'stretch',
           maxHeight: '75vh',
         }}>
-          <Image
-            src="/images/claudio/hf_20260507_143616_e5667b0b-64ac-4f5a-9147-2342e8199862.png"
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="https://pub-53356d483eb74822990977c0e5c21f6c.r2.dev/images/claudio/claudio-spera-portrait.jpg"
             alt="Claudio Spera — Fotografo"
-            fill
-            style={{ objectFit: 'cover', objectPosition: 'center top' }}
-            priority
+            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }}
           />
         </div>
       </section>
@@ -234,6 +232,50 @@ export default function ChiSonoPage() {
             }}>{label}</div>
           </div>
         ))}
+      </section>
+
+      {/* ── DOVE SIAMO ── */}
+      <section style={{
+        borderTop: `1px solid ${BORDER}`,
+        padding: 'clamp(64px,8vw,100px) clamp(24px,7vw,96px)',
+        display: 'grid',
+        gridTemplateColumns: '1fr 2fr',
+        gap: 'clamp(40px,6vw,96px)',
+      }}
+      className="chi-bio"
+      >
+        <div>
+          <div style={{
+            fontFamily: "'Jost', sans-serif", fontWeight: 300,
+            fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase',
+            color: INK, opacity: 0.5, marginBottom: 12,
+          }}>Lo studio</div>
+          <div style={{
+            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            fontStyle: 'italic', fontWeight: 400,
+            fontSize: 'clamp(22px,2.4vw,30px)',
+            color: INK, lineHeight: 1.4, marginBottom: 16,
+          }}>Mirabella Eclano,<br />Avellino</div>
+          <div style={{
+            fontFamily: "'Jost', sans-serif", fontWeight: 300,
+            fontSize: 'clamp(12px,1.1vw,14px)',
+            color: INK, opacity: 0.55, lineHeight: 1.7,
+          }}>
+            Raggiungo i clienti in tutta la Campania e sono disponibile per trasferte su tutta Italia.
+          </div>
+        </div>
+
+        <div style={{ overflow: 'hidden', borderRadius: 4 }}>
+          <iframe
+            src="https://maps.google.com/maps?q=Studio+Fotografico+Claudio+Spera+Mirabella+Eclano+AV&output=embed"
+            width="100%"
+            height="380"
+            style={{ border: 'none', display: 'block', filter: 'grayscale(0.2) contrast(0.95)' }}
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            title="Studio Fotografico Claudio Spera"
+          />
+        </div>
       </section>
 
       {/* ── CTA ── */}

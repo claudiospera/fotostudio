@@ -15,6 +15,11 @@ interface Categoria {
   cover?: string
 }
 
+interface Reel {
+  url: string
+  cover?: string
+}
+
 interface ServizioData {
   nome: string
   location: string
@@ -24,6 +29,7 @@ interface ServizioData {
   cover?: string
   gallery?: string[]
   categorie?: Categoria[]
+  reels?: Reel[]
 }
 
 const SERVIZI: Record<string, ServizioData> = {
@@ -121,8 +127,50 @@ const SERVIZI: Record<string, ServizioData> = {
   'compleanni-feste': {
     nome: '18 Anni',
     location: 'Location · Esterno',
+    cover: `${R2}/images/servizi/18-anni/gallery/DSCF2025.jpg`,
+    gallery: [
+      'DSCF0008', 'DSCF0013', 'DSCF0038', 'DSCF0094',
+      'DSCF0143', 'DSCF0170', 'DSCF0213', 'DSCF0436',
+      'DSCF0507', 'DSCF1639', 'DSCF1663', 'DSCF1675',
+      'DSCF1700', 'DSCF1721', 'DSCF1751', 'DSCF1794',
+      'DSCF1804', 'DSCF1846', 'DSCF1866', 'DSCF1889',
+      'DSCF1939', 'DSCF2025', 'DSCF2035', 'DSCF3469',
+      'DSCF3488', 'DSCF5002', 'DSCF5041', 'DSCF5232',
+      'DSCF5272', 'DSCF5829', 'DSCF5865',
+    ].map(n => `${R2}/images/servizi/18-anni/gallery/${n}.jpg`).concat([
+      `${R2}/images/servizi/18-anni/gallery/DSCF5954-68.jpg`,
+      `${R2}/images/servizi/18-anni/gallery/DSCF5969-76.jpg`,
+      `${R2}/images/servizi/18-anni/gallery/DSCF5986-89.jpg`,
+      `${R2}/images/servizi/18-anni/gallery/DSCF6013-104.jpg`,
+      `${R2}/images/servizi/18-anni/gallery/DSCF6022.jpg`,
+      `${R2}/images/servizi/18-anni/gallery/DSCF6054.jpg`,
+      `${R2}/images/servizi/18-anni/gallery/DSCF6054bn.jpg`,
+      `${R2}/images/servizi/18-anni/gallery/DSCF6054bn2.jpg`,
+      `${R2}/images/servizi/18-anni/gallery/DSCF6060-128.jpg`,
+      `${R2}/images/servizi/18-anni/gallery/DSCF6068-130.jpg`,
+      `${R2}/images/servizi/18-anni/gallery/DSCF6847.jpg`,
+      `${R2}/images/servizi/18-anni/gallery/DSCF6880.jpg`,
+      `${R2}/images/servizi/18-anni/gallery/DSCF6910.jpg`,
+      `${R2}/images/servizi/18-anni/gallery/DSCF6983-73.jpg`,
+      `${R2}/images/servizi/18-anni/gallery/DSCF7044-140.jpg`,
+      `${R2}/images/servizi/18-anni/gallery/DSCF7386.jpg`,
+      `${R2}/images/servizi/18-anni/gallery/DSCF7393.jpg`,
+      `${R2}/images/servizi/18-anni/gallery/DSCF8671.jpg`,
+      `${R2}/images/servizi/18-anni/gallery/DSCF8855.jpg`,
+      `${R2}/images/servizi/18-anni/gallery/DSCF8952.jpg`,
+      `${R2}/images/servizi/18-anni/gallery/DSCF9415.jpg`,
+      `${R2}/images/servizi/18-anni/gallery/DSCF9428.jpg`,
+      `${R2}/images/servizi/18-anni/gallery/DSCF9432.jpg`,
+      `${R2}/images/servizi/18-anni/gallery/DSCF9451.jpg`,
+      `${R2}/images/servizi/18-anni/gallery/DSCF9509.jpg`,
+      `${R2}/images/servizi/18-anni/gallery/DSCF9565.jpg`,
+    ]),
+    reels: [
+      { url: 'https://www.instagram.com/reel/DYmxlTOocFH/', cover: `${R2}/images/servizi/18-anni/gallery/DSCF5272.jpg` },
+      { url: 'https://www.instagram.com/reel/DUOeAZtjccF/', cover: `${R2}/images/servizi/18-anni/gallery/DSCF5954-68.jpg` },
+    ],
     quote: 'La festa e un\'emozione collettiva. Il compito del fotografo e non farla sfuggire.',
-    descrizione: 'Ogni compleanno e una storia a se: un primo anno di vita, un diciottesimo spensierato, un cinquantesimo pieno di gratitudine. Arrivo prima che inizino gli ospiti, seguo l\'allestimento, il taglio della torta, le risate, i brindisi. Mi muovo in modo discreto tra le persone, senza organizzare pose artificiali, per restituire la vera atmosfera della giornata. Sono disponibile per feste private, eventi in location, garden party e ricevimenti.',
+    descrizione: 'Ogni compleanno e una storia a se: un primo anno di vita, un diciottesimo spensierato, un cinquantesimo pieno di gratitudine. Arrivo prima che inizino gli ospiti, seguo l\'allestimento, il taglio della torta, le risate, i brindisi. La mia presenza è discreta, il mio sguardo è ovunque: ogni dettaglio, ogni emozione, ogni istante che vale la pena fermare. Sono disponibile per feste private, eventi in location, garden party e ricevimenti.',
     include: [
       'Copertura dell\'intero evento',
       'Servizio pre-evento (allestimento e preparativi)',
@@ -139,6 +187,15 @@ const SERVIZI: Record<string, ServizioData> = {
   'ritratti-famiglie': {
     nome: 'Ritratti & Famiglie',
     location: 'Studio · Esterno',
+    cover: `${R2}/images/servizi/ritratti-famiglie/gallery/DSCF1362-18.jpg`,
+    gallery: [
+      'DSCF1233-1', 'DSCF7751-3', 'DSCF1246-2', 'DSCF7820-5',
+      'DSCF1254-4', 'DSCF7825-6', 'DSCF7875-7', 'DSCF7892-8',
+      'DSCF7902-9', 'DSCF7907-10', 'DSCF1297-11', 'DSCF1315-12',
+      'DSCF1317-13', 'DSCF1332-14', 'DSCF7996-15', 'DSCF8010-16',
+      'DSCF8013-17', 'DSCF1362-18', 'DSCF8061-19', 'DSCF8072-20',
+      'DSCF8132-21', 'DSCF8186-22', 'DSCF8190-23', 'DSCF8226-24',
+    ].map(n => `${R2}/images/servizi/ritratti-famiglie/gallery/${n}.jpg`),
     quote: 'Un ritratto onesto dice piu di mille parole. Una fotografia di famiglia racconta chi siamo.',
     descrizione: 'Il ritratto e l\'essenza della fotografia: guardare una persona negli occhi e trovare il momento in cui si lascia vedere davvero. Lavoro sia in studio, con luce controllata e sfondi neutri, sia in esterno, sfruttando la luce naturale e le location significative per il cliente. Per le famiglie propongo sessioni informali, in cui i bambini giocano e gli adulti interagiscono liberamente, per fotografie spontanee e autentiche.',
     include: [
@@ -347,6 +404,91 @@ export default async function ServizioPage({ params }: { params: Promise<{ slug:
       {/* ── GALLERIA COMPLETA ─────────────────────────────────────────────── */}
       {servizio.gallery && <GalleryLightbox photos={servizio.gallery} />}
 
+      {/* ── MOMENTI IN VERTICALE (REELS) ──────────────────────────────────── */}
+      {servizio.reels && servizio.reels.length > 0 && (
+        <section style={{
+          borderTop: `1px solid ${BORDER}`,
+          padding: 'clamp(64px,8vw,112px) clamp(24px,5vw,64px)',
+          display: 'flex', flexDirection: 'column', gap: 'clamp(32px,4vw,56px)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20 }}>
+            <div>
+              <div style={{
+                fontFamily: "'Jost', sans-serif", fontWeight: 300,
+                fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase',
+                color: INK, opacity: 0.5, marginBottom: 8,
+              }}>Reel &amp; Stories</div>
+              <div style={{
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontStyle: 'italic', fontWeight: 400,
+                fontSize: 'clamp(32px,4vw,52px)', color: INK, lineHeight: 1.1,
+              }}>Momenti in verticale</div>
+            </div>
+            <a
+              href="https://www.instagram.com/claudiosperafotografo/"
+              target="_blank" rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 10,
+                fontFamily: "'Jost', sans-serif", fontWeight: 300,
+                fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase',
+                color: INK, textDecoration: 'none', opacity: 0.7,
+                border: `1px solid ${BORDER}`, padding: '12px 24px',
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+                <circle cx="12" cy="12" r="4"/>
+                <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
+              </svg>
+              @claudiosperafotografo
+            </a>
+          </div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: `repeat(${Math.min(servizio.reels.length, 4)}, 1fr)`,
+            gap: 'clamp(10px,1.5vw,20px)',
+          }} className="reel-grid-sv">
+            {servizio.reels.map((reel, i) => (
+              <a
+                key={i}
+                href={reel.url}
+                target="_blank" rel="noopener noreferrer"
+                style={{
+                  display: 'block', textDecoration: 'none',
+                  aspectRatio: '9/16',
+                  background: reel.cover ? `url(${reel.cover}) center/cover no-repeat` : 'rgba(26,22,18,0.06)',
+                  position: 'relative', overflow: 'hidden',
+                }}
+                className="reel-card-sv"
+              >
+                <div className="reel-overlay-sv" style={{
+                  position: 'absolute', inset: 0,
+                  background: 'rgba(26,22,18,0.45)',
+                  display: 'flex', flexDirection: 'column',
+                  alignItems: 'center', justifyContent: 'center', gap: 10,
+                  opacity: 0, transition: 'opacity .25s',
+                }}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
+                  <span style={{
+                    fontFamily: "'Jost', sans-serif", fontWeight: 300,
+                    fontSize: 8, letterSpacing: '0.2em', textTransform: 'uppercase',
+                    color: '#fff',
+                  }}>Vedi su Instagram</span>
+                </div>
+                <div style={{ position: 'absolute', bottom: 12, left: 12 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(26,22,18,0.4)" strokeWidth="1.5">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                  </svg>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* ── IL SERVIZIO COMPRENDE ──────────────────────────────────────────── */}
       <section style={{
         padding: 'clamp(64px,8vw,100px) clamp(24px,5vw,64px)',
@@ -445,7 +587,9 @@ export default async function ServizioPage({ params }: { params: Promise<{ slug:
           .pub-includes { grid-template-columns: 1fr !important; }
           .pub-gallery  { grid-template-columns: 1fr !important; grid-template-rows: auto !important; }
           .pub-gallery > div:first-child { grid-row: auto !important; }
+          .reel-grid-sv { grid-template-columns: repeat(2, 1fr) !important; }
         }
+        .reel-card-sv:hover .reel-overlay-sv { opacity: 1 !important; }
       `}</style>
     </div>
   )
