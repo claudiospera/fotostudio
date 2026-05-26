@@ -74,7 +74,7 @@ async function sendEmail(order: OrderNotification) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: 'Fotostudio Shop <noreply@storiedaraccontare.it>',
+      from: 'Fotostudio Shop <onboarding@resend.dev>',
       to,
       subject: `🛒 Nuovo ordine #${order.orderId} — ${order.customerName}`,
       html: `
