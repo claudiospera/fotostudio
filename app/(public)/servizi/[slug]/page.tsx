@@ -64,8 +64,7 @@ const SERVIZI: Record<string, ServizioData> = {
     descrizione: 'I primi mesi di vita scorrono in fretta. Fotografare un neonato significa fermare un tempo che non tornera: la piccola mano che stringe un dito, il respiro tranquillo, i tratti ancora morbidi. Per il battesimo seguo la cerimonia in chiesa, le emozioni dei genitori, il momento del Sacramento, e poi la festa con la famiglia. In studio creo un ambiente caldo e sicuro, adatto ai bambini piccolissimi, con luce naturale o artificiale morbida.',
     include: [
       'Sessione in studio o esterno',
-      'Servizio battesimo completo (chiesa + ricevimento)',
-      'Newborn session (0-20 giorni)',
+      'Servizio battesimo completo (chiesa + casa + ricevimento)',
       'Sessione bambini 0-12 mesi',
       'Gallery digitale ad alta risoluzione',
       'Selezione e post-produzione delle immagini',
