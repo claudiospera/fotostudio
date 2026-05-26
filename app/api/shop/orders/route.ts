@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sql } from '@/lib/db'
 import Stripe from 'stripe'
+import { notifyNewOrder } from '@/lib/notify-order'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
@@ -34,8 +35,9 @@ export async function POST(req: NextRequest) {
   `
   const orderId = rows[0].id
 
-  // Pagamento allo studio → conferma diretta
+  // Pagamento allo studio → conferma diretta + notifica immediata
   if (paymentMethod === 'studio') {
+    await notifyNewOrder({ orderId, customerName: customer.name, customerEmail: customer.email, customerPhone: customer.phone, items, total, paymentMethod })
     return NextResponse.json({ orderId })
   }
 

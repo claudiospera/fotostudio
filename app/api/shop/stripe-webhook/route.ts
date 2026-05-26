@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { sql } from '@/lib/db'
+import { notifyNewOrder } from '@/lib/notify-order'
 
 export async function POST(req: NextRequest) {
   const stripeKey = process.env.STRIPE_SECRET_KEY
@@ -29,6 +30,20 @@ export async function POST(req: NextRequest) {
         SET payment_status = 'paid', status = 'confirmed', updated_at = now()
         WHERE id = ${orderId}
       `
+      // Recupera i dati ordine per la notifica
+      const rows = await sql`SELECT * FROM shop_orders WHERE id = ${orderId}`
+      const order = rows[0]
+      if (order) {
+        await notifyNewOrder({
+          orderId,
+          customerName: order.customer_name,
+          customerEmail: order.customer_email,
+          customerPhone: order.customer_phone,
+          items: order.items,
+          total: order.total,
+          paymentMethod: 'stripe',
+        })
+      }
     }
   }
 
