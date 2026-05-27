@@ -9,6 +9,7 @@ const isPublicRoute = createRouteMatcher([
   '/api/public(.*)',
   '/api/preventivi-pubblici/(.*)',
   '/api/preventivo-sessioni/(.*)',
+  '/api/scheda-pub/(.*)',
   '/api/shop/orders',
   '/api/shop/stripe-webhook',
   '/api/shop/presign-photo',
