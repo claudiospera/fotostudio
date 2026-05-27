@@ -21,6 +21,7 @@ const SERVIZI = [
   { n: '04', nome: 'Maternità',                  loc: 'Studio · Natura',         href: '/servizi/maternita-gravidanza',     cover: `${R2}/images/servizi/maternita/DSCF0224.jpg` },
   { n: '05', nome: '18 Anni',                    loc: 'Location · Esterno',      href: '/servizi/compleanni-feste',         cover: `${R2}/images/servizi/18-anni/gallery/DSCF1721.jpg` },
   { n: '06', nome: 'Ritratti & Famiglie',        loc: 'Studio · Esterno',        href: '/servizi/ritratti-famiglie',        cover: `${R2}/images/servizi/ritratti-famiglie/gallery/DSCF8132-21.jpg` },
+  { n: '07', nome: 'Shooting Studio',            loc: 'Natale · Carnevale · Bambini', href: '/servizi/shooting-studio',      cover: null },
 ]
 
 export default function ServiziPage() {
