@@ -1,9 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
-import { ClienteCard } from './ClienteCard'
-import type { Cliente, Profile } from '@/lib/types'
+import { ClienteCardFull } from './ClienteCardFull'
+import type { Cliente } from '@/lib/types'
 
 interface ClienteCardModalProps {
   clienti: Cliente[]
@@ -16,15 +15,6 @@ interface ClienteCardModalProps {
 export const ClienteCardModal = ({
   clienti, dateLabel, onClose, onModifica, onElimina,
 }: ClienteCardModalProps) => {
-  const [profile, setProfile] = useState<Partial<Profile>>({})
-
-  useEffect(() => {
-    fetch('/api/profile')
-      .then(r => r.ok ? r.json() : {})
-      .then(setProfile)
-      .catch(() => {})
-  }, [])
-
   if (clienti.length === 0) return null
 
   return (
@@ -79,12 +69,11 @@ export const ClienteCardModal = ({
           gap: 16,
         }}>
           {clienti.map(c => (
-            <ClienteCard
+            <ClienteCardFull
               key={c.id}
               cliente={c}
-              profile={profile}
-              onModifica={onModifica}
-              onElimina={onElimina}
+              onEdit={() => onModifica(c)}
+              onDelete={() => onElimina(c)}
             />
           ))}
         </div>
