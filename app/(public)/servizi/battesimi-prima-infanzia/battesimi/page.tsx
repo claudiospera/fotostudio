@@ -19,6 +19,8 @@ const PHOTOS = [
   'DSCF3906.jpg',    'DSCF4967.jpg',    'DSCF4989.jpg',    'DSCF4994.jpg',
   'DSCF4071.jpg',    'DSCF4072.jpg',    'DSCF4074.jpg',
   'DSCF2289.jpg',    'DSCF2326.jpg',    'DSCF2349.jpg',    'DSCF2365.jpg',
+  '_DSF3520.jpg',    '_DSF3494.jpg',    'DSCF8123.jpg',    '_DSF3382.jpg',
+  '_DSF8873-Modifica.jpg',
 ].map(n => `${BASE}/${n}`)
 
 export default function BattesimiPage() {
