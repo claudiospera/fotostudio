@@ -46,7 +46,6 @@ function OrdineConfermatoInner() {
           <p style={{ fontWeight: 700, fontSize: 14, color: 'var(--n-tx)', margin: '0 0 8px' }}>📍 Come funziona il ritiro</p>
           <ul style={{ margin: 0, padding: '0 0 0 18px', fontSize: 13, color: 'var(--n-t2)', lineHeight: 1.8 }}>
             <li>Ti contatteremo per confermare la data di ritiro</li>
-            <li>Porta con te il numero d&apos;ordine</li>
             <li>Pagamento in contanti o POS al momento del ritiro</li>
           </ul>
         </div>
