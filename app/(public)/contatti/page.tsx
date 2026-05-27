@@ -116,6 +116,7 @@ export default function ContattiPage() {
   const [dataEvento,    setDataEvento]    = useState('')
   const [location,      setLocation]      = useState('')
   const [tipiSelezionati, setTipiSelezionati] = useState<string[]>([])
+  const [nomiBambini,   setNomiBambini]   = useState<string[]>([''])
   const [durata,        setDurata]        = useState('')
   const [video,         setVideo]         = useState('')
   const [comeHaTrovato, setComeHaTrovato] = useState('')
@@ -143,6 +144,7 @@ export default function ContattiPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nome, nomePartner: nomePartner || undefined,
+          nomiBambini: nomiBambini.filter(Boolean).length ? nomiBambini.filter(Boolean) : undefined,
           email, telefono: telefono || undefined,
           dataEvento: dataEvento || undefined,
           location: location || undefined,
@@ -362,6 +364,59 @@ export default function ContattiPage() {
                   ))}
                 </div>
               </div>
+
+              {/* Nomi bambini — visibile solo per servizi con bambini */}
+              {tipiSelezionati.some(t => ['Battesimo & Prima infanzia', 'Shooting Studio', 'Compleanno & Festa', 'Comunione & Cresima'].includes(t)) && (
+                <div style={{ marginBottom: 28 }}>
+                  <FieldLabel>Nome del bambino / della bambina</FieldLabel>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {nomiBambini.map((nb, idx) => (
+                      <div key={idx} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                        <input
+                          type="text"
+                          placeholder={idx === 0 ? 'Es. Sofia' : `Bambino ${idx + 1}`}
+                          value={nb}
+                          onChange={e => {
+                            const arr = [...nomiBambini]
+                            arr[idx] = e.target.value
+                            setNomiBambini(arr)
+                          }}
+                          style={{
+                            flex: 1, padding: '14px 16px', background: 'transparent',
+                            border: `1px solid ${INPUT_BORDER}`, outline: 'none',
+                            fontFamily: "'Jost', sans-serif", fontWeight: 300,
+                            fontSize: '14px', color: INK,
+                          }}
+                        />
+                        {nomiBambini.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => setNomiBambini(arr => arr.filter((_, i) => i !== idx))}
+                            style={{
+                              background: 'none', border: `1px solid ${INPUT_BORDER}`,
+                              color: INK, opacity: 0.45, cursor: 'pointer',
+                              width: 36, height: 36, fontSize: 16, flexShrink: 0,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            }}
+                          >×</button>
+                        )}
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setNomiBambini(arr => [...arr, ''])}
+                      style={{
+                        alignSelf: 'flex-start',
+                        background: 'none', border: `1px solid ${INPUT_BORDER}`,
+                        color: INK, opacity: 0.55, cursor: 'pointer',
+                        padding: '7px 16px',
+                        fontFamily: "'Jost', sans-serif", fontWeight: 300,
+                        fontSize: '10px', letterSpacing: '0.14em', textTransform: 'uppercase',
+                      }}
+                    >+ Aggiungi bambino</button>
+                  </div>
+                </div>
+              )}
 
               {/* Durata */}
               <div style={{ marginBottom: 36 }}>
