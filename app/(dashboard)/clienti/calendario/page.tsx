@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Menu, Calendar, Copy, RefreshCw, Check } from 'lucide-react'
 import { useUIStore } from '@/store/ui'
 import type { Cliente, CategoriaCliente } from '@/lib/types'
+import { ClienteCardFull } from '@/components/clienti/ClienteCardFull'
 
 const CAT_COLORS: Record<CategoriaCliente, string> = {
   'Matrimonio':             '#7a4a6e',
@@ -362,84 +363,35 @@ export default function CalendarioClientiPage() {
         {/* PANNELLO LATERALE — eventi del giorno selezionato */}
         {selected && (
           <div style={{
-            width: 280,
+            width: 340,
             borderLeft: '1px solid var(--b1)',
-            padding: '20px 18px',
+            padding: '20px 16px',
             overflowY: 'auto',
             flexShrink: 0,
           }}>
-            <h3 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 15, margin: '0 0 14px', color: 'var(--tx)' }}>
-              {selected.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}
-            </h3>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <h3 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 15, margin: 0, color: 'var(--tx)' }}>
+                {selected.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}
+              </h3>
+              <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: 'var(--t3)', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: 4 }}>×</button>
+            </div>
 
             {selectedClienti.length === 0 ? (
               <p style={{ fontSize: 12, color: 'var(--t3)', fontStyle: 'italic' }}>Nessun evento in questa data.</p>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {selectedClienti.map(c => {
-                  const col = CAT_COLORS[c.categoria] ?? '#8ec9b0'
-                  const emoji = CAT_EMOJI[c.categoria] ?? '📋'
-                  const residuo = Number(c.importo_totale ?? 0) - Number(c.acconto ?? 0)
-                  return (
-                    <div
-                      key={c.id}
-                      style={{
-                        background: 'var(--s1)',
-                        border: `1px solid ${col}44`,
-                        borderLeft: `3px solid ${col}`,
-                        borderRadius: 'var(--r2)',
-                        padding: '12px 12px',
-                        cursor: 'pointer',
-                        transition: 'background 0.12s',
-                      }}
-                      onClick={() => router.push(`/clienti?apri=${c.id}`)}
-                      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--s2)' }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--s1)' }}
-                    >
-                      <div style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
-                        {c.nome1}{c.nome2 ? ` e ${c.nome2}` : ''}
-                      </div>
-                      <div style={{ fontSize: 11, color: col, marginBottom: 6 }}>
-                        {emoji} {c.categoria}
-                      </div>
-                      {c.luogo_evento && (
-                        <div style={{ fontSize: 11, color: 'var(--t3)', marginBottom: 4 }}>
-                          📍 {c.luogo_evento}
-                        </div>
-                      )}
-                      {(c.tel1 || c.whatsapp1 || c.genitore1_tel) && (
-                        <div style={{ fontSize: 11, color: 'var(--t2)', marginBottom: 4 }}>
-                          📞 {c.tel1 || c.whatsapp1 || c.genitore1_tel}
-                        </div>
-                      )}
-                      {(Number(c.importo_totale) > 0 || Number(c.acconto) > 0) && (
-                        <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-                          {Number(c.acconto) > 0 && (
-                            <span style={{ fontSize: 10, color: 'var(--ac)', background: 'rgba(142,201,176,0.1)', border: '1px solid rgba(142,201,176,0.2)', borderRadius: 4, padding: '2px 6px' }}>
-                              Acconto: {Number(c.acconto).toLocaleString('it-IT')} €
-                            </span>
-                          )}
-                          {residuo > 0 && (
-                            <span style={{ fontSize: 10, color: 'var(--amber)', background: 'rgba(201,160,90,0.1)', border: '1px solid rgba(201,160,90,0.2)', borderRadius: 4, padding: '2px 6px' }}>
-                              Saldo: {residuo.toLocaleString('it-IT')} €
-                            </span>
-                          )}
-                        </div>
-                      )}
-                      <button
-                        onClick={e => { e.stopPropagation(); window.open(`/api/scheda-pub/${c.id}`, '_blank') }}
-                        style={{
-                          marginTop: 8, width: '100%', padding: '5px 0',
-                          borderRadius: 'var(--r2)', border: '1px solid rgba(142,201,176,0.2)',
-                          background: 'transparent', color: 'var(--ac)',
-                          fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                        }}
-                      >
-                        📄 Scheda cliente
-                      </button>
-                    </div>
-                  )
-                })}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {selectedClienti.map(c => (
+                  <ClienteCardFull
+                    key={c.id}
+                    cliente={c}
+                    onEdit={() => router.push(`/clienti?apri=${c.id}`)}
+                    onDelete={async () => {
+                      if (!confirm(`Eliminare ${c.nome1}?`)) return
+                      await fetch(`/api/clienti/${c.id}`, { method: 'DELETE' })
+                      fetchClienti()
+                    }}
+                  />
+                ))}
               </div>
             )}
           </div>
