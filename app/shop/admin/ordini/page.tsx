@@ -296,7 +296,7 @@ export default function AdminOrdiniPage() {
                               Email
                             </a>
                             <a
-                              href={`https://wa.me/39${order.customer_phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Ciao ${order.customer_name}! 🎉\n\nIl tuo ordine da Storie da Raccontare è PRONTO! ✅\n\nPuoi ritirarlo in studio quando vuoi.\n\nTi aspettiamo! 📸`)}`}
+                              href={`https://wa.me/39${order.customer_phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Ciao ${order.customer_name}!\n\nIl tuo ordine da Storie da Raccontare e' PRONTO!\n\nPuoi ritirarlo in studio quando vuoi.\n\nTi aspettiamo!`)}`}
                               target="_blank" rel="noreferrer"
                               style={{
                                 display: 'flex', alignItems: 'center', gap: 6,
