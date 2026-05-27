@@ -17,7 +17,6 @@ const gestionaleItems = [
   { href: '/dashboard',                label: 'Dashboard',          icon: LayoutGrid  },
   { href: '/gallerie',                 label: 'Gallerie',            icon: Images      },
   { href: '/clienti',                  label: 'Clienti',             icon: Users       },
-  { href: '/clienti/calendario',        label: 'Calendario clienti',  icon: CalendarDays },
   { href: '/preventivi',               label: 'Contratti',           icon: FileText    },
   { href: '/statistiche',              label: 'Statistiche',         icon: BarChart2   },
 ]
@@ -169,8 +168,9 @@ export const Sidebar = () => {
             </button>
             {appuntamentiOpen && (
               <div className="ml-4 pl-3 border-l border-[rgba(255,255,255,0.07)] mb-1">
-                <NavLink href="/appuntamenti/calendari"    label="Calendari"    icon={CalendarDays}  />
-                <NavLink href="/appuntamenti/prenotazioni" label="Prenotazioni" icon={ClipboardList} />
+                <NavLink href="/clienti/calendario"        label="Calendario clienti" icon={CalendarDays}  />
+                <NavLink href="/appuntamenti/calendari"    label="Calendari booking"  icon={CalendarCheck} />
+                <NavLink href="/appuntamenti/prenotazioni" label="Prenotazioni"       icon={ClipboardList} />
               </div>
             )}
 
