@@ -259,9 +259,15 @@ export default function StampeClassichePage() {
 
   const activePhoto = photos.find(p => p.id === activeId) ?? null
   const totalPrints = photos.reduce((s, p) => s + p.copies, 0)
+  // Calcola copie totali per variante per applicare lo scaglione corretto
+  const copiesPerVariantPreview: Record<string, number> = photos.reduce((acc, p) => {
+    acc[p.variantId] = (acc[p.variantId] ?? 0) + p.copies
+    return acc
+  }, {} as Record<string, number>)
   const totalPrice  = photos.reduce((s, p) => {
     const pv = VARIANTS.find(v => v.id === p.variantId) ?? VARIANTS[0]
-    return s + p.copies * getPriceForQuantity(pv.price, pv.priceBreaks, p.copies)
+    const totalCopies = copiesPerVariantPreview[p.variantId] ?? p.copies
+    return s + p.copies * getPriceForQuantity(pv.price, pv.priceBreaks, totalCopies)
   }, 0)
 
   const PREVIEW_BIG = 260
@@ -344,9 +350,16 @@ export default function StampeClassichePage() {
     if (isUploading || isRendering) return
     setIsRendering(true)
     try {
+      // Calcola il totale copie per variante per applicare lo scaglione corretto
+      const copiesPerVariant: Record<string, number> = {}
+      for (const p of photos) {
+        copiesPerVariant[p.variantId] = (copiesPerVariant[p.variantId] ?? 0) + p.copies
+      }
+
       for (const p of photos) {
         const pv = VARIANTS.find(v => v.id === p.variantId) ?? VARIANTS[0]
-        const price = getPriceForQuantity(pv.price, pv.priceBreaks, p.copies)
+        const totalCopiesForVariant = copiesPerVariant[p.variantId] ?? p.copies
+        const price = getPriceForQuantity(pv.price, pv.priceBreaks, totalCopiesForVariant)
 
         const imageUrl = p.uploadedUrl || p.url
         const filename = p.name
