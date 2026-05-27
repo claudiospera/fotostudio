@@ -19,10 +19,10 @@ const INPUT_BORDER = 'rgba(26,22,18,0.22)'
 const TIPI_EVENTO = [
   'Matrimonio', 'Promessa di matrimonio', 'Ritratti',
   'Battesimo & Prima infanzia', 'Comunione & Cresima',
-  'Maternità', 'Compleanno & Festa', 'Altro',
+  'Maternità', 'Compleanno & Festa', 'Shooting Studio', 'Altro',
 ]
 
-const DURATE = ['1 ora', '2 ore', '4 ore', '6 ore', '8 ore', '10/12 ore']
+const DURATE = ['30 minuti', '1 ora', '2 ore', '4 ore', '6 ore', '8 ore', '10/12 ore']
 
 const VIDEO_OPTIONS = ['Sì, sono interessato/a', 'No, grazie', 'Non so ancora']
 
