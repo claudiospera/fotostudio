@@ -106,6 +106,7 @@ body {
 .footer-brand { font-family:'Playfair Display',serif; font-size:13px; font-weight:600; color:#D8E8D6; letter-spacing:0.02em; }
 .footer-date { font-size:10px; color:#9ab894; }
 @media print {
+  * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
   body { background:#F2EDE6; }
   .page { max-width:100%; }
   @page { margin:10mm 10mm; size:A4; }
