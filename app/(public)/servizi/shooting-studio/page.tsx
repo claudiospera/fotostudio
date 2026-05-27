@@ -10,7 +10,8 @@ const R2     = 'https://pub-53356d483eb74822990977c0e5c21f6c.r2.dev'
 const BASE   = `${R2}/images/servizi/shooting-studio/gallery`
 
 const PHOTOS: string[] = [
-  // Le foto verranno aggiunte qui
+  '40x55.jpg',
+  'DSCF8287.jpg',
 ].map(n => `${BASE}/${n}`)
 
 const TEMI = [
