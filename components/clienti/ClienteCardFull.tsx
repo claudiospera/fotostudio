@@ -218,7 +218,7 @@ export function ClienteCardFull({ cliente: c, onEdit, onDelete }: {
             onMouseLeave={e => { if (!disabled) (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
           >{label}</button>
         ))}
-        <button onClick={() => window.open(`/api/scheda-pdf/${c.id}`, '_blank')} style={{
+        <button onClick={() => window.open(`/api/scheda-pub/${c.id}`, '_blank')} style={{
           padding: '10px 0', fontSize: 12, fontWeight: 600, background: 'transparent', color: 'var(--ac)', border: 'none',
           borderTop: '1px solid rgba(255,255,255,0.06)', borderRight: '1px solid rgba(255,255,255,0.06)',
           cursor: 'pointer', transition: 'background 0.12s',

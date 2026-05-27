@@ -296,7 +296,15 @@ export default function CalendarioClientiPage() {
                 return (
                   <div
                     key={i}
-                    onClick={() => valid && setSelected(new Date(year, month, day))}
+                    onClick={() => {
+                      if (!valid) return
+                      if (events.length === 0) {
+                        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+                        router.push(`/clienti?nuovo=1&data=${dateStr}`)
+                      } else {
+                        setSelected(new Date(year, month, day))
+                      }
+                    }}
                     style={{
                       background: selCell ? 'rgba(142,201,176,0.12)' : 'var(--s1)',
                       border: selCell

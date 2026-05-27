@@ -147,6 +147,7 @@ function ClientiContent() {
   const [showForm, setShowForm]   = useState(false)
   const [editing, setEditing]     = useState<Cliente | null>(null)
   const [deleting, setDeleting]   = useState<string | null>(null)
+  const [prefilledDate, setPrefilledDate] = useState<string | undefined>()
 
   const fetchClienti = useCallback(async () => {
     setLoading(true)
@@ -169,10 +170,12 @@ function ClientiContent() {
     }
   }, [searchParams, clienti, loading, router])
 
-  // Auto-open new client form (?nuovo=1)
+  // Auto-open new client form (?nuovo=1&data=YYYY-MM-DD)
   useEffect(() => {
     if (searchParams.get('nuovo') !== '1') return
+    const data = searchParams.get('data') ?? undefined
     setEditing(null)
+    setPrefilledDate(data)
     setShowForm(true)
     router.replace('/clienti')
   }, [searchParams, router])
@@ -386,8 +389,9 @@ function ClientiContent() {
       {showForm && (
         <ClienteForm
           initial={editing ?? undefined}
+          initialDate={editing ? undefined : prefilledDate}
           onSave={handleSave}
-          onClose={() => { setShowForm(false); setEditing(null) }}
+          onClose={() => { setShowForm(false); setEditing(null); setPrefilledDate(undefined) }}
         />
       )}
 
@@ -789,13 +793,14 @@ const CATEGORIA_OPTIONS: { value: CategoriaCliente; label: string }[] = [
   { value: 'Altra Cerimonia',        label: '🎊 Altra Cerimonia'        },
 ]
 
-function ClienteForm({ initial, onSave, onClose }: {
+function ClienteForm({ initial, initialDate, onSave, onClose }: {
   initial?: Cliente
+  initialDate?: string
   onSave: (data: FormData) => void
   onClose: () => void
 }) {
   const [form, setForm] = useState<FormData>(() => {
-    if (!initial) return { ...EMPTY_FORM }
+    if (!initial) return { ...EMPTY_FORM, data_evento: initialDate }
     const extra = initial.extra ?? {}
     // Migrazione: se c'è un acconto singolo ma nessuna lista, inizializza la lista
     if (!extra.acconti && Number(initial.acconto) > 0) {
