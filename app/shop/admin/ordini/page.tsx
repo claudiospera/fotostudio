@@ -140,51 +140,44 @@ export default function AdminOrdiniPage() {
               }}>
                 {/* Riga principale */}
                 <div
-                  style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 20px', cursor: 'pointer' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', cursor: 'pointer', flexWrap: 'wrap' }}
                   onClick={() => setExpanded(isOpen ? null : order.id)}
                 >
-                  {/* Stato badge */}
-                  <span style={{
-                    padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
-                    background: sc.bg, color: sc.color, flexShrink: 0,
-                  }}>
-                    {STATUS_LABEL[order.status]}
-                  </span>
-
-                  {/* Cliente */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontWeight: 700, fontSize: 14, color: '#111', margin: 0 }}>
-                      {order.customer_name}
-                    </p>
-                    <p style={{ fontSize: 12, color: '#777', margin: '2px 0 0' }}>
-                      {order.customer_email} · {order.customer_phone}
-                    </p>
+                  {/* Sinistra: badge + nome cliente */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+                    <span style={{
+                      padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
+                      background: sc.bg, color: sc.color, flexShrink: 0, whiteSpace: 'nowrap',
+                    }}>
+                      {STATUS_LABEL[order.status]}
+                    </span>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontWeight: 700, fontSize: 14, color: '#111', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {order.customer_name}
+                      </p>
+                      <p style={{ fontSize: 12, color: '#777', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {order.customer_email}
+                        {order.customer_phone ? ` · ${order.customer_phone}` : ''}
+                      </p>
+                    </div>
                   </div>
 
-                  {/* Pagamento */}
-                  <div style={{ flexShrink: 0, textAlign: 'center' }}>
-                    <p style={{ fontSize: 11, color: '#999', margin: 0 }}>
-                      {order.payment_method === 'online' ? '💳 Online' : '🏠 Studio'}
-                    </p>
-                    <p style={{
-                      fontSize: 11, fontWeight: 700, margin: '2px 0 0',
+                  {/* Destra: pagamento + totale + data + freccia */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                    <span style={{
+                      fontSize: 11, fontWeight: 700,
                       color: order.payment_status === 'paid' ? '#16a34a' : '#b45309',
                     }}>
-                      {order.payment_status === 'paid' ? 'Pagato' : 'Non pagato'}
-                    </p>
+                      {order.payment_method === 'online' ? '💳' : '🏠'} {order.payment_status === 'paid' ? 'Pagato' : 'Non pagato'}
+                    </span>
+                    <span style={{ fontWeight: 800, fontSize: 15, color: '#111', whiteSpace: 'nowrap' }}>
+                      {formatPrice(order.total)}
+                    </span>
+                    <span style={{ fontSize: 12, color: '#999', whiteSpace: 'nowrap' }}>
+                      {new Date(order.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: '2-digit' })}
+                    </span>
+                    <span style={{ color: '#ccc', fontSize: 14 }}>{isOpen ? '▲' : '▼'}</span>
                   </div>
-
-                  {/* Totale */}
-                  <span style={{ fontWeight: 800, fontSize: 16, color: '#111', flexShrink: 0, minWidth: 80, textAlign: 'right' }}>
-                    {formatPrice(order.total)}
-                  </span>
-
-                  {/* Data */}
-                  <span style={{ fontSize: 12, color: '#999', flexShrink: 0 }}>
-                    {new Date(order.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: '2-digit' })}
-                  </span>
-
-                  <span style={{ color: '#ccc', fontSize: 14 }}>{isOpen ? '▲' : '▼'}</span>
                 </div>
 
                 {/* Dettaglio espanso */}
