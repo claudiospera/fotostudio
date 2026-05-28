@@ -1,9 +1,60 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  alternates: { canonical: 'https://storiedaraccontare.it' },
+}
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'LocalBusiness',
+  '@id': 'https://storiedaraccontare.it/#photographer',
+  name: 'Storie da Raccontare — Claudio Spera Fotografo',
+  description: 'Fotografo di matrimoni, battesimi, ritratti e famiglia a Mirabella Eclano (AV), Campania.',
+  url: 'https://storiedaraccontare.it',
+  telephone: '+393897855581',
+  image: 'https://pub-53356d483eb74822990977c0e5c21f6c.r2.dev/images/galleria/matrimoni/real-weddings/FRANCO%20E%20ANTONIO/_DSF8816.jpg',
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: 'Mirabella Eclano',
+    addressRegion: 'AV',
+    addressCountry: 'IT',
+  },
+  geo: {
+    '@type': 'GeoCoordinates',
+    latitude: 41.0333,
+    longitude: 14.9833,
+  },
+  areaServed: [
+    { '@type': 'State', name: 'Campania' },
+    { '@type': 'City',  name: 'Avellino' },
+    { '@type': 'City',  name: 'Benevento' },
+    { '@type': 'City',  name: 'Napoli' },
+  ],
+  hasOfferCatalog: {
+    '@type': 'OfferCatalog',
+    name: 'Servizi fotografici',
+    itemListElement: [
+      { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Fotografia matrimoni' } },
+      { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Fotografia battesimi' } },
+      { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Ritratti e famiglia' } },
+      { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Maternità e gravidanza' } },
+      { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Comunioni e cresime' } },
+    ],
+  },
+  sameAs: [
+    'https://www.instagram.com/claudiosperafotografo/',
+  ],
+}
 
 export default async function HomePage() {
   return (
     <div style={{ fontFamily: 'Montserrat, sans-serif', color: '#0a0a0a', background: '#ffffff', minHeight: '100vh' }}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
 
       {/* ── NAVBAR ── */}
       <nav style={{
