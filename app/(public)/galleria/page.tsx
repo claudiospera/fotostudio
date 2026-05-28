@@ -6,6 +6,7 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = {
   title: 'Galleria — Claudio Spera Fotografo',
   description: 'Sfoglia la galleria fotografica di Claudio Spera: matrimoni, ritratti, famiglie e molto altro.',
+  alternates: { canonical: 'https://storiedaraccontare.it/galleria' },
 }
 
 const BG     = '#F5F0E8'

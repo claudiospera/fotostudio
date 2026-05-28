@@ -6,8 +6,9 @@ import type { Metadata } from 'next'
 import { WEDDINGS } from './_data'
 
 export const metadata: Metadata = {
-  title: 'Real Weddings — Claudio Spera Fotografo',
-  description: 'Matrimoni reali raccontati foto per foto. Ogni storia è unica.',
+  title: 'Real Weddings — Matrimoni Reali — Claudio Spera Fotografo',
+  description: 'Matrimoni reali raccontati foto per foto. Sfoglia i Real Weddings di Claudio Spera: ogni storia è unica, ogni coppia è diversa.',
+  alternates: { canonical: 'https://storiedaraccontare.it/galleria/matrimoni/real-weddings' },
 }
 
 const BG     = '#F5F0E8'

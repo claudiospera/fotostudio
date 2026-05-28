@@ -7,6 +7,7 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = {
   title: 'Chi sono — Claudio Spera Fotografo',
   description: 'Sono Claudio Spera, fotografo professionista di matrimoni, ritratti e famiglie a Mirabella Eclano, Campania. Racconto storie vere attraverso la fotografia.',
+  alternates: { canonical: 'https://storiedaraccontare.it/chi-sono' },
 }
 
 const BG     = '#F5F0E8'
@@ -14,9 +15,26 @@ const INK    = '#1a1612'
 const GOLD   = '#C9A96E'
 const BORDER = 'rgba(26,22,18,0.12)'
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: 'Claudio Spera',
+  jobTitle: 'Fotografo Professionista',
+  url: 'https://storiedaraccontare.it',
+  sameAs: ['https://www.instagram.com/claudiosperafotografo/'],
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: 'Mirabella Eclano',
+    addressRegion: 'AV',
+    addressCountry: 'IT',
+  },
+  knowsAbout: ['Fotografia matrimoni', 'Fotografia ritratto', 'Fotografia famiglia', 'Fotografia battesimi'],
+}
+
 export default function ChiSonoPage() {
   return (
     <div style={{ background: BG, minHeight: '100vh', color: INK }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       {/* ── NAV ── */}
       <nav style={{

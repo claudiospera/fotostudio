@@ -221,6 +221,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: `${s.nome} — Claudio Spera Fotografo`,
     description: s.descrizione.slice(0, 155) + '...',
+    alternates: { canonical: `https://storiedaraccontare.it/servizi/${slug}` },
+    openGraph: {
+      title: `${s.nome} — Claudio Spera Fotografo`,
+      description: s.descrizione.slice(0, 155) + '...',
+      url: `https://storiedaraccontare.it/servizi/${slug}`,
+      ...(s.cover ? { images: [{ url: s.cover, width: 1200, height: 630, alt: s.nome }] } : {}),
+    },
   }
 }
 
@@ -246,8 +253,23 @@ export default async function ServizioPage({ params }: { params: Promise<{ slug:
   const cols = 3
   const rows = Math.ceil(servizio.include.length / cols)
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Service',
+    name: servizio.nome,
+    description: servizio.descrizione,
+    provider: {
+      '@type': 'LocalBusiness',
+      name: 'Storie da Raccontare — Claudio Spera Fotografo',
+      url: 'https://storiedaraccontare.it',
+    },
+    areaServed: { '@type': 'State', name: 'Campania' },
+    url: `https://storiedaraccontare.it/servizi/${slug}`,
+  }
+
   return (
     <div style={{ background: BG, minHeight: '100vh', color: INK }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       {/* ── NAV ────────────────────────────────────────────────────────────── */}
       <nav style={{

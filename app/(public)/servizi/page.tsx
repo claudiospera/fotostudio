@@ -7,6 +7,7 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = {
   title: 'Servizi Fotografici — Claudio Spera Fotografo',
   description: 'Matrimoni, battesimi, comunioni, maternità, compleanni e ritratti. Scopri tutti i servizi fotografici di Claudio Spera a Mirabella Eclano, Campania.',
+  alternates: { canonical: 'https://storiedaraccontare.it/servizi' },
 }
 
 const BG     = '#F5F0E8'
