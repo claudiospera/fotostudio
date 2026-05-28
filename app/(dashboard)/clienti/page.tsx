@@ -309,7 +309,7 @@ function ClientiContent() {
           ))}
         </div>
 
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
+        <div className="clienti-top-actions" style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
           {/* Ricerca */}
           <div style={{ position: 'relative' }}>
             <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--t3)', pointerEvents: 'none' }} />
@@ -317,6 +317,7 @@ function ClientiContent() {
               placeholder="Cerca cliente…"
               value={search}
               onChange={e => setSearch(e.target.value)}
+              className="clienti-search-input"
               style={{
                 paddingLeft: 32, paddingRight: 12, height: 36, borderRadius: 'var(--r2)',
                 border: '1px solid var(--b1)', background: 'var(--s2)', color: 'var(--tx)',
@@ -333,17 +334,20 @@ function ClientiContent() {
               background: 'transparent', color: 'var(--t2)',
               border: '1px solid rgba(255,255,255,0.08)',
               fontSize: 13, fontWeight: 500, cursor: 'pointer',
+              flexShrink: 0,
             }}
           >
             <Download size={14} /> CSV
           </button>
           <button
             onClick={openNew}
+            className="clienti-nuovo-btn"
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
               padding: '0 16px', height: 36, borderRadius: 'var(--r2)',
               background: 'var(--ac)', color: '#111', border: 'none',
               fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              flexShrink: 0, whiteSpace: 'nowrap',
             }}
           >
             <Plus size={14} /> Nuovo cliente
@@ -597,6 +601,9 @@ function ClienteCard({ cliente: c, onEdit, onDelete }: {
             <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, color: 'var(--t2)' }}>
               <span>📅</span>
               <span>{formatDate(c.data_evento)}</span>
+              {c.extra?.ora_ricevimento && (
+                <span style={{ color: 'var(--t3)', marginLeft: 2 }}>· 🕐 {c.extra.ora_ricevimento}</span>
+              )}
             </div>
           )}
           {c.luogo_evento && (

@@ -119,6 +119,19 @@ body {
   .hamburger-btn {
     display: grid;
   }
+  /* Clienti page — topbar actions responsive */
+  .clienti-search-input {
+    width: 130px !important;
+  }
+  .clienti-nuovo-btn {
+    padding: 0 10px !important;
+    font-size: 12px !important;
+  }
+}
+@media (max-width: 480px) {
+  .clienti-search-input {
+    width: 90px !important;
+  }
 }
 
 /* ─── LANDING PAGE ─── */
