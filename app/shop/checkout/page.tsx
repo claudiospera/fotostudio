@@ -11,7 +11,7 @@ function formatPrice(cents: number) {
 }
 
 export default function CheckoutPage() {
-  const { cart, total, clearCart } = useCart()
+  const { cart, total, finalTotal, coupon, clearCart } = useCart()
   const router = useRouter()
 
   const [name, setName] = useState('')
@@ -51,8 +51,10 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           customer: { name, email, phone, notes },
           items: cart.items,
-          total,
+          total: finalTotal,
           paymentMethod,
+          couponCode: coupon?.code ?? null,
+          discount: coupon?.discount ?? 0,
         }),
       })
       const data = await res.json()
@@ -260,9 +262,21 @@ export default function CheckoutPage() {
               <span style={{ fontSize: 13, color: 'var(--n-t2)' }}>Spedizione</span>
               <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--n-ac)' }}>Gratis (ritiro)</span>
             </div>
+            {coupon && (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <span style={{ fontSize: 13, color: 'var(--n-t2)' }}>Subtotale</span>
+                  <span style={{ fontSize: 13, color: 'var(--n-t2)' }}>{formatPrice(total)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <span style={{ fontSize: 13, color: '#16a34a', fontWeight: 600 }}>Sconto ({coupon.code})</span>
+                  <span style={{ fontSize: 13, color: '#16a34a', fontWeight: 600 }}>−{formatPrice(coupon.discount)}</span>
+                </div>
+              </>
+            )}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, paddingTop: 12, borderTop: '2px solid var(--n-tx)' }}>
               <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--n-tx)' }}>Totale</span>
-              <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--n-ac)' }}>{formatPrice(total)}</span>
+              <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--n-ac)' }}>{formatPrice(finalTotal)}</span>
             </div>
           </div>
 

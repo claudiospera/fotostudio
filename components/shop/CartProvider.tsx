@@ -18,14 +18,24 @@ const STORAGE_KEY = 'fotostudio_cart'
 
 const emptyCart = (): Cart => ({ items: [], updatedAt: new Date().toISOString() })
 
+export interface AppliedCoupon {
+  code: string
+  discount: number   // in centesimi
+  label: string
+}
+
 interface CartContextValue {
   cart: Cart
   itemCount: number
-  total: number       // in centesimi
+  total: number           // subtotale in centesimi
+  finalTotal: number      // total - discount
+  coupon: AppliedCoupon | null
   addItem: (item: CartItem) => void
   removeItem: (productId: string, variantId: string) => void
   updateQuantity: (productId: string, variantId: string, qty: number) => void
   clearCart: () => void
+  applyCoupon: (code: string) => Promise<{ ok: boolean; error?: string }>
+  removeCoupon: () => void
 }
 
 const CartContext = createContext<CartContextValue | null>(null)
@@ -65,6 +75,7 @@ function mergeItems(local: CartItem[], remote: CartItem[]): CartItem[] {
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const { user, isLoaded } = useUser()
   const [cart, setCart] = useState<Cart>(emptyCart)
+  const [coupon, setCoupon] = useState<AppliedCoupon | null>(null)
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const prevUserIdRef = useRef<string | null | undefined>(undefined)
 
@@ -165,16 +176,37 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = useCallback(() => {
     setCart(emptyCart())
+    setCoupon(null)
     if (user?.id) {
       fetch('/api/shop/cart', { method: 'DELETE' }).catch(() => {})
     }
   }, [user?.id])
 
+  const applyCoupon = useCallback(async (code: string): Promise<{ ok: boolean; error?: string }> => {
+    const subtotal = cart.items.reduce((sum, i) => sum + i.price * i.quantity, 0)
+    try {
+      const res = await fetch('/api/shop/validate-coupon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, total: subtotal }),
+      })
+      const data = await res.json()
+      if (!res.ok) return { ok: false, error: data.error || 'Codice non valido' }
+      setCoupon({ code: code.trim().toUpperCase(), discount: data.discount, label: data.label })
+      return { ok: true }
+    } catch {
+      return { ok: false, error: 'Errore di connessione' }
+    }
+  }, [cart.items])
+
+  const removeCoupon = useCallback(() => setCoupon(null), [])
+
   const itemCount = cart.items.reduce((sum, i) => sum + i.quantity, 0)
   const total = cart.items.reduce((sum, i) => sum + i.price * i.quantity, 0)
+  const finalTotal = Math.max(0, total - (coupon?.discount ?? 0))
 
   return (
-    <CartContext.Provider value={{ cart, itemCount, total, addItem, removeItem, updateQuantity, clearCart }}>
+    <CartContext.Provider value={{ cart, itemCount, total, finalTotal, coupon, addItem, removeItem, updateQuantity, clearCart, applyCoupon, removeCoupon }}>
       {children}
     </CartContext.Provider>
   )

@@ -4,6 +4,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import Image from 'next/image'
 import { Trash2 } from 'lucide-react'
 import { useCart } from '@/components/shop/CartProvider'
@@ -13,8 +14,11 @@ function formatPrice(cents: number): string {
 }
 
 export default function CartPage() {
-  const { cart, total, removeItem, updateQuantity, clearCart } = useCart()
+  const { cart, total, finalTotal, coupon, removeItem, updateQuantity, clearCart, applyCoupon, removeCoupon } = useCart()
   const router = useRouter()
+  const [couponInput, setCouponInput] = useState('')
+  const [couponLoading, setCouponLoading] = useState(false)
+  const [couponError, setCouponError] = useState('')
 
   if (cart.items.length === 0) {
     return (
@@ -127,11 +131,103 @@ export default function CartPage() {
         ))}
       </div>
 
+      {/* Codice sconto */}
+      <div style={{ marginTop: 28, padding: '20px 0', borderTop: '1px solid var(--n-border)' }}>
+        {coupon ? (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.3)',
+            borderRadius: 'var(--n-r2)', padding: '12px 16px',
+          }}>
+            <div>
+              <p style={{ fontSize: 13, fontWeight: 700, color: '#16a34a', margin: 0 }}>
+                ✓ {coupon.label}
+              </p>
+              <p style={{ fontSize: 11, color: 'var(--n-t2)', margin: '2px 0 0' }}>
+                Sconto applicato: −{formatPrice(coupon.discount)}
+              </p>
+            </div>
+            <button
+              onClick={removeCoupon}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'var(--n-t3)', textDecoration: 'underline' }}
+            >
+              Rimuovi
+            </button>
+          </div>
+        ) : (
+          <div>
+            <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--n-t2)', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: 8 }}>
+              Codice sconto
+            </p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                value={couponInput}
+                onChange={e => { setCouponInput(e.target.value.toUpperCase()); setCouponError('') }}
+                placeholder="Es. ESTATE25"
+                style={{
+                  flex: 1, padding: '10px 14px', fontSize: 13,
+                  border: `1px solid ${couponError ? '#e53e3e' : 'var(--n-border)'}`,
+                  borderRadius: 'var(--n-r2)', background: '#fff',
+                  color: 'var(--n-tx)', outline: 'none',
+                  letterSpacing: '.06em', fontWeight: 600,
+                }}
+                onKeyDown={async e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    if (!couponInput.trim()) return
+                    setCouponLoading(true)
+                    const res = await applyCoupon(couponInput)
+                    setCouponLoading(false)
+                    if (!res.ok) setCouponError(res.error || 'Codice non valido')
+                    else setCouponInput('')
+                  }
+                }}
+              />
+              <button
+                disabled={couponLoading || !couponInput.trim()}
+                onClick={async () => {
+                  if (!couponInput.trim()) return
+                  setCouponLoading(true)
+                  const res = await applyCoupon(couponInput)
+                  setCouponLoading(false)
+                  if (!res.ok) setCouponError(res.error || 'Codice non valido')
+                  else setCouponInput('')
+                }}
+                style={{
+                  padding: '10px 18px', fontSize: 13, fontWeight: 700,
+                  background: couponLoading || !couponInput.trim() ? 'var(--n-t3)' : 'var(--n-tx)',
+                  color: '#fff', border: 'none', borderRadius: 'var(--n-r2)',
+                  cursor: couponLoading || !couponInput.trim() ? 'default' : 'pointer',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {couponLoading ? '…' : 'Applica'}
+              </button>
+            </div>
+            {couponError && (
+              <p style={{ fontSize: 12, color: '#e53e3e', marginTop: 6 }}>{couponError}</p>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Totale */}
-      <div style={{ marginTop: 32, paddingTop: 24, borderTop: '2px solid var(--n-tx)' }}>
+      <div style={{ marginTop: 16, paddingTop: 20, borderTop: '2px solid var(--n-tx)' }}>
+        {coupon && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+            <span style={{ fontSize: 14, color: 'var(--n-t2)' }}>Subtotale</span>
+            <span style={{ fontSize: 14, color: 'var(--n-t2)' }}>{formatPrice(total)}</span>
+          </div>
+        )}
+        {coupon && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+            <span style={{ fontSize: 14, color: '#16a34a', fontWeight: 600 }}>Sconto ({coupon.code})</span>
+            <span style={{ fontSize: 14, color: '#16a34a', fontWeight: 600 }}>−{formatPrice(coupon.discount)}</span>
+          </div>
+        )}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <span style={{ fontSize: '16px', fontWeight: 700, fontFamily: 'Poppins, sans-serif', color: 'var(--n-tx)' }}>Totale</span>
-          <span style={{ fontSize: '22px', fontWeight: 800, fontFamily: 'Poppins, sans-serif', color: 'var(--n-ac)' }}>{formatPrice(total)}</span>
+          <span style={{ fontSize: '22px', fontWeight: 800, fontFamily: 'Poppins, sans-serif', color: 'var(--n-ac)' }}>{formatPrice(finalTotal)}</span>
         </div>
         <p style={{ fontSize: '11px', color: 'var(--n-t3)', marginBottom: 28 }}>
           Ritiro in studio · nessuna spedizione
