@@ -613,12 +613,12 @@ function RoomScene({
     return () => ro.disconnect()
   }, [])
 
-  const containerH = Math.round(containerW * 864 / 1184)
+  const containerH = Math.round(containerW * 0.82)
 
   const CM_SCALE_BASE = (containerW / 420) * 3.6
   const minSidePx     = Math.round(containerW * 0.20)
   const shortSideCm   = Math.min(widthCm, heightCm)
-  const maxCmScale    = Math.min((containerW * 0.68) / widthCm, (containerH * 0.56) / heightCm)
+  const maxCmScale    = Math.min((containerW * 0.76) / widthCm, (containerH * 0.64) / heightCm)
   const CM_SCALE      = Math.min(Math.max(CM_SCALE_BASE, minSidePx / shortSideCm), maxCmScale)
   const panelW = Math.round(widthCm  * CM_SCALE)
   const panelH = Math.round(heightCm * CM_SCALE)
