@@ -10,8 +10,32 @@ function escapeIcal(s: string): string {
 }
 
 function toIcalDate(dateStr: string): string {
-  // dateStr = "YYYY-MM-DD" → "YYYYMMDD"
   return dateStr.replace(/-/g, '')
+}
+
+// RFC 5545 §3.1: lines must not exceed 75 octets; fold with CRLF + SPACE
+function foldLine(line: string): string {
+  const enc = new TextEncoder()
+  if (enc.encode(line).length <= 75) return line
+  const parts: string[] = []
+  let chunk = ''
+  let chunkBytes = 0
+  let firstChunk = true
+  for (const char of line) {
+    const charBytes = enc.encode(char).length
+    const limit = firstChunk ? 75 : 74
+    if (chunkBytes + charBytes > limit) {
+      parts.push(chunk)
+      chunk = ' ' + char
+      chunkBytes = 1 + charBytes
+      firstChunk = false
+    } else {
+      chunk += char
+      chunkBytes += charBytes
+    }
+  }
+  if (chunk) parts.push(chunk)
+  return parts.join('\r\n')
 }
 
 const CAT_EMOJI: Record<string, string> = {
@@ -80,13 +104,13 @@ export async function GET(req: Request) {
 
     return [
       'BEGIN:VEVENT',
-      `UID:${uid}`,
+      foldLine(`UID:${uid}`),
       `DTSTAMP:${now}`,
       dtstart,
       dtend,
-      `SUMMARY:${summary}`,
-      location.trim(),
-      description.trim(),
+      foldLine(`SUMMARY:${summary}`),
+      location ? foldLine(location.trim()) : null,
+      description ? foldLine(description.trim()) : null,
       'END:VEVENT',
     ].filter(Boolean).join('\r\n')
   })
@@ -96,22 +120,21 @@ export async function GET(req: Request) {
     'VERSION:2.0',
     'PRODID:-//Storie da Raccontare//CRM//IT',
     'CALSCALE:GREGORIAN',
-    'METHOD:PUBLISH',
-    `X-WR-CALNAME:${calName}`,
+    foldLine(`X-WR-CALNAME:${calName}`),
     'X-WR-TIMEZONE:Europe/Rome',
     'X-APPLE-CALENDAR-COLOR:#7a4a6e',
     'REFRESH-INTERVAL;VALUE=DURATION:PT1H',
     'X-PUBLISHED-TTL:PT1H',
     ...events,
     'END:VCALENDAR',
-    '', // trailing CRLF richiesto da RFC 5545
+    '',
   ].join('\r\n')
 
   return new NextResponse(ical, {
     headers: {
-      'Content-Type': 'text/calendar; charset=utf-8',
+      'Content-Type': 'text/calendar; charset=UTF-8',
       'Content-Disposition': 'inline; filename="clienti.ics"',
-      'Cache-Control': 'public, max-age=3600',
+      'Cache-Control': 'no-cache',
     },
   })
 }
