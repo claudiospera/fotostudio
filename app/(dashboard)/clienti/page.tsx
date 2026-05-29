@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Plus, Search, Pencil, Trash2, Phone, Mail, Calendar, MapPin, Download, Menu } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, Phone, Mail, Calendar, MapPin, Download, Menu, Copy, Check as CheckIcon, RefreshCw } from 'lucide-react'
 import type { Cliente, CategoriaCliente, PacchettoCliente } from '@/lib/types'
 import { useUIStore } from '@/store/ui'
 
@@ -148,6 +148,10 @@ function ClientiContent() {
   const [editing, setEditing]     = useState<Cliente | null>(null)
   const [deleting, setDeleting]   = useState<string | null>(null)
   const [prefilledDate, setPrefilledDate] = useState<string | undefined>()
+  const [showIcal, setShowIcal]   = useState(false)
+  const [icalToken, setIcalToken] = useState<string | null>(null)
+  const [icalCopied, setIcalCopied] = useState(false)
+  const [icalRegen, setIcalRegen]  = useState(false)
 
   const fetchClienti = useCallback(async () => {
     setLoading(true)
@@ -157,6 +161,24 @@ function ClientiContent() {
   }, [])
 
   useEffect(() => { fetchClienti() }, [fetchClienti])
+
+  useEffect(() => {
+    fetch('/api/ical-token').then(r => r.ok ? r.json() : null).then(d => { if (d?.token) setIcalToken(d.token) })
+  }, [])
+
+  const icalUrl = icalToken ? `${typeof window !== 'undefined' ? window.location.origin : ''}/api/ical?token=${icalToken}` : ''
+
+  const copyIcalUrl = () => {
+    if (!icalUrl) return
+    navigator.clipboard.writeText(icalUrl).then(() => { setIcalCopied(true); setTimeout(() => setIcalCopied(false), 2500) })
+  }
+
+  const regenIcalToken = async () => {
+    setIcalRegen(true)
+    const res = await fetch('/api/ical-token', { method: 'POST' })
+    if (res.ok) { const d = await res.json(); setIcalToken(d.token) }
+    setIcalRegen(false)
+  }
 
   // Auto-open a client when coming from calendar (?apri=<id>)
   useEffect(() => {
@@ -326,6 +348,21 @@ function ClientiContent() {
             />
           </div>
           <button
+            onClick={() => setShowIcal(v => !v)}
+            title="Sincronizza con iPhone / Calendario"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '0 14px', height: 36, borderRadius: 'var(--r2)',
+              background: showIcal ? 'var(--acd)' : 'transparent',
+              color: showIcal ? 'var(--ac)' : 'var(--t2)',
+              border: `1px solid ${showIcal ? 'var(--ac)' : 'rgba(255,255,255,0.08)'}`,
+              fontSize: 13, fontWeight: 500, cursor: 'pointer',
+              flexShrink: 0, transition: 'all .15s',
+            }}
+          >
+            <Calendar size={14} /> iCal
+          </button>
+          <button
             onClick={esportaCSV}
             title={`Esporta ${filtrati.length} clienti in CSV`}
             style={{
@@ -354,6 +391,56 @@ function ClientiContent() {
           </button>
         </div>
       </div>
+
+      {/* ── ICAL PANEL ── */}
+      {showIcal && (
+        <div style={{
+          margin: '0 28px 0', padding: '16px 20px',
+          background: 'var(--s1)', border: '1px solid var(--ac)',
+          borderRadius: 'var(--r)', display: 'flex', flexDirection: 'column', gap: 10,
+        }}>
+          <p style={{ fontWeight: 700, fontSize: 13, color: 'var(--tx)', margin: 0 }}>
+            📅 Sincronizza con iPhone / Mac / Google Calendar
+          </p>
+          <p style={{ fontSize: 12, color: 'var(--t2)', margin: 0, lineHeight: 1.6 }}>
+            Copia il link e aggiungilo come <strong style={{ color: 'var(--tx)' }}>calendario sottoscritto</strong> su iPhone:<br />
+            <span style={{ color: 'var(--t3)', fontSize: 11 }}>Impostazioni → Calendario → Account → Aggiungi account → Altro → Aggiungi calendario sottoscritto</span>
+          </p>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <code style={{
+              flex: 1, fontSize: 11, padding: '8px 12px', borderRadius: 'var(--r2)',
+              background: 'var(--s2)', color: 'var(--t2)', border: '1px solid var(--b1)',
+              wordBreak: 'break-all', lineHeight: 1.5,
+            }}>
+              {icalUrl || 'Caricamento…'}
+            </code>
+            <button
+              onClick={copyIcalUrl} disabled={!icalUrl}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '8px 14px', borderRadius: 'var(--r2)',
+                background: icalCopied ? '#22c55e' : 'var(--ac)', color: '#111',
+                border: 'none', fontSize: 12, fontWeight: 700, cursor: icalUrl ? 'pointer' : 'not-allowed',
+                flexShrink: 0, transition: 'background .2s',
+              }}
+            >
+              {icalCopied ? <><CheckIcon size={13} strokeWidth={3} /> Copiato!</> : <><Copy size={13} /> Copia</>}
+            </button>
+            <button
+              onClick={regenIcalToken}
+              title="Rigenera token (invalida il link precedente)"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 34, height: 34, borderRadius: 'var(--r2)',
+                background: 'var(--s2)', border: '1px solid var(--b1)',
+                color: 'var(--t3)', cursor: 'pointer', flexShrink: 0,
+              }}
+            >
+              <RefreshCw size={13} style={{ animation: icalRegen ? 'spin 1s linear infinite' : 'none' }} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── GRID ── */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px' }}>
