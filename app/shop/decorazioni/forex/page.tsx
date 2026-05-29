@@ -502,15 +502,12 @@ function RoomScene({
     return () => ro.disconnect()
   }, [])
 
-  // Immagine ambiente: 1184×864 → ratio 1.373
-  const containerH = Math.round(containerW * 864 / 1184)
+  const containerH = Math.round(containerW * 0.82)
 
-  // Scala cm→px: stessa logica di prima, limitata all'area muro della foto
-  // Area muro utile: 62% larghezza × 44% altezza (sopra il divano)
   const CM_SCALE_BASE = (containerW / 420) * 3.6
   const shortSideCm   = Math.min(widthCm, heightCm)
   const minSidePx     = Math.round(containerW * 0.18)
-  const maxCmScale    = Math.min((containerW * 0.68) / widthCm, (containerH * 0.56) / heightCm)
+  const maxCmScale    = Math.min((containerW * 0.76) / widthCm, (containerH * 0.64) / heightCm)
   const CM_SCALE      = Math.min(Math.max(CM_SCALE_BASE, minSidePx / shortSideCm), maxCmScale)
   const panelW = Math.round(widthCm  * CM_SCALE)
   const panelH = Math.round(heightCm * CM_SCALE)
