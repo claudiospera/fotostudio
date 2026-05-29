@@ -167,7 +167,8 @@ function ClientiContent() {
   }, [])
 
   const icalHttpUrl = icalToken ? `https://storiedaraccontare.it/api/ical?token=${icalToken}` : ''
-  const icalUrl     = icalHttpUrl
+  // webcal:// fa aprire direttamente l'app Calendario su iPhone quando toccato da Safari
+  const icalUrl     = icalToken ? `webcal://storiedaraccontare.it/api/ical?token=${icalToken}` : ''
 
   const copyIcalUrl = () => {
     if (!icalUrl) return
@@ -404,9 +405,9 @@ function ClientiContent() {
             📅 Sincronizza con iPhone / Mac / Google Calendar
           </p>
           <p style={{ fontSize: 12, color: 'var(--t2)', margin: 0, lineHeight: 1.6 }}>
-            <strong style={{ color: 'var(--tx)' }}>Metodo 1 — iPhone/iPad (più semplice):</strong> apri questa pagina da Safari sul tuo iPhone e tocca il pulsante verde. Safari scarica il file e propone di aprirlo in Calendario.<br />
-            <strong style={{ color: 'var(--tx)' }}>Metodo 2 — Impostazioni iPhone:</strong> copia il link e vai in <span style={{ color: 'var(--ac)' }}>Impostazioni → Calendario → Account → Aggiungi account → Altro → <strong>Aggiungi calendario con iscrizione</strong></span> (NON CalDAV). Incolla il link e tocca Trova.<br />
-            <strong style={{ color: 'var(--tx)' }}>Metodo 3 — Mac/Google:</strong> incolla il link in Google Calendar → Altre agende → Da URL, oppure in Calendario Mac → File → Nuovo calendario con iscrizione.
+            <strong style={{ color: '#22c55e' }}>Metodo 1 — iPhone (tocca il pulsante verde da Safari):</strong> apri questa pagina dal browser Safari del tuo iPhone e tocca il pulsante verde. Safari passa il link all&apos;app Calendario che si apre con la richiesta di iscrizione. <strong style={{ color: '#22c55e' }}>Non copiare il link nelle Impostazioni</strong> — funziona solo toccandolo direttamente.<br />
+            <strong style={{ color: 'var(--tx)' }}>Metodo 2 — Mac:</strong> Calendario → File → Nuovo calendario con iscrizione → incolla il link copiato.<br />
+            <strong style={{ color: 'var(--tx)' }}>Metodo 3 — Google Calendar:</strong> Altre agende → Da URL → incolla il link copiato.
           </p>
 
           {/* Pulsante apri direttamente su iPhone (webcal:// → apre Calendar.app) */}
@@ -420,7 +421,7 @@ function ClientiContent() {
               opacity: icalUrl ? 1 : 0.4, pointerEvents: icalUrl ? 'auto' : 'none',
             }}
           >
-            📅 Sottoscrivi su iPhone / iPad (tocca da Safari)
+            📅 Tocca qui da Safari iPhone per iscriverti al Calendario
           </a>
 
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
