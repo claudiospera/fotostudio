@@ -58,13 +58,15 @@ export const PreventiviDashboard = () => {
   const [deletingSlug, setDeletingSlug] = useState<string | null>(null)
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/preventivi').then(r => r.ok ? r.json() : []),
-      fetch('/api/clienti').then(r => r.ok ? r.json() : []),
-    ]).then(([preventivi, clienti]) => {
-      setPreventivi(preventivi)
-      setClienti(clienti)
-    }).catch(() => {}).finally(() => setLoadingPreventivi(false))
+    Promise.allSettled([
+      fetch('/api/preventivi').then(r => r.ok ? r.json() : Promise.reject(new Error(`${r.status}`))),
+      fetch('/api/clienti').then(r => r.ok ? r.json() : Promise.reject(new Error(`${r.status}`))),
+    ]).then(([prevResult, clientiResult]) => {
+      if (prevResult.status === 'fulfilled') setPreventivi(prevResult.value)
+      else console.error('Errore fetch preventivi:', prevResult.reason)
+      if (clientiResult.status === 'fulfilled') setClienti(clientiResult.value)
+      else console.error('Errore fetch clienti:', clientiResult.reason)
+    }).finally(() => setLoadingPreventivi(false))
   }, [])
 
   useEffect(() => {

@@ -660,6 +660,7 @@ interface PhotoItemProps {
 
 function PhotoItem({ photo, index, galleryId, isFavorited, commentCount, inCart, showWatermark, showDownloadSingle, onOpenLightbox, onToggleFavorite, onOpenComment, onOpenOrder }: PhotoItemProps) {
   const [downloading, setDownloading] = useState(false)
+  const [hovered, setHovered] = useState(false)
 
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -669,9 +670,14 @@ function PhotoItem({ photo, index, galleryId, isFavorited, commentCount, inCart,
   }
 
   return (
-    <div style={{ aspectRatio: '1', borderRadius: '6px', overflow: 'hidden', background: '#e8e8e6', position: 'relative', animation: `slideUp .3s ease ${Math.min(index * 0.02, 0.4)}s both` }}>
+    <div
+      style={{ borderRadius: '3px', overflow: 'hidden', background: '#e8e8e6', position: 'relative', breakInside: 'avoid', marginBottom: 6, cursor: 'pointer' }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={() => onOpenLightbox(index)}
+    >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={photo.url} alt={photo.filename} loading="lazy" onClick={() => onOpenLightbox(index)} style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer', display: 'block' }} />
+      <img src={photo.url} alt={photo.filename} loading="lazy" style={{ width: '100%', height: 'auto', display: 'block' }} />
 
       {/* Watermark overlay */}
       {showWatermark && (
@@ -687,32 +693,132 @@ function PhotoItem({ photo, index, galleryId, isFavorited, commentCount, inCart,
         </div>
       )}
 
-      <div className="photo-actions-overlay" onClick={() => onOpenLightbox(index)} style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,.75) 0%, transparent 55%)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '8px', cursor: 'pointer' }}>
-        <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+      {/* Hover overlay — gradiente + icone bianche */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: 'linear-gradient(to top, rgba(0,0,0,.55) 0%, rgba(0,0,0,.05) 45%, transparent 100%)',
+        opacity: hovered ? 1 : 0,
+        transition: 'opacity 0.2s ease',
+        display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '12px 12px',
+        pointerEvents: hovered ? 'auto' : 'none',
+      }}>
+        <div style={{ display: 'flex', gap: 14, justifyContent: 'flex-end', alignItems: 'center' }}>
 
           {/* ♡ Preferita */}
-          <button onClick={e => { e.stopPropagation(); onToggleFavorite(photo.id) }} title={isFavorited ? 'Rimuovi dai preferite' : 'Aggiungi alle preferite'} style={{ width: 28, height: 28, border: 'none', cursor: 'pointer', background: 'none', display: 'grid', placeItems: 'center', transition: 'all .15s' }}>
-            <svg viewBox="0 0 24 24" width={18} height={18} fill={isFavorited ? '#8ec9b0' : 'none'} stroke="#8ec9b0" strokeWidth={2} strokeLinecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg>
-          </button>
-
-          {/* 💬 Commento */}
-          <button onClick={e => { e.stopPropagation(); onOpenComment(photo) }} title="Lascia un commento" style={{ width: 28, height: 28, border: 'none', cursor: 'pointer', background: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, transition: 'all .15s' }}>
-            <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="#8ec9b0" strokeWidth={2} strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            {commentCount > 0 && <span style={{ fontSize: '9px', color: '#8ec9b0', fontWeight: 700 }}>{commentCount}</span>}
+          <button onClick={e => { e.stopPropagation(); onToggleFavorite(photo.id) }} title={isFavorited ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'grid', placeItems: 'center', transition: 'transform .15s' }}>
+            <svg viewBox="0 0 24 24" width={20} height={20} fill={isFavorited ? '#fff' : 'none'} stroke="#fff" strokeWidth={1.8} strokeLinecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg>
           </button>
 
           {/* ↓ Download singolo */}
           {showDownloadSingle && (
-            <button onClick={handleDownload} title="Scarica foto" style={{ width: 28, height: 28, border: 'none', cursor: 'pointer', background: 'none', display: 'grid', placeItems: 'center', transition: 'all .15s', opacity: downloading ? .5 : 1 }}>
-              {downloading ? <div style={{ width: 10, height: 10, border: '1.5px solid #8ec9b0', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .7s linear infinite' }} /> : <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="#8ec9b0" strokeWidth={2} strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>}
+            <button onClick={handleDownload} title="Scarica foto" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'grid', placeItems: 'center', opacity: downloading ? .5 : 1, transition: 'transform .15s' }}>
+              {downloading
+                ? <div style={{ width: 12, height: 12, border: '1.5px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .7s linear infinite' }} />
+                : <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              }
             </button>
           )}
 
-          {/* 🛒 Ordina */}
-          <button onClick={e => { e.stopPropagation(); onOpenOrder(photo) }} title="Ordina stampa" style={{ width: 28, height: 28, border: 'none', cursor: 'pointer', background: 'none', display: 'grid', placeItems: 'center', transition: 'all .15s' }}>
-            <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke={inCart ? '#fff' : '#8ec9b0'} strokeWidth={2} strokeLinecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+          {/* 💬 Commento */}
+          <button onClick={e => { e.stopPropagation(); onOpenComment(photo) }} title="Lascia un commento" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 3, transition: 'transform .15s' }}>
+            <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            {commentCount > 0 && <span style={{ fontSize: '11px', color: '#fff', fontWeight: 700 }}>{commentCount}</span>}
           </button>
 
+          {/* 🛒 Ordina */}
+          <button onClick={e => { e.stopPropagation(); onOpenOrder(photo) }} title="Ordina stampa" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'grid', placeItems: 'center', transition: 'transform .15s' }}>
+            <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke={inCart ? '#8ec9b0' : '#fff'} strokeWidth={1.8} strokeLinecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+          </button>
+
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Slideshow ──────────────────────────────────────────────────────────────
+
+function SlideshowModal({ photos, onClose }: { photos: Photo[]; onClose: () => void }) {
+  const [index, setIndex] = useState(0)
+  const [playing, setPlaying] = useState(true)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const next = useCallback(() => setIndex(i => (i + 1) % photos.length), [photos.length])
+  const prev = useCallback(() => setIndex(i => (i - 1 + photos.length) % photos.length), [photos.length])
+
+  useEffect(() => {
+    if (playing) {
+      timerRef.current = setTimeout(next, 4000)
+    }
+    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
+  }, [playing, index, next])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+      if (e.key === 'ArrowRight') { next(); setPlaying(false) }
+      if (e.key === 'ArrowLeft')  { prev(); setPlaying(false) }
+      if (e.key === ' ') { e.preventDefault(); setPlaying(p => !p) }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose, next, prev])
+
+  const photo = photos[index]
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 500, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      {/* Foto */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        key={photo.id}
+        src={photo.url}
+        alt={photo.filename}
+        style={{ maxWidth: '100%', maxHeight: '100vh', objectFit: 'contain', display: 'block', animation: 'fadeIn .4s ease' }}
+      />
+
+      {/* Barra superiore */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(to bottom, rgba(0,0,0,.6), transparent)' }}>
+        <span style={{ fontSize: '13px', color: 'rgba(255,255,255,.7)', fontFamily: 'Syne, sans-serif', fontWeight: 600, letterSpacing: '.05em' }}>
+          {index + 1} / {photos.length}
+        </span>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff', padding: 4 }}>
+          <svg viewBox="0 0 24 24" width={22} height={22} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      {/* Freccia sinistra */}
+      <button
+        onClick={() => { prev(); setPlaying(false) }}
+        style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,.12)', border: 'none', borderRadius: '50%', width: 44, height: 44, cursor: 'pointer', display: 'grid', placeItems: 'center', color: '#fff', transition: 'background .15s' }}
+      >
+        <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+
+      {/* Freccia destra */}
+      <button
+        onClick={() => { next(); setPlaying(false) }}
+        style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,.12)', border: 'none', borderRadius: '50%', width: 44, height: 44, cursor: 'pointer', display: 'grid', placeItems: 'center', color: '#fff', transition: 'background .15s' }}
+      >
+        <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+
+      {/* Barra inferiore: play/pause + barra progresso */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10, background: 'linear-gradient(to top, rgba(0,0,0,.5), transparent)' }}>
+        {/* Progress bar */}
+        <div style={{ height: 2, background: 'rgba(255,255,255,.2)', borderRadius: 2 }}>
+          <div style={{ height: '100%', background: '#fff', borderRadius: 2, width: `${((index + 1) / photos.length) * 100}%`, transition: 'width .3s ease' }} />
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <button
+            onClick={() => setPlaying(p => !p)}
+            style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'rgba(255,255,255,.15)', border: 'none', borderRadius: 20, padding: '7px 18px', color: '#fff', fontSize: '12px', fontWeight: 600, cursor: 'pointer', letterSpacing: '.06em' }}
+          >
+            {playing
+              ? <><svg viewBox="0 0 24 24" width={14} height={14} fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Pausa</>
+              : <><svg viewBox="0 0 24 24" width={14} height={14} fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Play</>
+            }
+          </button>
         </div>
       </div>
     </div>
@@ -738,6 +844,9 @@ export default function ClientePortalPage() {
   const [cart, setCart]             = useState<Map<string, CartItem>>(new Map())
   const [orderPhoto, setOrderPhoto] = useState<Photo | null>(null)
   const [cartOpen, setCartOpen]     = useState(false)
+
+  // slideshow
+  const [slideshowOpen, setSlideshowOpen] = useState(false)
 
   // past orders
   const [pastOrders, setPastOrders]   = useState<PastOrder[]>([])
@@ -944,112 +1053,91 @@ export default function ClientePortalPage() {
           {/* Gradient overlay */}
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,.72) 0%, rgba(0,0,0,.15) 50%, rgba(0,0,0,.25) 100%)' }} />
 
-          {/* Navbar */}
-          <nav style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: 'clamp(12px, 3vw, 20px) clamp(16px, 4vw, 36px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 10, gap: 8 }}>
-            <div style={{ background: '#fff', borderRadius: 8, padding: '5px 10px', flexShrink: 0 }}>
+          {/* Navbar — solo logo */}
+          <nav style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: 'clamp(16px, 3vw, 24px) clamp(16px, 4vw, 36px)', display: 'flex', alignItems: 'center', zIndex: 10 }}>
+            <div style={{ background: 'rgba(255,255,255,.9)', backdropFilter: 'blur(8px)', borderRadius: 8, padding: '5px 10px', flexShrink: 0 }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo.png" alt={photographer} style={{ height: 28, width: 'auto', display: 'block' }} />
-            </div>
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
-              {pastOrders.length > 0 && (
-                <button
-                  onClick={() => setOrdersOpen(true)}
-                  style={{ background: 'rgba(255,255,255,.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,.2)', borderRadius: 8, padding: '8px 12px', cursor: 'pointer', color: '#fff', fontSize: '12px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 5 }}
-                >
-                  <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-                  <span className="portal-btn-label">I miei ordini ({pastOrders.length})</span>
-                  <span style={{ display: 'none' }} className="portal-btn-count">{pastOrders.length > 0 ? pastOrders.length : ''}</span>
-                </button>
-              )}
-              <button
-                onClick={() => setCartOpen(true)}
-                style={{ background: cartCount > 0 ? '#fff' : 'rgba(255,255,255,.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,.2)', borderRadius: 8, padding: '8px 12px', cursor: 'pointer', color: cartCount > 0 ? '#111' : '#fff', fontSize: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5, transition: 'all .15s' }}
-              >
-                <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-                <span className="portal-btn-label">{cartCount > 0 ? `Carrello (${cartCount})` : 'Carrello'}</span>
-                {cartCount > 0 && <span className="portal-btn-mobile-count" style={{ fontWeight: 700, fontSize: '13px' }}>{cartCount}</span>}
-              </button>
+              <img src="/logo.png" alt={photographer} style={{ height: 26, width: 'auto', display: 'block' }} />
             </div>
           </nav>
 
-          {/* Hero content — bottom left */}
-          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 'clamp(20px, 4vw, 36px) clamp(16px, 4vw, 40px)' }}>
+          {/* Hero content — centrato */}
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px clamp(20px, 6vw, 80px) 20px', textAlign: 'center' }}>
             {gallery.type && (
-              <div style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,.5)', marginBottom: 10 }}>{gallery.type}</div>
+              <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '.22em', textTransform: 'uppercase', color: 'rgba(255,255,255,.55)', marginBottom: 20 }}>{gallery.type}</div>
             )}
-            <h1 style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: 'clamp(28px, 5vw, 54px)', color: '#fff', letterSpacing: '-0.01em', lineHeight: 1.05, marginBottom: 12 }}>{gallery.name}</h1>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'center' }}>
-              {gallery.subtitle && (
-                <span style={{ fontSize: '15px', color: 'rgba(255,255,255,.6)', fontStyle: 'italic', fontFamily: 'Playfair Display, serif' }}>{gallery.subtitle}</span>
-              )}
-              {gallery.date && (
-                <span style={{ fontSize: '13px', color: 'rgba(255,255,255,.45)', display: 'flex', alignItems: 'center', gap: 5, letterSpacing: '.02em' }}>
-                  <svg viewBox="0 0 24 24" width={11} height={11} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                  {formatDate(gallery.date)}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* ── STATS BAR ──────────────────────────────────────────────────── */}
-        <div style={{ background: '#fff', borderBottom: '1px solid rgba(0,0,0,.07)', padding: 'clamp(10px, 2vw, 12px) clamp(16px, 4vw, 40px)', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '12px', color: '#999', display: 'flex', alignItems: 'center', gap: 5, letterSpacing: '.01em' }}>
-            <svg viewBox="0 0 24 24" width={13} height={13} fill="none" stroke="#8ec9b0" strokeWidth={1.8} strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-            <strong style={{ color: '#444', fontWeight: 500 }}>{photos.length}</strong>&nbsp;foto
-          </span>
-          {/* Contatore preferiti — sempre visibile */}
-          <span style={{ fontSize: '12px', color: '#999', display: 'flex', alignItems: 'center', gap: 5, transition: 'all .2s' }}>
-            <svg viewBox="0 0 24 24" width={12} height={12} fill={favorites.size > 0 ? '#d97070' : 'none'} stroke={favorites.size > 0 ? '#d97070' : '#ccc'} strokeWidth={2}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg>
-            <strong style={{ color: favorites.size > 0 ? '#d97070' : '#bbb', fontWeight: 600, transition: 'color .2s' }}>{favorites.size}</strong>&nbsp;<span style={{ color: favorites.size > 0 ? '#888' : '#ccc', transition: 'color .2s' }}>preferiti</span>
-          </span>
-
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
-            {/* Download tutte */}
-            {gallery.settings?.download_zip !== false && <button
-              onClick={downloadAll}
-              disabled={downloading || photos.length === 0}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, background: downloading ? '#e8f5f0' : '#f0faf6', color: '#2d8c6e', border: '1px solid #b2ddc8', borderRadius: 6, padding: '7px 14px', fontSize: '11px', fontWeight: 600, letterSpacing: '.04em', cursor: downloading ? 'not-allowed' : 'pointer', transition: 'all .15s', textTransform: 'uppercase' }}
-            >
-              {downloading ? (
-                <>
-                  <svg viewBox="0 0 24 24" width={12} height={12} fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" style={{ animation: 'spin .8s linear infinite' }}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-                  {downloadProgress}%
-                </>
-              ) : (
-                <>
-                  <svg viewBox="0 0 24 24" width={12} height={12} fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                  Scarica tutte
-                </>
-              )}
-            </button>}
-            {downloading && (
-              <button
-                onClick={cancelDownload}
-                style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#fff0f0', color: '#c0392b', border: '1px solid #f5c6c6', borderRadius: 6, padding: '7px 12px', fontSize: '11px', fontWeight: 600, letterSpacing: '.04em', cursor: 'pointer', transition: 'all .15s', textTransform: 'uppercase' }}
-              >
-                <svg viewBox="0 0 24 24" width={11} height={11} fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                Annulla
-              </button>
+            <h1 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 'clamp(32px, 7vw, 96px)', color: '#fff', letterSpacing: '-0.02em', lineHeight: 1, marginBottom: 8, textTransform: 'uppercase' }}>{gallery.name}</h1>
+            {(gallery.subtitle || gallery.date) && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 36 }}>
+                {gallery.subtitle && <span style={{ fontSize: '15px', color: 'rgba(255,255,255,.55)', fontStyle: 'italic' }}>{gallery.subtitle}</span>}
+                {gallery.date && <span style={{ fontSize: '13px', color: 'rgba(255,255,255,.4)', letterSpacing: '.04em' }}>{formatDate(gallery.date)}</span>}
+              </div>
             )}
-            {/* CTA Scorri */}
-            <a
-              href="#photos"
-              style={{ background: '#111', color: '#fff', borderRadius: 6, padding: '7px 18px', fontSize: '11px', fontWeight: 600, letterSpacing: '.08em', textDecoration: 'none', textTransform: 'uppercase', transition: 'background .15s' }}
-            >
-              Scorri ↓
+            {!gallery.subtitle && !gallery.date && <div style={{ marginBottom: 36 }} />}
+            <a href="#photos" style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.22em', textTransform: 'uppercase', color: 'rgba(255,255,255,.9)', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,.5)', paddingBottom: 4, transition: 'color .15s' }}>
+              View Gallery
             </a>
           </div>
         </div>
 
+        {/* ── STICKY NAV BAR ─────────────────────────────────────────────── */}
+        <div style={{ position: 'sticky', top: 0, zIndex: 100, background: '#fff', borderBottom: '1px solid rgba(0,0,0,.08)', padding: '0 clamp(16px, 4vw, 40px)', display: 'flex', alignItems: 'center', gap: 16, height: 56, boxShadow: '0 1px 8px rgba(0,0,0,.06)' }}>
+          {/* Sinistra: nome galleria + fotografo */}
+          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minWidth: 0, flex: 1 }}>
+            <p style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111', letterSpacing: '.01em', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{gallery.name}</p>
+            <p style={{ fontSize: '10px', color: '#999', letterSpacing: '.05em', textTransform: 'uppercase', lineHeight: 1.2, marginTop: 2 }}>{photographer}</p>
+          </div>
+
+          {/* Destra: azioni con testo */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+
+            {/* Favorites */}
+            <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'none', border: 'none', cursor: 'default', color: favorites.size > 0 ? '#111' : '#aaa', fontSize: '12px', fontWeight: 500, letterSpacing: '.01em' }}>
+              <svg viewBox="0 0 24 24" width={16} height={16} fill={favorites.size > 0 ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={1.8}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              <span className="nav-label">Favorites{favorites.size > 0 ? ` (${favorites.size})` : ''}</span>
+            </button>
+
+            {/* Download */}
+            {gallery.settings?.download_zip !== false && (
+              <button onClick={downloading ? cancelDownload : downloadAll} disabled={!downloading && photos.length === 0} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'none', border: 'none', cursor: photos.length === 0 ? 'default' : 'pointer', color: downloading ? '#c0392b' : '#555', fontSize: '12px', fontWeight: 500, letterSpacing: '.01em', transition: 'color .15s' }}>
+                {downloading
+                  ? <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  : <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                }
+                <span className="nav-label">{downloading ? `Annulla (${downloadProgress}%)` : 'Download'}</span>
+              </button>
+            )}
+
+            {/* Carrello / Share */}
+            <button onClick={() => setCartOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer', color: cartCount > 0 ? '#111' : '#555', fontSize: '12px', fontWeight: cartCount > 0 ? 600 : 500, letterSpacing: '.01em', transition: 'color .15s' }}>
+              <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              <span className="nav-label">{cartCount > 0 ? `Carrello (${cartCount})` : 'Share'}</span>
+            </button>
+
+            {/* Slideshow */}
+            <button onClick={() => setSlideshowOpen(true)} disabled={photos.length === 0} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'none', border: 'none', cursor: photos.length === 0 ? 'default' : 'pointer', color: '#555', fontSize: '12px', fontWeight: 500, letterSpacing: '.01em', transition: 'color .15s' }}>
+              <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <span className="nav-label">Slideshow</span>
+            </button>
+
+            {/* I miei ordini */}
+            {pastOrders.length > 0 && (
+              <button onClick={() => setOrdersOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer', color: '#555', fontSize: '12px', fontWeight: 500, letterSpacing: '.01em' }}>
+                <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                <span className="nav-label">Ordini</span>
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* ── PHOTO GRID ─────────────────────────────────────────────────── */}
-        <div id="photos" style={{ padding: 'clamp(16px, 3vw, 28px) clamp(16px, 4vw, 40px) 48px' }}>
+        <div id="photos" style={{ padding: 'clamp(12px, 2vw, 20px) clamp(12px, 3vw, 24px) 60px' }}>
           {photos.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '80px 20px', color: '#bbb' }}>
               <p style={{ fontSize: '14px' }}>Le foto sono in arrivo…</p>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(160px, 100%), 1fr))', gap: 5 }}>
+            <div style={{ columns: 4, columnGap: 6 }}>
               {photos.map((photo, i) => (
                 <PhotoItem
                   key={photo.id}
@@ -1226,6 +1314,7 @@ export default function ClientePortalPage() {
 
       {/* Orders history drawer */}
       {ordersOpen && <OrderHistoryDrawer orders={pastOrders} onClose={() => setOrdersOpen(false)} />}
+      {slideshowOpen && photos.length > 0 && <SlideshowModal photos={photos} onClose={() => setSlideshowOpen(false)} />}
 
     </>
   )

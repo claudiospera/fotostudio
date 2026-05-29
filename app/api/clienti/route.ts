@@ -36,11 +36,16 @@ export async function GET() {
   const { userId } = await auth()
   if (!userId) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
-  const data = await sql`
-    SELECT * FROM clienti WHERE user_id = ${userId}
-    ORDER BY data_evento ASC NULLS LAST
-  `
-  return NextResponse.json((data as Record<string, unknown>[]).map(normalizeCliente))
+  try {
+    const data = await sql`
+      SELECT * FROM clienti WHERE user_id = ${userId}
+      ORDER BY data_evento ASC NULLS LAST
+    `
+    return NextResponse.json((data as Record<string, unknown>[]).map(normalizeCliente))
+  } catch (err) {
+    console.error('Errore fetch clienti:', err)
+    return NextResponse.json({ error: 'Errore database' }, { status: 500 })
+  }
 }
 
 export async function POST(req: Request) {

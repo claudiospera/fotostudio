@@ -6,8 +6,13 @@ export async function GET() {
   const { userId } = await auth()
   if (!userId) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
-  const data = await sql`SELECT * FROM preventivi WHERE user_id = ${userId} ORDER BY created_at DESC`
-  return NextResponse.json(data)
+  try {
+    const data = await sql`SELECT * FROM preventivi WHERE user_id = ${userId} ORDER BY created_at DESC`
+    return NextResponse.json(data)
+  } catch (err) {
+    console.error('Errore fetch preventivi:', err)
+    return NextResponse.json({ error: 'Errore database' }, { status: 500 })
+  }
 }
 
 export async function POST(request: Request) {
