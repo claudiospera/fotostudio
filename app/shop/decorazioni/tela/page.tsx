@@ -110,14 +110,18 @@ export default function TelaPage() {
   const [uploading,     setUploading]     = useState(false)
   const [photoFilename, setPhotoFilename] = useState<string | undefined>(undefined)
   const [zoom,          setZoom]          = useState(1)
-  const [photoOffset,   setPhotoOffset]   = useState({ x: 0, y: 0 })
+  const [offsetNorm,    setOffsetNorm]    = useState({ x: 0, y: 0 })
   const [photoNatSize,  setPhotoNatSize]  = useState<{ w: number; h: number } | null>(null)
   const [isRendering,   setIsRendering]   = useState(false)
-
   // Dimensioni effettive con rotazione
   const canvasW   = rotated ? Math.max(variant.widthCm, variant.heightCm) : variant.widthCm
   const canvasH   = rotated ? Math.min(variant.widthCm, variant.heightCm) : variant.heightCm
   const isSquare  = variant.widthCm === variant.heightCm
+
+  // Dimensioni slot editor (proporzioni reali della tela, max 280px)
+  const EDITOR_MAX = 280
+  const slotW = canvasW >= canvasH ? EDITOR_MAX : Math.round(EDITOR_MAX * canvasW / canvasH)
+  const slotH = canvasH >= canvasW ? EDITOR_MAX : Math.round(EDITOR_MAX * canvasH / canvasW)
 
   useEffect(() => {
     return () => { if (photoUrl) URL.revokeObjectURL(photoUrl) }
@@ -132,6 +136,7 @@ export default function TelaPage() {
     setPhotoFilename(file.name)
     setUploading(true)
     setZoom(1)
+    setOffsetNorm({ x: 0, y: 0 })
     e.target.value = ''
     try {
       const res = await fetch('/api/shop/presign-photo', {
@@ -154,7 +159,7 @@ export default function TelaPage() {
     setUploadedUrl(null)
     setPhotoFilename(undefined)
     setZoom(1)
-    setPhotoOffset({ x: 0, y: 0 })
+    setOffsetNorm({ x: 0, y: 0 })
     setPhotoNatSize(null)
   }, [photoUrl])
 
@@ -262,98 +267,12 @@ export default function TelaPage() {
         maxWidth: 1140, margin: '0 auto',
         padding: 'clamp(24px, 4vw, 48px) clamp(20px, 5vw, 48px)',
         display: 'grid',
-        gridTemplateColumns: 'minmax(300px, 460px) 1fr',
-        gap: 'clamp(24px, 4vw, 64px)',
+        gridTemplateColumns: '1fr minmax(300px, 400px)',
+        gap: 'clamp(24px, 4vw, 48px)',
         alignItems: 'start',
       }}>
 
-        {/* ── SINISTRA: Scena ambiente ─────────────────────────────────────── */}
-        <div className="shop-sticky" style={{ position: 'sticky', top: 88 }}>
-
-          <p style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 20 }}>
-            Anteprima in ambiente
-          </p>
-
-          <RoomScene
-            widthCm={canvasW}
-            heightCm={canvasH}
-            borderType={borderType}
-            photoUrl={photoUrl}
-            zoom={zoom}
-            onUploadClick={() => fileInputRef.current?.click()}
-            onOffsetChange={(xNorm, yNorm) => setPhotoOffset({ x: xNorm, y: yNorm })}
-            onNatSize={(nw, nh) => setPhotoNatSize({ w: nw, h: nh })}
-          />
-
-          {/* Controlli foto */}
-          {photoUrl ? (
-            <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <ZoomIn size={14} color="#888" />
-                <input
-                  type="range" min={1} max={2} step={0.01} value={zoom}
-                  onChange={e => setZoom(Number(e.target.value))}
-                  style={{ flex: 1, accentColor: '#00c1de', cursor: 'pointer', height: 4, touchAction: 'none' }}
-                  aria-label="Zoom foto"
-                />
-                <span style={{ fontSize: '11px', color: '#aaa', minWidth: 32, textAlign: 'right' }}>
-                  {Math.round(zoom * 100)}%
-                </span>
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  style={{
-                    flex: 1, padding: '8px 0', borderRadius: 8,
-                    border: '1px solid #e0e0e0', background: '#fff',
-                    fontSize: '12px', fontWeight: 600, color: '#555',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                  }}
-                >
-                  <Upload size={12} /> Cambia foto
-                </button>
-                <button
-                  onClick={handleRemovePhoto}
-                  title="Rimuovi foto"
-                  style={{
-                    padding: '8px 12px', borderRadius: 8,
-                    border: '1px solid #e0e0e0', background: '#fff',
-                    fontSize: '12px', color: '#aaa', cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}
-                >
-                  <RotateCcw size={12} />
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div style={{ marginTop: 14, textAlign: 'center' }}>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                style={{
-                  padding: '10px 22px', borderRadius: 10,
-                  border: '1.5px dashed #c0c0c0', background: 'transparent',
-                  fontSize: '12px', fontWeight: 600, color: '#888',
-                  cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 7,
-                  transition: 'all .15s',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = '#00c1de'; e.currentTarget.style.color = '#00c1de' }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = '#c0c0c0'; e.currentTarget.style.color = '#888' }}
-              >
-                <Upload size={13} /> Carica la tua foto
-              </button>
-            </div>
-          )}
-
-          {/* Tag riepilogo */}
-          <div style={{ marginTop: 16, display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-            <Tag>{canvasW}×{canvasH} cm</Tag>
-            {!isSquare && <Tag>{rotated ? 'Orizzontale' : 'Verticale'}</Tag>}
-            <Tag>Bordo {borderType.label}</Tag>
-          </div>
-        </div>
-
-        {/* ── DESTRA: Configuratore ───────────────────────────────────────── */}
+        {/* ── SINISTRA: Opzioni ───────────────────────────────────────────── */}
         <div className="shop-first-mobile" style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
 
           <div>
@@ -361,7 +280,7 @@ export default function TelaPage() {
               Stampa su Tela
             </h2>
             <p style={{ fontSize: '14px', color: '#666', lineHeight: 1.65 }}>
-              Scegli il formato, il bordo e l'orientamento. Carica la tua foto per vedere l'anteprima in ambiente.
+              Scegli il formato e il bordo. Carica la tua foto, riposizionala e poi aggiungila al carrello.
             </p>
           </div>
 
@@ -387,63 +306,6 @@ export default function TelaPage() {
               ))}
             </div>
           </Section>
-
-          {/* Orientamento */}
-          {!isSquare && (
-            <Section title="Orientamento">
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button
-                  onClick={() => setRotated(false)}
-                  style={{
-                    flex: 1, padding: '12px 16px', borderRadius: 10,
-                    border: `2px solid ${!rotated ? '#00c1de' : '#e0e0e0'}`,
-                    background: !rotated ? 'rgba(0,193,222,0.06)' : '#fff',
-                    cursor: 'pointer', transition: 'all .15s',
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    fontFamily: 'Montserrat, sans-serif',
-                  }}
-                >
-                  <div style={{ width: 18, height: 24, border: `2px solid ${!rotated ? '#00c1de' : '#ccc'}`, borderRadius: 3, flexShrink: 0, transition: 'border-color .15s' }} />
-                  <div>
-                    <p style={{ fontSize: '13px', fontWeight: 700, color: !rotated ? '#00c1de' : '#0a0a0a', marginBottom: 2 }}>Verticale</p>
-                    <p style={{ fontSize: '11px', color: '#888' }}>
-                      {Math.min(variant.widthCm, variant.heightCm)}×{Math.max(variant.widthCm, variant.heightCm)} cm
-                    </p>
-                  </div>
-                  {!rotated && (
-                    <div style={{ marginLeft: 'auto', width: 20, height: 20, borderRadius: '50%', background: '#00c1de', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Check size={11} color="#fff" strokeWidth={3} />
-                    </div>
-                  )}
-                </button>
-
-                <button
-                  onClick={() => setRotated(true)}
-                  style={{
-                    flex: 1, padding: '12px 16px', borderRadius: 10,
-                    border: `2px solid ${rotated ? '#00c1de' : '#e0e0e0'}`,
-                    background: rotated ? 'rgba(0,193,222,0.06)' : '#fff',
-                    cursor: 'pointer', transition: 'all .15s',
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    fontFamily: 'Montserrat, sans-serif',
-                  }}
-                >
-                  <div style={{ width: 24, height: 18, border: `2px solid ${rotated ? '#00c1de' : '#ccc'}`, borderRadius: 3, flexShrink: 0, transition: 'border-color .15s' }} />
-                  <div>
-                    <p style={{ fontSize: '13px', fontWeight: 700, color: rotated ? '#00c1de' : '#0a0a0a', marginBottom: 2 }}>Orizzontale</p>
-                    <p style={{ fontSize: '11px', color: '#888' }}>
-                      {Math.max(variant.widthCm, variant.heightCm)}×{Math.min(variant.widthCm, variant.heightCm)} cm
-                    </p>
-                  </div>
-                  {rotated && (
-                    <div style={{ marginLeft: 'auto', width: 20, height: 20, borderRadius: '50%', background: '#00c1de', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Check size={11} color="#fff" strokeWidth={3} />
-                    </div>
-                  )}
-                </button>
-              </div>
-            </Section>
-          )}
 
           {/* Tipo di bordo */}
           <Section title="Tipo di bordo" note="Spessore telaio: 2,5 cm">
@@ -522,15 +384,10 @@ export default function TelaPage() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
               }}
             >
-              {addedFeedback ? (
-                <><Check size={18} strokeWidth={3} /> Aggiunto al carrello!</>
-              ) : uploading ? (
-                <>Caricamento foto…</>
-              ) : isRendering ? (
-                <>Composizione immagine…</>
-              ) : (
-                <><ShoppingCart size={18} /> Aggiungi al carrello</>
-              )}
+              {addedFeedback ? <><Check size={18} strokeWidth={3} /> Aggiunto al carrello!</>
+                : uploading ? <>Caricamento foto…</>
+                : isRendering ? <>Composizione immagine…</>
+                : <><ShoppingCart size={18} /> Aggiungi al carrello</>}
             </button>
 
             <Link href="/shop/carrello" style={{
@@ -539,7 +396,6 @@ export default function TelaPage() {
               border: '2px solid #00c1de', color: '#00c1de',
               background: '#fff', fontFamily: 'Poppins, sans-serif',
               fontWeight: 700, fontSize: '13px', textDecoration: 'none',
-              transition: 'all .15s',
             }}>
               🛒 Vai al carrello
             </Link>
@@ -548,6 +404,137 @@ export default function TelaPage() {
               Spedizione calcolata al checkout · Telaio in legno incluso · Gancio incluso
             </p>
           </div>
+        </div>
+
+        {/* ── DESTRA: Editor foto + Anteprima ambiente ────────────────────── */}
+        <div className="shop-sticky" style={{ position: 'sticky', top: 88, display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+          {/* Card: Modifica foto */}
+          <div style={{ background: '#fff', border: '1px solid #e8e8e8', borderRadius: 16, padding: 20, display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center' }}>
+            <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <p style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '.12em' }}>
+                Modifica foto
+              </p>
+              {!photoUrl && (
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    border: '1.5px solid #00c1de', borderRadius: 100,
+                    padding: '5px 14px', fontSize: '11px', fontWeight: 600, color: '#00c1de',
+                    background: 'none', cursor: 'pointer', fontFamily: 'Montserrat, sans-serif',
+                  }}
+                >
+                  <Upload size={11} /> Aggiungi foto
+                </button>
+              )}
+            </div>
+
+            {/* Orientamento */}
+            {!isSquare && (
+              <div style={{ display: 'flex', width: '100%', border: '1.5px solid #e0e0e0', borderRadius: 9, overflow: 'hidden' }}>
+                {([
+                  { val: false, label: 'Verticale',    icon: '↕' },
+                  { val: true,  label: 'Orizzontale',  icon: '↔' },
+                ] as const).map(o => (
+                  <button
+                    key={String(o.val)}
+                    onClick={() => setRotated(o.val)}
+                    style={{
+                      flex: 1, border: 'none', padding: '9px 0', cursor: 'pointer',
+                      fontSize: '13px', fontWeight: 600,
+                      background: rotated === o.val ? '#00c1de' : '#f7f7f7',
+                      color: rotated === o.val ? '#fff' : '#888',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                      transition: 'all .15s', fontFamily: 'Montserrat, sans-serif',
+                    }}
+                  >
+                    <span style={{ fontSize: '16px' }}>{o.icon}</span> {o.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Slot foto (draggabile, proporzioni tela) */}
+            <div style={{ boxShadow: '4px 6px 24px rgba(0,0,0,0.14)', borderRadius: 4 }}>
+              <PhotoSlot
+                w={slotW} h={slotH}
+                photoUrl={photoUrl} zoom={zoom}
+                offsetNorm={offsetNorm}
+                onOffsetNormChange={(x, y) => setOffsetNorm({ x, y })}
+                onUploadClick={() => fileInputRef.current?.click()}
+                onNatSize={(nw, nh) => setPhotoNatSize({ w: nw, h: nh })}
+              />
+            </div>
+
+            {/* Zoom */}
+            {photoUrl && (
+              <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <ZoomIn size={13} color="#888" />
+                <input
+                  type="range" min={1} max={2.5} step={0.01} value={zoom}
+                  onChange={e => setZoom(Number(e.target.value))}
+                  style={{ flex: 1, accentColor: '#00c1de', cursor: 'pointer', height: 4, touchAction: 'none' }}
+                  aria-label="Zoom foto"
+                />
+                <span style={{ fontSize: '11px', color: '#aaa', minWidth: 34, textAlign: 'right' }}>
+                  {Math.round(zoom * 100)}%
+                </span>
+              </div>
+            )}
+
+            {/* Cambia foto / Rimuovi */}
+            {photoUrl && (
+              <>
+                <div style={{ width: '100%', display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{
+                      flex: 1, padding: '8px 0', borderRadius: 8,
+                      border: '1px solid #e0e0e0', background: '#fff',
+                      fontSize: '12px', fontWeight: 600, color: '#555',
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    }}
+                  >
+                    <Upload size={12} /> Cambia foto
+                  </button>
+                  <button onClick={handleRemovePhoto} title="Rimuovi foto"
+                    style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #e0e0e0', background: '#fff', fontSize: '12px', color: '#aaa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <RotateCcw size={12} />
+                  </button>
+                </div>
+                <p style={{ fontSize: '11px', color: '#bbb', textAlign: 'center', margin: '-4px 0 0' }}>
+                  Trascina la foto per centrare il soggetto
+                </p>
+              </>
+            )}
+
+            {/* Tag riepilogo */}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+              <Tag>{canvasW}×{canvasH} cm</Tag>
+              {!isSquare && <Tag>{rotated ? 'Orizzontale' : 'Verticale'}</Tag>}
+              <Tag>Bordo {borderType.label}</Tag>
+            </div>
+          </div>
+
+          {/* Card: Anteprima in ambiente */}
+          <div style={{ background: '#fff', border: '1px solid #e8e8e8', borderRadius: 16, padding: 20 }}>
+            <p style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 16 }}>
+              Anteprima in ambiente
+            </p>
+            <RoomScene
+              widthCm={canvasW}
+              heightCm={canvasH}
+              borderType={borderType}
+              photoUrl={photoUrl}
+              zoom={zoom}
+              offsetNorm={offsetNorm}
+              onOffsetNormChange={(x, y) => setOffsetNorm({ x, y })}
+              onUploadClick={() => fileInputRef.current?.click()}
+              onNatSize={(nw, nh) => setPhotoNatSize({ w: nw, h: nh })}
+            />
+          </div>
+
         </div>
       </div>
 
@@ -592,14 +579,15 @@ export default function TelaPage() {
 // Stessa scena del forex ma con effetto tela (bordo laterale + ombra inset)
 
 function RoomScene({
-  widthCm, heightCm, borderType, photoUrl, zoom, onUploadClick, onOffsetChange, onNatSize,
+  widthCm, heightCm, borderType, photoUrl, zoom, offsetNorm, onOffsetNormChange, onUploadClick, onNatSize,
 }: {
   widthCm: number; heightCm: number
   borderType: BorderType
   photoUrl: string | null
   zoom: number
+  offsetNorm: { x: number; y: number }
+  onOffsetNormChange: (x: number, y: number) => void
   onUploadClick: () => void
-  onOffsetChange?: (xNorm: number, yNorm: number) => void
   onNatSize?: (nw: number, nh: number) => void
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -690,8 +678,9 @@ function RoomScene({
           <PhotoSlot
             w={panelW} h={panelH}
             photoUrl={photoUrl} zoom={zoom}
+            offsetNorm={offsetNorm}
+            onOffsetNormChange={onOffsetNormChange}
             onUploadClick={onUploadClick}
-            onOffsetChange={onOffsetChange}
             onNatSize={onNatSize}
           />
           {/* Inset ombra bordo tela */}
@@ -713,28 +702,31 @@ function RoomScene({
 
 // ─── PhotoSlot ────────────────────────────────────────────────────────────────
 
-function PhotoSlot({ w, h, photoUrl, zoom, onUploadClick, onOffsetChange, onNatSize }: {
-  w: number; h: number; photoUrl: string | null; zoom: number; onUploadClick: () => void
-  onOffsetChange?: (xNorm: number, yNorm: number) => void
+function PhotoSlot({ w, h, photoUrl, zoom, offsetNorm, onOffsetNormChange, onUploadClick, onNatSize }: {
+  w: number; h: number; photoUrl: string | null; zoom: number
+  offsetNorm: { x: number; y: number }
+  onOffsetNormChange: (x: number, y: number) => void
+  onUploadClick: () => void
   onNatSize?: (nw: number, nh: number) => void
 }) {
-  const [offset,      setOffset]      = useState({ x: 0, y: 0 })
   const [isDragging,  setIsDragging]  = useState(false)
   const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null)
   const dragRef  = useRef<{ startMouseX: number; startMouseY: number; startOffsetX: number; startOffsetY: number } | null>(null)
-  const stateRef = useRef({ offset: { x: 0, y: 0 }, w, h, zoom, natW: 0, natH: 0 })
+  const stateRef = useRef({ w, h, zoom, natW: 0, natH: 0, oxNorm: 0, oyNorm: 0 })
 
   useEffect(() => {
-    stateRef.current = { offset, w, h, zoom, natW: naturalSize?.w ?? 0, natH: naturalSize?.h ?? 0 }
-  }, [offset, w, h, zoom, naturalSize])
+    stateRef.current = { w, h, zoom, natW: naturalSize?.w ?? 0, natH: naturalSize?.h ?? 0, oxNorm: offsetNorm.x, oyNorm: offsetNorm.y }
+  }, [w, h, zoom, naturalSize, offsetNorm])
 
-  useEffect(() => { setOffset({ x: 0, y: 0 }); setNaturalSize(null); setIsDragging(false); dragRef.current = null }, [photoUrl])
+  useEffect(() => { setNaturalSize(null); setIsDragging(false); dragRef.current = null }, [photoUrl])
 
   useEffect(() => {
     if (!naturalSize) return
     const { maxX, maxY } = getCoverBounds(naturalSize.w, naturalSize.h, w, h, zoom)
-    setOffset(prev => clampOffset(prev.x, prev.y, maxX, maxY))
-  }, [zoom, w, h, naturalSize])
+    const curPx = { x: offsetNorm.x * w, y: offsetNorm.y * h }
+    const clamped = clampOffset(curPx.x, curPx.y, maxX, maxY)
+    onOffsetNormChange(clamped.x / w, clamped.y / h)
+  }, [zoom, w, h, naturalSize]) // eslint-disable-line
 
   useEffect(() => {
     if (!photoUrl) return
@@ -746,8 +738,7 @@ function PhotoSlot({ w, h, photoUrl, zoom, onUploadClick, onOffsetChange, onNatS
       const dx = clientX - dragRef.current.startMouseX
       const dy = clientY - dragRef.current.startMouseY
       const clamped = clampOffset(dragRef.current.startOffsetX + dx, dragRef.current.startOffsetY + dy, maxX, maxY)
-      setOffset(clamped)
-      onOffsetChange?.(clamped.x / w, clamped.y / h)
+      onOffsetNormChange(clamped.x / cw, clamped.y / ch)
     }
     const onEnd = () => { if (!dragRef.current) return; dragRef.current = null; setIsDragging(false) }
     const onMouseMove = (e: MouseEvent) => onMove(e.clientX, e.clientY)
@@ -771,7 +762,8 @@ function PhotoSlot({ w, h, photoUrl, zoom, onUploadClick, onOffsetChange, onNatS
 
   function startDrag(clientX: number, clientY: number) {
     if (!canDrag) return
-    dragRef.current = { startMouseX: clientX, startMouseY: clientY, startOffsetX: stateRef.current.offset.x, startOffsetY: stateRef.current.offset.y }
+    const { w: cw, h: ch, oxNorm, oyNorm } = stateRef.current
+    dragRef.current = { startMouseX: clientX, startMouseY: clientY, startOffsetX: oxNorm * cw, startOffsetY: oyNorm * ch }
     setIsDragging(true)
   }
 
@@ -779,8 +771,8 @@ function PhotoSlot({ w, h, photoUrl, zoom, onUploadClick, onOffsetChange, onNatS
     const coverScale = naturalSize ? Math.max(w / naturalSize.w, h / naturalSize.h) : 1
     const imgW = naturalSize ? naturalSize.w * coverScale * zoom : w
     const imgH = naturalSize ? naturalSize.h * coverScale * zoom : h
-    const posX = (w - imgW) / 2 + offset.x
-    const posY = (h - imgH) / 2 + offset.y
+    const posX = (w - imgW) / 2 + offsetNorm.x * w
+    const posY = (h - imgH) / 2 + offsetNorm.y * h
     return (
       <div
         style={{
@@ -817,6 +809,121 @@ function PhotoSlot({ w, h, photoUrl, zoom, onUploadClick, onOffsetChange, onNatS
       <Camera size={Math.max(14, Math.min(22, w / 8))} color="#aaa" strokeWidth={1.5} />
       {w > 60 && <span style={{ fontSize: '9px', color: '#bbb', fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase' }}>Carica foto</span>}
     </button>
+  )
+}
+
+// ─── PhotoEditorModal ─────────────────────────────────────────────────────────
+// Modale fullscreen per riposizionare la foto senza l'anteprima ambiente
+
+function PhotoEditorModal({
+  photoUrl, photoNatSize, canvasW, canvasH,
+  zoom, onZoomChange,
+  offsetNorm, onOffsetNormChange,
+  onClose,
+}: {
+  photoUrl: string
+  photoNatSize: { w: number; h: number } | null
+  canvasW: number; canvasH: number
+  zoom: number; onZoomChange: (z: number) => void
+  offsetNorm: { x: number; y: number }
+  onOffsetNormChange: (x: number, y: number) => void
+  onClose: () => void
+}) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [editorW, setEditorW] = useState(300)
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const ro = new ResizeObserver(([entry]) => setEditorW(Math.round(entry.contentRect.width)))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  const aspectRatio = canvasH / canvasW
+  const editorH = Math.round(editorW * aspectRatio)
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 1000,
+      background: 'rgba(10,10,10,0.92)',
+      display: 'flex', flexDirection: 'column',
+      fontFamily: 'Montserrat, sans-serif',
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: '16px 20px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        borderBottom: '1px solid rgba(255,255,255,0.08)',
+      }}>
+        <div>
+          <p style={{ color: '#fff', fontWeight: 700, fontSize: 15, margin: 0 }}>Posiziona la tua foto</p>
+          <p style={{ color: '#888', fontSize: 11, margin: '3px 0 0' }}>
+            Trascina per riposizionare · Zoom per ingrandire
+          </p>
+        </div>
+        <button
+          onClick={onClose}
+          style={{
+            background: '#00c1de', color: '#fff', border: 'none', borderRadius: 10,
+            padding: '10px 24px', fontWeight: 700, fontSize: 14, cursor: 'pointer',
+            fontFamily: 'Montserrat, sans-serif',
+          }}
+        >
+          Fatto ✓
+        </button>
+      </div>
+
+      {/* Canvas area */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+        <div ref={containerRef} style={{ width: '100%', maxWidth: 560 }}>
+          {editorW > 0 && (
+            <div style={{
+              width: editorW, height: editorH,
+              borderRadius: 12, overflow: 'hidden',
+              boxShadow: '0 8px 48px rgba(0,0,0,0.7)',
+              border: '2px solid rgba(255,255,255,0.12)',
+            }}>
+              <PhotoSlot
+                w={editorW} h={editorH}
+                photoUrl={photoUrl} zoom={zoom}
+                offsetNorm={offsetNorm}
+                onOffsetNormChange={onOffsetNormChange}
+                onUploadClick={() => {}}
+                onNatSize={() => {}}
+              />
+            </div>
+          )}
+          {/* Indicatore formato */}
+          <p style={{ textAlign: 'center', color: '#666', fontSize: 11, marginTop: 10, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase' }}>
+            {canvasW}×{canvasH} cm · Proporzioni reali
+          </p>
+        </div>
+      </div>
+
+      {/* Zoom slider */}
+      <div style={{ padding: '0 28px 28px' }}>
+        <div style={{
+          background: 'rgba(255,255,255,0.05)', borderRadius: 12,
+          padding: '16px 20px',
+          border: '1px solid rgba(255,255,255,0.08)',
+        }}>
+          <p style={{ color: '#888', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 12 }}>Zoom</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <ZoomIn size={16} color="#666" />
+            <input
+              type="range" min={1} max={2.5} step={0.01} value={zoom}
+              onChange={e => onZoomChange(Number(e.target.value))}
+              style={{ flex: 1, accentColor: '#00c1de', cursor: 'pointer', height: 4, touchAction: 'none' }}
+              aria-label="Zoom foto"
+            />
+            <span style={{ fontSize: 13, color: '#aaa', minWidth: 40, textAlign: 'right', fontWeight: 700 }}>
+              {Math.round(zoom * 100)}%
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 
