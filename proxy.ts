@@ -10,6 +10,7 @@ const isPublicRoute = createRouteMatcher([
   '/api/preventivi-pubblici/(.*)',
   '/api/preventivo-sessioni/(.*)',
   '/api/scheda-pub/(.*)',
+  '/api/ical',
   '/api/shop/orders',
   '/api/shop/orders/(.*)',
   '/api/shop/validate-coupon',
