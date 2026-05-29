@@ -405,24 +405,9 @@ function ClientiContent() {
             📅 Sincronizza con iPhone / Mac / Google Calendar
           </p>
           <p style={{ fontSize: 12, color: 'var(--t2)', margin: 0, lineHeight: 1.6 }}>
-            <strong style={{ color: '#22c55e' }}>Metodo 1 — iPhone (tocca il pulsante verde da Safari):</strong> apri questa pagina dal browser Safari del tuo iPhone e tocca il pulsante verde. Safari passa il link all&apos;app Calendario che si apre con la richiesta di iscrizione. <strong style={{ color: '#22c55e' }}>Non copiare il link nelle Impostazioni</strong> — funziona solo toccandolo direttamente.<br />
-            <strong style={{ color: 'var(--tx)' }}>Metodo 2 — Mac:</strong> Calendario → File → Nuovo calendario con iscrizione → incolla il link copiato.<br />
-            <strong style={{ color: 'var(--tx)' }}>Metodo 3 — Google Calendar:</strong> Altre agende → Da URL → incolla il link copiato.
+            <strong style={{ color: 'var(--ac)' }}>Metodo consigliato — Mac + iPhone via iCloud:</strong> su Mac apri <strong>Calendario → File → Nuovo calendario con iscrizione</strong>, incolla il link qui sotto, imposta aggiornamento &quot;Ogni ora&quot; e salva su iCloud. Il calendario apparirà automaticamente su iPhone.<br />
+            <strong style={{ color: 'var(--tx)' }}>Metodo alternativo — Google Calendar:</strong> Altre agende → Da URL → incolla il link copiato. Poi attiva la sincronizzazione Google su iPhone.
           </p>
-
-          {/* Pulsante apri direttamente su iPhone (webcal:// → apre Calendar.app) */}
-          <a
-            href={icalUrl}
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              padding: '10px 16px', borderRadius: 'var(--r2)',
-              background: '#22c55e', color: '#fff',
-              fontSize: 13, fontWeight: 700, textDecoration: 'none',
-              opacity: icalUrl ? 1 : 0.4, pointerEvents: icalUrl ? 'auto' : 'none',
-            }}
-          >
-            📅 Tocca qui da Safari iPhone per iscriverti al Calendario
-          </a>
 
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <code style={{
