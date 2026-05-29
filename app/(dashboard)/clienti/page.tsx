@@ -167,7 +167,7 @@ function ClientiContent() {
   }, [])
 
   const icalHttpUrl = icalToken ? `https://storiedaraccontare.it/api/ical?token=${icalToken}` : ''
-  const icalUrl     = icalToken ? `webcals://storiedaraccontare.it/api/ical?token=${icalToken}` : ''
+  const icalUrl     = icalHttpUrl
 
   const copyIcalUrl = () => {
     if (!icalUrl) return
@@ -404,8 +404,9 @@ function ClientiContent() {
             📅 Sincronizza con iPhone / Mac / Google Calendar
           </p>
           <p style={{ fontSize: 12, color: 'var(--t2)', margin: 0, lineHeight: 1.6 }}>
-            <strong style={{ color: 'var(--tx)' }}>Metodo 1 — iPhone/iPad (più semplice):</strong> apri questa pagina da Safari sul tuo iPhone e tocca il pulsante verde. iOS aprirà direttamente l&apos;app Calendario e chiederà conferma per la sottoscrizione.<br />
-            <strong style={{ color: 'var(--tx)' }}>Metodo 2 — Mac/Google Calendar:</strong> copia il link e incollalo in <span style={{ color: 'var(--t3)' }}>Impostazioni → Calendario → Account → Altro → Calendario con iscrizione</span> oppure in Google Calendar → Altre agende → Da URL.
+            <strong style={{ color: 'var(--tx)' }}>Metodo 1 — iPhone/iPad (più semplice):</strong> apri questa pagina da Safari sul tuo iPhone e tocca il pulsante verde. Safari scarica il file e propone di aprirlo in Calendario.<br />
+            <strong style={{ color: 'var(--tx)' }}>Metodo 2 — Impostazioni iPhone:</strong> copia il link e vai in <span style={{ color: 'var(--ac)' }}>Impostazioni → Calendario → Account → Aggiungi account → Altro → <strong>Aggiungi calendario con iscrizione</strong></span> (NON CalDAV). Incolla il link e tocca Trova.<br />
+            <strong style={{ color: 'var(--tx)' }}>Metodo 3 — Mac/Google:</strong> incolla il link in Google Calendar → Altre agende → Da URL, oppure in Calendario Mac → File → Nuovo calendario con iscrizione.
           </p>
 
           {/* Pulsante apri direttamente su iPhone (webcal:// → apre Calendar.app) */}
