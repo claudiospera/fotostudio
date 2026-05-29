@@ -167,7 +167,7 @@ function ClientiContent() {
   }, [])
 
   const icalUrl = icalToken
-    ? `https://storiedaraccontare.it/api/ical?token=${icalToken}`
+    ? `webcal://storiedaraccontare.it/api/ical?token=${icalToken}`
     : ''
 
   const copyIcalUrl = () => {

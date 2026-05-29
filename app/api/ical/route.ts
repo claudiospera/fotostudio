@@ -109,8 +109,8 @@ export async function GET(req: Request) {
   return new NextResponse(ical, {
     headers: {
       'Content-Type': 'text/calendar; charset=utf-8',
-      'Content-Disposition': 'attachment; filename="clienti.ics"',
-      'Cache-Control': 'no-cache, no-store',
+      'Content-Disposition': 'inline; filename="clienti.ics"',
+      'Cache-Control': 'public, max-age=3600',
     },
   })
 }
