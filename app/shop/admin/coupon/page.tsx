@@ -4,6 +4,32 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Plus, Trash2, ToggleLeft, ToggleRight } from 'lucide-react'
 
+const PRODUCTS = [
+  { group: 'Stampe',      items: [
+    { id: 'stampe-classiche',  label: 'Stampe Classiche' },
+    { id: 'stampe-instax',     label: 'Stampe Instax / Polaroid' },
+    { id: 'hahnemuhle',        label: 'Stampe Hahnemühle Fine Art' },
+    { id: 'poster',            label: 'Poster' },
+  ]},
+  { group: 'Decorazioni', items: [
+    { id: 'tela',    label: 'Stampa su Tela' },
+    { id: 'forex',   label: 'Stampa su Forex' },
+    { id: 'cornici', label: 'Cornici' },
+  ]},
+  { group: 'Gadget', items: [
+    { id: 'cuscino',               label: 'Cuscino' },
+    { id: 'puzzle',                label: 'Puzzle' },
+    { id: 'tazza',                 label: 'Tazza' },
+    { id: 'salvadanaio',           label: 'Salvadanaio' },
+    { id: 'borraccia-inox',        label: 'Borraccia Inox' },
+    { id: 'borraccia-alluminio',   label: 'Borraccia Alluminio' },
+    { id: 'portachiavi',           label: 'Portachiavi' },
+    { id: 'portachiavi-ecopelle',  label: 'Portachiavi Ecopelle' },
+    { id: 'tappetino-mouse',       label: 'Tappetino Mouse' },
+    { id: 'photo-globe-cuore',     label: 'Photo Globe Cuore' },
+  ]},
+]
+
 interface Coupon {
   id: string
   code: string
@@ -15,6 +41,7 @@ interface Coupon {
   used_count: number
   active: boolean
   created_at: string
+  product_ids: string[]
 }
 
 function formatPrice(cents: number) {
@@ -53,6 +80,7 @@ export default function AdminCouponPage() {
   const [validFrom, setValidFrom] = useState('')
   const [validUntil, setValidUntil] = useState('')
   const [maxUses, setMaxUses] = useState('')
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([])
 
   useEffect(() => {
     fetch('/api/shop/admin/coupons')
@@ -77,6 +105,7 @@ export default function AdminCouponPage() {
         valid_from: validFrom || null,
         valid_until: validUntil || null,
         max_uses: maxUses ? parseInt(maxUses) : null,
+        product_ids: selectedProducts,
       }),
     })
     const data = await res.json()
@@ -87,7 +116,7 @@ export default function AdminCouponPage() {
     setCoupons(prev => [data, ...prev])
     setShowForm(false)
     setCode(''); setValue(''); setValidFrom(''); setValidUntil(''); setMaxUses('')
-    setType('percent')
+    setType('percent'); setSelectedProducts([])
   }
 
   async function handleToggle(coupon: Coupon) {
@@ -219,6 +248,82 @@ export default function AdminCouponPage() {
                 />
               </div>
 
+              {/* Selettore prodotti */}
+              <div>
+                <label style={labelStyle}>
+                  Prodotti applicabili
+                  <span style={{ fontWeight: 400, color: '#aaa', marginLeft: 6, textTransform: 'none', letterSpacing: 0 }}>
+                    — lascia tutto deselezionato per applicare a tutti i prodotti
+                  </span>
+                </label>
+                <div style={{
+                  border: '1px solid #e8e8e8', borderRadius: 10, overflow: 'hidden',
+                  background: '#fafafa',
+                }}>
+                  {PRODUCTS.map(group => (
+                    <div key={group.group}>
+                      {/* Intestazione gruppo con checkbox seleziona-tutti */}
+                      <div style={{
+                        padding: '8px 14px',
+                        background: '#f3f3f3', borderBottom: '1px solid #e8e8e8',
+                        display: 'flex', alignItems: 'center', gap: 8,
+                      }}>
+                        <input
+                          type="checkbox"
+                          style={{ accentColor: '#00c1de', cursor: 'pointer' }}
+                          checked={group.items.every(p => selectedProducts.includes(p.id))}
+                          onChange={e => {
+                            const ids = group.items.map(p => p.id)
+                            setSelectedProducts(prev =>
+                              e.target.checked
+                                ? [...new Set([...prev, ...ids])]
+                                : prev.filter(id => !ids.includes(id))
+                            )
+                          }}
+                        />
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#555', letterSpacing: '.06em', textTransform: 'uppercase' }}>
+                          {group.group}
+                        </span>
+                      </div>
+                      {/* Prodotti del gruppo */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 0 }}>
+                        {group.items.map(product => (
+                          <label key={product.id} style={{
+                            display: 'flex', alignItems: 'center', gap: 8,
+                            padding: '8px 14px', cursor: 'pointer',
+                            borderBottom: '1px solid #f3f3f3',
+                            background: selectedProducts.includes(product.id) ? 'rgba(0,193,222,0.05)' : 'transparent',
+                            transition: 'background .1s',
+                          }}>
+                            <input
+                              type="checkbox"
+                              style={{ accentColor: '#00c1de', cursor: 'pointer', flexShrink: 0 }}
+                              checked={selectedProducts.includes(product.id)}
+                              onChange={e => {
+                                setSelectedProducts(prev =>
+                                  e.target.checked
+                                    ? [...prev, product.id]
+                                    : prev.filter(id => id !== product.id)
+                                )
+                              }}
+                            />
+                            <span style={{ fontSize: 13, color: '#333' }}>{product.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {selectedProducts.length > 0 && (
+                  <p style={{ fontSize: 12, color: '#00c1de', marginTop: 6, fontWeight: 600 }}>
+                    ✓ Sconto valido solo su: {selectedProducts.map(id => {
+                      const found = PRODUCTS.flatMap(g => g.items).find(p => p.id === id)
+                      return found?.label ?? id
+                    }).join(', ')}
+                  </p>
+                )}
+              </div>
+
               {formError && (
                 <p style={{ fontSize: 13, color: '#e53e3e', background: '#fff5f5', border: '1px solid #fed7d7', borderRadius: 8, padding: '9px 13px' }}>
                   {formError}
@@ -276,7 +381,7 @@ export default function AdminCouponPage() {
               {/* Intestazione tabella */}
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: '140px 90px 90px 100px 100px 70px 80px 80px',
+                gridTemplateColumns: '130px 80px 80px 90px 90px 60px 1fr 70px 80px',
                 padding: '10px 24px',
                 background: '#f9f9f9', borderBottom: '1px solid #e8e8e8',
                 fontSize: 11, fontWeight: 700, color: '#999',
@@ -289,6 +394,7 @@ export default function AdminCouponPage() {
                 <span>Dal</span>
                 <span>Al</span>
                 <span>Usi</span>
+                <span>Prodotti</span>
                 <span>Stato</span>
                 <span></span>
               </div>
@@ -303,7 +409,7 @@ export default function AdminCouponPage() {
                     key={coupon.id}
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: '140px 90px 90px 100px 100px 70px 80px 80px',
+                      gridTemplateColumns: '130px 80px 80px 90px 90px 60px 1fr 70px 80px',
                       padding: '14px 24px',
                       borderBottom: '1px solid #f3f3f3',
                       alignItems: 'center', gap: 8,
@@ -330,6 +436,17 @@ export default function AdminCouponPage() {
                     </span>
                     <span style={{ fontSize: 12, color: exhausted ? '#e53e3e' : '#555' }}>
                       {coupon.used_count}{coupon.max_uses ? `/${coupon.max_uses}` : ''}
+                    </span>
+
+                    {/* Prodotti */}
+                    <span style={{ fontSize: 11, color: '#555' }}>
+                      {!coupon.product_ids?.length
+                        ? <span style={{ color: '#aaa' }}>Tutti</span>
+                        : coupon.product_ids.map(id => {
+                            const found = PRODUCTS.flatMap(g => g.items).find(p => p.id === id)
+                            return found?.label ?? id
+                          }).join(', ')
+                      }
                     </span>
 
                     {/* Badge stato */}

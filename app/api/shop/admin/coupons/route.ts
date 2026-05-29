@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   const { userId } = await auth()
   if (!userId) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
-  const { code, type, value, valid_from, valid_until, max_uses } = await req.json()
+  const { code, type, value, valid_from, valid_until, max_uses, product_ids } = await req.json()
 
   if (!code || !type || !value) {
     return NextResponse.json({ error: 'Codice, tipo e valore sono obbligatori' }, { status: 400 })
@@ -30,15 +30,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'La percentuale deve essere tra 1 e 100' }, { status: 400 })
   }
 
+  const ids: string[] = Array.isArray(product_ids) ? product_ids : []
+
   const rows = await sql`
-    INSERT INTO shop_coupons (code, type, value, valid_from, valid_until, max_uses)
+    INSERT INTO shop_coupons (code, type, value, valid_from, valid_until, max_uses, product_ids)
     VALUES (
       ${code.trim().toUpperCase()},
       ${type},
       ${value},
       ${valid_from || null},
       ${valid_until || null},
-      ${max_uses || null}
+      ${max_uses || null},
+      ${ids}
     )
     RETURNING *
   `

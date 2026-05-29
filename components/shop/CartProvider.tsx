@@ -188,7 +188,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch('/api/shop/validate-coupon', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, total: subtotal }),
+        body: JSON.stringify({
+          code,
+          total: subtotal,
+          items: cart.items.map(i => ({ productId: i.productId, price: i.price, quantity: i.quantity })),
+        }),
       })
       const data = await res.json()
       if (!res.ok) return { ok: false, error: data.error || 'Codice non valido' }
