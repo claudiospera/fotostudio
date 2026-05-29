@@ -16,7 +16,18 @@ interface PublicGallery {
   date?: string
   cover_color?: string
   cover_url?: string | null
-  settings?: { watermark?: boolean; download_singolo?: boolean; download_zip?: boolean }
+  settings?: {
+    watermark?: boolean
+    download_singolo?: boolean
+    download_zip?: boolean
+    show_title?: boolean
+    show_subtitle?: boolean
+    show_date?: boolean
+    theme_palette?: string
+    theme_font?: string
+    theme_grid?: string
+    theme_template?: string
+  }
   photos: Photo[]
   profiles?: { name?: string; studio_name?: string }
 }
@@ -75,6 +86,27 @@ function fmt(n: number) { return n.toFixed(2).replace('.', ',') + ' €' }
 function formatDate(d?: string) {
   if (!d) return null
   return new Date(d).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+// ── theme maps ─────────────────────────────────────────────────────────────
+
+const PALETTE_MAP: Record<string, {
+  heroOverlay: string; navBg: string; navText: string; navBorder: string; navSub: string
+  accent: string; gridBg: string; heroTextColor: string
+}> = {
+  agave:  { heroOverlay: 'linear-gradient(to top, rgba(10,30,20,.78) 0%, rgba(0,0,0,.15) 50%, rgba(0,0,0,.25) 100%)',    navBg: '#fff',     navText: '#111',    navBorder: 'rgba(0,0,0,.08)',         navSub: '#999',    accent: '#8ec9b0', gridBg: '#f8f8f6', heroTextColor: '#fff' },
+  black:  { heroOverlay: 'linear-gradient(to top, rgba(0,0,0,.85) 0%, rgba(0,0,0,.2) 50%, rgba(0,0,0,.3) 100%)',         navBg: '#fff',     navText: '#111',    navBorder: 'rgba(0,0,0,.08)',         navSub: '#999',    accent: '#111',    gridBg: '#f4f4f4', heroTextColor: '#fff' },
+  warm:   { heroOverlay: 'linear-gradient(to top, rgba(25,12,0,.80) 0%, rgba(0,0,0,.1) 50%, rgba(0,0,0,.2) 100%)',       navBg: '#faf8f3', navText: '#2a1a00', navBorder: 'rgba(0,0,0,.07)',         navSub: '#a0886a', accent: '#c9a05a', gridBg: '#faf7f1', heroTextColor: '#fff' },
+  white:  { heroOverlay: 'linear-gradient(to top, rgba(0,0,0,.65) 0%, rgba(0,0,0,.1) 50%, rgba(0,0,0,.2) 100%)',         navBg: '#f8f7f5', navText: '#1a1a1a', navBorder: 'rgba(0,0,0,.06)',         navSub: '#aaa',    accent: '#333',    gridBg: '#ffffff', heroTextColor: '#fff' },
+  dark:   { heroOverlay: 'linear-gradient(to top, rgba(0,0,0,.92) 0%, rgba(0,0,0,.3) 50%, rgba(0,0,0,.45) 100%)',        navBg: '#111',     navText: '#ccc',    navBorder: 'rgba(255,255,255,.08)',   navSub: '#555',    accent: '#888',    gridBg: '#0d0d0d', heroTextColor: '#e0e0e0' },
+  cool:   { heroOverlay: 'linear-gradient(to top, rgba(5,15,35,.82) 0%, rgba(0,0,0,.15) 50%, rgba(0,0,0,.25) 100%)',     navBg: '#fff',     navText: '#111',    navBorder: 'rgba(0,0,0,.08)',         navSub: '#999',    accent: '#7ab0dc', gridBg: '#f5f7fa', heroTextColor: '#fff' },
+}
+
+const FONT_MAP: Record<string, { family: string; googleId: string; weight: string }> = {
+  syne:     { family: "'Syne', sans-serif",         googleId: 'Syne:wght@700;800',              weight: '800' },
+  playfair: { family: "'Playfair Display', serif",  googleId: 'Playfair+Display:wght@400;700',  weight: '700' },
+  bodoni:   { family: "'Bodoni Moda', serif",       googleId: 'Bodoni+Moda:ital,wght@0,400;0,700', weight: '700' },
+  inter:    { family: "'Inter', sans-serif",        googleId: 'Inter:wght@300;400;600',          weight: '400' },
 }
 
 function getSessionId(): string {
@@ -656,9 +688,10 @@ interface PhotoItemProps {
   onToggleFavorite: (photoId: string) => void
   onOpenComment: (photo: Photo) => void
   onOpenOrder: (photo: Photo) => void
+  gridMode?: boolean
 }
 
-function PhotoItem({ photo, index, galleryId, isFavorited, commentCount, inCart, showWatermark, showDownloadSingle, onOpenLightbox, onToggleFavorite, onOpenComment, onOpenOrder }: PhotoItemProps) {
+function PhotoItem({ photo, index, galleryId, isFavorited, commentCount, inCart, showWatermark, showDownloadSingle, onOpenLightbox, onToggleFavorite, onOpenComment, onOpenOrder, gridMode }: PhotoItemProps) {
   const [downloading, setDownloading] = useState(false)
   const [hovered, setHovered] = useState(false)
 
@@ -671,13 +704,13 @@ function PhotoItem({ photo, index, galleryId, isFavorited, commentCount, inCart,
 
   return (
     <div
-      style={{ borderRadius: '3px', overflow: 'hidden', background: '#e8e8e6', position: 'relative', breakInside: 'avoid', marginBottom: 6, cursor: 'pointer' }}
+      style={{ borderRadius: '3px', overflow: 'hidden', background: '#e8e8e6', position: 'relative', breakInside: 'avoid', marginBottom: gridMode ? 0 : 6, cursor: 'pointer', ...(gridMode ? { aspectRatio: '3/2' } : {}) }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onClick={() => onOpenLightbox(index)}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={photo.url} alt={photo.filename} loading="lazy" style={{ width: '100%', height: 'auto', display: 'block' }} />
+      <img src={photo.url} alt={photo.filename} loading="lazy" style={{ width: '100%', height: gridMode ? '100%' : 'auto', objectFit: gridMode ? 'cover' : undefined, display: 'block' }} />
 
       {/* Watermark overlay */}
       {showWatermark && (
@@ -1032,9 +1065,28 @@ export default function ClientePortalPage() {
   const photographer = gallery.profiles?.studio_name ?? gallery.profiles?.name ?? 'Storie da Raccontare'
   const coverBg     = gallery.cover_color ?? '#2a3830'
 
+  // ── theme derivation ──────────────────────────────────────────────────────
+  const paletteId = gallery.settings?.theme_palette ?? 'agave'
+  const fontId    = gallery.settings?.theme_font    ?? 'syne'
+  const gridId    = gallery.settings?.theme_grid    ?? 'masonry'
+  const theme     = PALETTE_MAP[paletteId] ?? PALETTE_MAP['agave']
+  const fontDef   = FONT_MAP[fontId] ?? FONT_MAP['syne']
+
+  const showTitle    = gallery.settings?.show_title    !== false
+  const showSubtitle = gallery.settings?.show_subtitle !== false
+  const showDate     = gallery.settings?.show_date     !== false
+
   return (
     <>
-      <div style={{ minHeight: '100vh', background: '#f8f8f6', fontFamily: 'Inter, DM Sans, sans-serif' }}>
+      {/* Dynamic font link */}
+      {fontId !== 'syne' && (
+        // eslint-disable-next-line @next/next/no-page-custom-font
+        <link
+          rel="stylesheet"
+          href={`https://fonts.googleapis.com/css2?family=${fontDef.googleId}&display=swap`}
+        />
+      )}
+      <div style={{ minHeight: '100vh', background: theme.gridBg, fontFamily: 'Inter, DM Sans, sans-serif' }}>
 
         {/* ── HERO ───────────────────────────────────────────────────────── */}
         <div style={{ position: 'relative', height: '75vh', minHeight: 420, overflow: 'hidden' }}>
@@ -1051,7 +1103,7 @@ export default function ClientePortalPage() {
           })()}
 
           {/* Gradient overlay */}
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,.72) 0%, rgba(0,0,0,.15) 50%, rgba(0,0,0,.25) 100%)' }} />
+          <div style={{ position: 'absolute', inset: 0, background: theme.heroOverlay }} />
 
           {/* Navbar — solo logo */}
           <nav style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: 'clamp(16px, 3vw, 24px) clamp(16px, 4vw, 36px)', display: 'flex', alignItems: 'center', zIndex: 10 }}>
@@ -1064,42 +1116,44 @@ export default function ClientePortalPage() {
           {/* Hero content — centrato */}
           <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px clamp(20px, 6vw, 80px) 20px', textAlign: 'center' }}>
             {gallery.type && (
-              <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '.22em', textTransform: 'uppercase', color: 'rgba(255,255,255,.55)', marginBottom: 20 }}>{gallery.type}</div>
+              <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '.22em', textTransform: 'uppercase', color: `${theme.heroTextColor}88`, marginBottom: 20 }}>{gallery.type}</div>
             )}
-            <h1 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 'clamp(32px, 7vw, 96px)', color: '#fff', letterSpacing: '-0.02em', lineHeight: 1, marginBottom: 8, textTransform: 'uppercase' }}>{gallery.name}</h1>
-            {(gallery.subtitle || gallery.date) && (
+            {showTitle && (
+              <h1 style={{ fontFamily: fontDef.family, fontWeight: fontDef.weight as React.CSSProperties['fontWeight'], fontSize: 'clamp(32px, 7vw, 96px)', color: theme.heroTextColor, letterSpacing: '-0.02em', lineHeight: 1, marginBottom: 8, textTransform: 'uppercase' }}>{gallery.name}</h1>
+            )}
+            {(showSubtitle || showDate) && (gallery.subtitle || gallery.date) && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 36 }}>
-                {gallery.subtitle && <span style={{ fontSize: '15px', color: 'rgba(255,255,255,.55)', fontStyle: 'italic' }}>{gallery.subtitle}</span>}
-                {gallery.date && <span style={{ fontSize: '13px', color: 'rgba(255,255,255,.4)', letterSpacing: '.04em' }}>{formatDate(gallery.date)}</span>}
+                {showSubtitle && gallery.subtitle && <span style={{ fontSize: '15px', color: `${theme.heroTextColor}88`, fontStyle: 'italic' }}>{gallery.subtitle}</span>}
+                {showDate && gallery.date && <span style={{ fontSize: '13px', color: `${theme.heroTextColor}66`, letterSpacing: '.04em' }}>{formatDate(gallery.date)}</span>}
               </div>
             )}
-            {!gallery.subtitle && !gallery.date && <div style={{ marginBottom: 36 }} />}
-            <a href="#photos" style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.22em', textTransform: 'uppercase', color: 'rgba(255,255,255,.9)', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,.5)', paddingBottom: 4, transition: 'color .15s' }}>
+            {!(showSubtitle && gallery.subtitle) && !(showDate && gallery.date) && <div style={{ marginBottom: 36 }} />}
+            <a href="#photos" style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.22em', textTransform: 'uppercase', color: `${theme.heroTextColor}e0`, textDecoration: 'none', borderBottom: `1px solid ${theme.heroTextColor}77`, paddingBottom: 4, transition: 'color .15s' }}>
               View Gallery
             </a>
           </div>
         </div>
 
         {/* ── STICKY NAV BAR ─────────────────────────────────────────────── */}
-        <div style={{ position: 'sticky', top: 0, zIndex: 100, background: '#fff', borderBottom: '1px solid rgba(0,0,0,.08)', padding: '0 clamp(16px, 4vw, 40px)', display: 'flex', alignItems: 'center', gap: 16, height: 56, boxShadow: '0 1px 8px rgba(0,0,0,.06)' }}>
+        <div style={{ position: 'sticky', top: 0, zIndex: 100, background: theme.navBg, borderBottom: `1px solid ${theme.navBorder}`, padding: '0 clamp(16px, 4vw, 40px)', display: 'flex', alignItems: 'center', gap: 16, height: 56, boxShadow: '0 1px 8px rgba(0,0,0,.06)' }}>
           {/* Sinistra: nome galleria + fotografo */}
           <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minWidth: 0, flex: 1 }}>
-            <p style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '13px', color: '#111', letterSpacing: '.01em', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{gallery.name}</p>
-            <p style={{ fontSize: '10px', color: '#999', letterSpacing: '.05em', textTransform: 'uppercase', lineHeight: 1.2, marginTop: 2 }}>{photographer}</p>
+            <p style={{ fontFamily: fontDef.family, fontWeight: 700, fontSize: '13px', color: theme.navText, letterSpacing: '.01em', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{gallery.name}</p>
+            <p style={{ fontSize: '10px', color: theme.navSub, letterSpacing: '.05em', textTransform: 'uppercase', lineHeight: 1.2, marginTop: 2 }}>{photographer}</p>
           </div>
 
           {/* Destra: azioni con testo */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
 
             {/* Favorites */}
-            <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'none', border: 'none', cursor: 'default', color: favorites.size > 0 ? '#111' : '#aaa', fontSize: '12px', fontWeight: 500, letterSpacing: '.01em' }}>
+            <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'none', border: 'none', cursor: 'default', color: favorites.size > 0 ? theme.navText : theme.navSub, fontSize: '12px', fontWeight: 500, letterSpacing: '.01em' }}>
               <svg viewBox="0 0 24 24" width={16} height={16} fill={favorites.size > 0 ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={1.8}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg>
               <span className="nav-label">Favorites{favorites.size > 0 ? ` (${favorites.size})` : ''}</span>
             </button>
 
             {/* Download */}
             {gallery.settings?.download_zip !== false && (
-              <button onClick={downloading ? cancelDownload : downloadAll} disabled={!downloading && photos.length === 0} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'none', border: 'none', cursor: photos.length === 0 ? 'default' : 'pointer', color: downloading ? '#c0392b' : '#555', fontSize: '12px', fontWeight: 500, letterSpacing: '.01em', transition: 'color .15s' }}>
+              <button onClick={downloading ? cancelDownload : downloadAll} disabled={!downloading && photos.length === 0} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'none', border: 'none', cursor: photos.length === 0 ? 'default' : 'pointer', color: downloading ? '#c0392b' : theme.navSub, fontSize: '12px', fontWeight: 500, letterSpacing: '.01em', transition: 'color .15s' }}>
                 {downloading
                   ? <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   : <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -1109,20 +1163,20 @@ export default function ClientePortalPage() {
             )}
 
             {/* Carrello / Share */}
-            <button onClick={() => setCartOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer', color: cartCount > 0 ? '#111' : '#555', fontSize: '12px', fontWeight: cartCount > 0 ? 600 : 500, letterSpacing: '.01em', transition: 'color .15s' }}>
+            <button onClick={() => setCartOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer', color: cartCount > 0 ? theme.navText : theme.navSub, fontSize: '12px', fontWeight: cartCount > 0 ? 600 : 500, letterSpacing: '.01em', transition: 'color .15s' }}>
               <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
               <span className="nav-label">{cartCount > 0 ? `Carrello (${cartCount})` : 'Share'}</span>
             </button>
 
             {/* Slideshow */}
-            <button onClick={() => setSlideshowOpen(true)} disabled={photos.length === 0} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'none', border: 'none', cursor: photos.length === 0 ? 'default' : 'pointer', color: '#555', fontSize: '12px', fontWeight: 500, letterSpacing: '.01em', transition: 'color .15s' }}>
+            <button onClick={() => setSlideshowOpen(true)} disabled={photos.length === 0} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'none', border: 'none', cursor: photos.length === 0 ? 'default' : 'pointer', color: theme.navSub, fontSize: '12px', fontWeight: 500, letterSpacing: '.01em', transition: 'color .15s' }}>
               <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               <span className="nav-label">Slideshow</span>
             </button>
 
             {/* I miei ordini */}
             {pastOrders.length > 0 && (
-              <button onClick={() => setOrdersOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer', color: '#555', fontSize: '12px', fontWeight: 500, letterSpacing: '.01em' }}>
+              <button onClick={() => setOrdersOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer', color: theme.navSub, fontSize: '12px', fontWeight: 500, letterSpacing: '.01em' }}>
                 <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
                 <span className="nav-label">Ordini</span>
               </button>
@@ -1135,6 +1189,27 @@ export default function ClientePortalPage() {
           {photos.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '80px 20px', color: '#bbb' }}>
               <p style={{ fontSize: '14px' }}>Le foto sono in arrivo…</p>
+            </div>
+          ) : gridId === 'grid' ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 6 }}>
+              {photos.map((photo, i) => (
+                <PhotoItem
+                  key={photo.id}
+                  photo={photo}
+                  index={i}
+                  galleryId={gallery.id}
+                  isFavorited={favorites.has(photo.id)}
+                  commentCount={commentCounts[photo.id] ?? 0}
+                  inCart={cartPhotos.has(photo.id)}
+                  showWatermark={!!gallery.settings?.watermark}
+                  showDownloadSingle={gallery.settings?.download_singolo !== false}
+                  onOpenLightbox={setLbIndex}
+                  onToggleFavorite={toggleFavorite}
+                  onOpenComment={setCommentPhoto}
+                  onOpenOrder={setOrderPhoto}
+                  gridMode
+                />
+              ))}
             </div>
           ) : (
             <div style={{ columns: 4, columnGap: 6 }}>

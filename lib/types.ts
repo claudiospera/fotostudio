@@ -45,6 +45,14 @@ export interface GallerySettings {
     paypal: boolean
     bonifico: boolean
   }
+  // Appearance / portale cliente
+  show_title?: boolean
+  show_subtitle?: boolean
+  show_date?: boolean
+  theme_template?: string   // 'agave' | 'classic' | 'vintage' | 'rectangle' | 'minimal' | 'dark'
+  theme_palette?: string    // 'agave' | 'black' | 'warm' | 'white' | 'dark' | 'cool'
+  theme_font?: string       // 'syne' | 'playfair' | 'bodoni' | 'inter'
+  theme_grid?: string       // 'masonry' | 'grid'
 }
 
 export interface Photo {

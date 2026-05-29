@@ -75,10 +75,37 @@ const TABS = [
     icon: <svg viewBox="0 0 24 24" width={13} height={13} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg> },
   { id: 'sharing',  label: 'Condivisioni',
     icon: <svg viewBox="0 0 24 24" width={13} height={13} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg> },
+  { id: 'aspetto',  label: 'Aspetto',
+    icon: <svg viewBox="0 0 24 24" width={13} height={13} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/><path d="M12 8v8M8 12h8"/></svg> },
   { id: 'orders',   label: 'Ordini stampa',
     icon: <svg viewBox="0 0 24 24" width={13} height={13} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> },
   { id: 'settings', label: 'Impostazioni',
     icon: <svg viewBox="0 0 24 24" width={13} height={13} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> },
+]
+
+const APPEARANCE_TEMPLATES = [
+  { id: 'agave',     label: 'AGAVE',     palette: 'agave', font: 'syne',     grid: 'masonry', bg: '#0f1b16', accent: '#8ec9b0' },
+  { id: 'classic',   label: 'CLASSIC',   palette: 'black', font: 'playfair', grid: 'masonry', bg: '#0d0d0d', accent: '#ffffff' },
+  { id: 'vintage',   label: 'VINTAGE',   palette: 'warm',  font: 'bodoni',   grid: 'masonry', bg: '#1e150a', accent: '#c9a05a' },
+  { id: 'rectangle', label: 'RECTANGLE', palette: 'black', font: 'syne',     grid: 'grid',    bg: '#0d0d0d', accent: '#eeeeee' },
+  { id: 'minimal',   label: 'MINIMAL',   palette: 'white', font: 'inter',    grid: 'masonry', bg: '#f8f7f5', accent: '#333333' },
+  { id: 'dark',      label: 'DARK',      palette: 'dark',  font: 'syne',     grid: 'grid',    bg: '#050505', accent: '#888888' },
+]
+
+const APPEARANCE_PALETTES = [
+  { id: 'agave',  label: 'Agave',   swatch: '#8ec9b0', bg: '#0f1b16' },
+  { id: 'black',  label: 'Classic', swatch: '#ffffff', bg: '#0d0d0d' },
+  { id: 'warm',   label: 'Vintage', swatch: '#c9a05a', bg: '#1e150a' },
+  { id: 'white',  label: 'Minimal', swatch: '#333333', bg: '#f8f7f5' },
+  { id: 'dark',   label: 'Dark',    swatch: '#888888', bg: '#050505' },
+  { id: 'cool',   label: 'Cool',    swatch: '#7ab0dc', bg: '#0a0f1a' },
+]
+
+const APPEARANCE_FONTS = [
+  { id: 'syne',     label: 'Syne',     style: { fontFamily: "'Syne', sans-serif",           fontWeight: 700 } },
+  { id: 'playfair', label: 'Playfair', style: { fontFamily: "'Playfair Display', serif",     fontWeight: 400 } },
+  { id: 'bodoni',   label: 'Bodoni',   style: { fontFamily: "'Bodoni Moda', serif",          fontWeight: 400 } },
+  { id: 'inter',    label: 'Inter',    style: { fontFamily: "'Inter', sans-serif",           fontWeight: 300 } },
 ]
 
 const ORDER_STATUS: Record<string, { label: string; style: React.CSSProperties }> = {
@@ -118,6 +145,10 @@ export default function GalleryDetailPage() {
 
   // sharing state
   const [copied, setCopied]       = useState(false)
+
+  // aspetto state
+  const [savingAspetto, setSavingAspetto] = useState(false)
+  const [aspettoSaved, setAspettoSaved]   = useState(false)
 
   // interactions (preferiti + commenti)
   interface CommentWithPhoto {
@@ -364,6 +395,22 @@ export default function GalleryDetailPage() {
     setSavingSettings(false)
     setSettingsSaved(true)
     setTimeout(() => setSettingsSaved(false), 2000)
+  }, [gallery, id])
+
+  // ── appearance settings ────────────────────────────────────────────────
+  const saveAspetto = useCallback(async (patch: Partial<NonNullable<Gallery['settings']>>) => {
+    if (!gallery) return
+    const newSettings = { ...(gallery.settings ?? {}), ...patch }
+    setGallery(prev => prev ? { ...prev, settings: newSettings as typeof prev.settings } : prev)
+    setSavingAspetto(true)
+    await fetch(`/api/galleries/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ settings: newSettings }),
+    })
+    setSavingAspetto(false)
+    setAspettoSaved(true)
+    setTimeout(() => setAspettoSaved(false), 2000)
   }, [gallery, id])
 
   // ── copy link ──────────────────────────────────────────────────────────
@@ -1449,6 +1496,182 @@ export default function GalleryDetailPage() {
                 {savingSettings
                   ? <><div style={{ width: 10, height: 10, border: '2px solid var(--t3)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .7s linear infinite' }} /> Salvataggio…</>
                   : <><svg viewBox="0 0 24 24" width={12} height={12} fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg> Impostazioni salvate</>
+                }
+              </div>
+            )}
+
+          </div>
+        )}
+
+        {tab === 'aspetto' && gallery && (
+          <div style={{ animation: 'fadeIn .2s ease', maxWidth: '720px' }}>
+
+            {/* ── Sezione visibilità hero ── */}
+            <div style={{ marginBottom: 28 }}>
+              <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', color: 'var(--t3)', textTransform: 'uppercase', marginBottom: 12 }}>Visibilità nel portale</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {([
+                  { key: 'show_title',    label: 'Titolo galleria',   desc: 'Mostra il nome nel hero a schermo intero.' },
+                  { key: 'show_subtitle', label: 'Sottotitolo',       desc: 'Mostra il sottotitolo sotto il titolo.' },
+                  { key: 'show_date',     label: 'Data evento',       desc: 'Mostra la data sotto il titolo nel hero.' },
+                ] as { key: 'show_title' | 'show_subtitle' | 'show_date'; label: string; desc: string }[]).map(({ key, label, desc }) => {
+                  const val = gallery.settings?.[key] !== false // default true
+                  return (
+                    <div key={key} style={{ background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 'var(--r)', padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+                      <div>
+                        <p style={{ fontSize: '13px', fontWeight: 500, color: 'var(--tx)', marginBottom: 2 }}>{label}</p>
+                        <p style={{ fontSize: '11px', color: 'var(--t3)' }}>{desc}</p>
+                      </div>
+                      <button
+                        onClick={() => saveAspetto({ [key]: !val })}
+                        style={{ width: 42, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer', background: val ? 'var(--ac)' : 'var(--s3)', position: 'relative', flexShrink: 0, transition: 'background .2s' }}
+                      >
+                        <span style={{ position: 'absolute', top: 3, left: val ? 21 : 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left .2s', display: 'block' }} />
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* ── Template ── */}
+            <div style={{ marginBottom: 28 }}>
+              <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', color: 'var(--t3)', textTransform: 'uppercase', marginBottom: 12 }}>Template</p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                {APPEARANCE_TEMPLATES.map(tpl => {
+                  const active = (gallery.settings?.theme_template ?? 'agave') === tpl.id
+                  return (
+                    <button
+                      key={tpl.id}
+                      onClick={() => saveAspetto({ theme_template: tpl.id, theme_palette: tpl.palette, theme_font: tpl.font, theme_grid: tpl.grid })}
+                      style={{ background: 'none', border: `2px solid ${active ? 'var(--ac)' : 'var(--b1)'}`, borderRadius: 'var(--r)', padding: 0, cursor: 'pointer', overflow: 'hidden', transition: 'border-color .15s' }}
+                    >
+                      {/* mini preview */}
+                      <div style={{ height: 72, background: tpl.bg, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {/* simula foto nel portale */}
+                        <div style={{ display: 'flex', gap: 3, padding: '0 8px' }}>
+                          {[60, 40, 55, 45].map((h, i) => (
+                            <div key={i} style={{ width: tpl.grid === 'grid' ? 14 : 14, height: tpl.grid === 'grid' ? 14 : h / 4, background: `${tpl.accent}22`, borderRadius: 2, flexShrink: 0 }} />
+                          ))}
+                        </div>
+                        {/* titolo simulato */}
+                        <div style={{ position: 'absolute', bottom: 8, left: 0, right: 0, textAlign: 'center' }}>
+                          <div style={{ display: 'inline-block', height: 2, width: 32, background: tpl.accent, borderRadius: 1 }} />
+                        </div>
+                        {active && (
+                          <div style={{ position: 'absolute', top: 6, right: 6, width: 16, height: 16, borderRadius: '50%', background: 'var(--ac)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <svg viewBox="0 0 24 24" width={10} height={10} fill="none" stroke="#fff" strokeWidth={3} strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ padding: '8px 10px', background: 'var(--s1)', textAlign: 'left' }}>
+                        <p style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', color: active ? 'var(--ac)' : 'var(--t2)' }}>{tpl.label}</p>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* ── Palette ── */}
+            <div style={{ marginBottom: 28 }}>
+              <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', color: 'var(--t3)', textTransform: 'uppercase', marginBottom: 12 }}>Palette colori</p>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                {APPEARANCE_PALETTES.map(p => {
+                  const active = (gallery.settings?.theme_palette ?? 'agave') === p.id
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => saveAspetto({ theme_palette: p.id })}
+                      title={p.label}
+                      style={{ width: 52, height: 52, borderRadius: 'var(--r2)', border: `2px solid ${active ? 'var(--ac)' : 'transparent'}`, padding: 0, cursor: 'pointer', overflow: 'hidden', display: 'flex', flexDirection: 'column', transition: 'border-color .15s' }}
+                    >
+                      <div style={{ flex: 1, background: p.bg }} />
+                      <div style={{ height: 14, background: p.swatch }} />
+                    </button>
+                  )
+                })}
+              </div>
+              <div style={{ marginTop: 8, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                {APPEARANCE_PALETTES.map(p => (
+                  <div key={p.id} style={{ width: 52, textAlign: 'center' }}>
+                    <p style={{ fontSize: '10px', color: (gallery.settings?.theme_palette ?? 'agave') === p.id ? 'var(--ac)' : 'var(--t3)' }}>{p.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Font ── */}
+            <div style={{ marginBottom: 28 }}>
+              <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', color: 'var(--t3)', textTransform: 'uppercase', marginBottom: 12 }}>Font</p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+                {APPEARANCE_FONTS.map(f => {
+                  const active = (gallery.settings?.theme_font ?? 'syne') === f.id
+                  return (
+                    <button
+                      key={f.id}
+                      onClick={() => saveAspetto({ theme_font: f.id })}
+                      style={{ background: active ? 'var(--acd)' : 'var(--s1)', border: `1px solid ${active ? 'var(--ac)' : 'var(--b1)'}`, borderRadius: 'var(--r)', padding: '16px 12px', cursor: 'pointer', textAlign: 'center', transition: 'all .15s' }}
+                    >
+                      <p style={{ ...f.style, fontSize: '24px', color: active ? 'var(--ac)' : 'var(--tx)', marginBottom: 6 }}>Aa</p>
+                      <p style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', color: active ? 'var(--ac)' : 'var(--t3)', textTransform: 'uppercase' }}>{f.label}</p>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* ── Griglia ── */}
+            <div style={{ marginBottom: 28 }}>
+              <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', color: 'var(--t3)', textTransform: 'uppercase', marginBottom: 12 }}>Tipo di griglia</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                {([
+                  { id: 'masonry', label: 'Masonry', desc: 'Foto alle altezze naturali', preview: [55, 35, 60, 40] },
+                  { id: 'grid',    label: 'Griglia',  desc: 'Formato quadrato uniforme', preview: [40, 40, 40, 40] },
+                ] as { id: string; label: string; desc: string; preview: number[] }[]).map(g => {
+                  const active = (gallery.settings?.theme_grid ?? 'masonry') === g.id
+                  return (
+                    <button
+                      key={g.id}
+                      onClick={() => saveAspetto({ theme_grid: g.id })}
+                      style={{ background: active ? 'var(--acd)' : 'var(--s1)', border: `1px solid ${active ? 'var(--ac)' : 'var(--b1)'}`, borderRadius: 'var(--r)', padding: '16px', cursor: 'pointer', textAlign: 'left', transition: 'all .15s' }}
+                    >
+                      <div style={{ display: 'flex', gap: 4, marginBottom: 12, alignItems: 'flex-end' }}>
+                        {g.preview.map((h, i) => (
+                          <div key={i} style={{ flex: 1, height: h / 3, background: active ? 'var(--ac)' : 'var(--s4)', borderRadius: 3, transition: 'background .15s' }} />
+                        ))}
+                      </div>
+                      <p style={{ fontSize: '12px', fontWeight: 600, color: active ? 'var(--ac)' : 'var(--tx)', marginBottom: 3 }}>{g.label}</p>
+                      <p style={{ fontSize: '11px', color: 'var(--t3)' }}>{g.desc}</p>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* ── Anteprima ── */}
+            <div style={{ background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 'var(--r)', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+              <div>
+                <p style={{ fontSize: '13px', fontWeight: 500, color: 'var(--tx)', marginBottom: 2 }}>Anteprima portale</p>
+                <p style={{ fontSize: '11px', color: 'var(--t3)' }}>Visualizza il portale cliente con le impostazioni attuali.</p>
+              </div>
+              <a
+                href={`/cliente/${id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 14px', background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 'var(--r2)', fontSize: '12px', color: 'var(--tx)', textDecoration: 'none', whiteSpace: 'nowrap' }}
+              >
+                <svg viewBox="0 0 24 24" width={13} height={13} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                Apri in nuova scheda
+              </a>
+            </div>
+
+            {/* Feedback salvataggio */}
+            {(savingAspetto || aspettoSaved) && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '11px', color: aspettoSaved ? 'var(--ac)' : 'var(--t3)', padding: '12px 0 0' }}>
+                {savingAspetto
+                  ? <><div style={{ width: 10, height: 10, border: '2px solid var(--t3)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .7s linear infinite' }} /> Salvataggio…</>
+                  : <><svg viewBox="0 0 24 24" width={12} height={12} fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg> Aspetto salvato</>
                 }
               </div>
             )}
