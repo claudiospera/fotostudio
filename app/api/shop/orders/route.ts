@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
 
   // Pagamento allo studio → conferma diretta + notifica immediata
   if (paymentMethod === 'studio') {
-    await notifyNewOrder({ orderId, customerName: customer.name, customerEmail: customer.email, customerPhone: customer.phone, items, total, paymentMethod })
+    await notifyNewOrder({ orderId, customerName: customer.name, customerEmail: customer.email, customerPhone: customer.phone, items, total: safeTotal, paymentMethod, couponCode: couponCode ?? undefined, discount: verifiedDiscount || undefined })
     return NextResponse.json({ orderId })
   }
 

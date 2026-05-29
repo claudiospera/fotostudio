@@ -9,6 +9,8 @@ interface OrderNotification {
   items: { productName: string; variantLabel: string; quantity: number; price: number }[]
   total: number
   paymentMethod: string
+  couponCode?: string
+  discount?: number
 }
 
 function formatItems(items: OrderNotification['items']): string {
@@ -38,6 +40,14 @@ async function sendTelegram(order: OrderNotification) {
   if (!token || !chatId) return
 
   const payLabel = order.paymentMethod === 'studio' ? '🏠 Pagamento in studio' : '💳 Pagamento online (Stripe)'
+  const subtotal = order.items.reduce((sum, i) => sum + i.price * i.quantity, 0)
+  const discountLine = order.couponCode && order.discount
+    ? `\n🏷️ Sconto (${order.couponCode}): -${(order.discount / 100).toFixed(2)}€`
+    : ''
+  const subtotalLine = order.couponCode && order.discount
+    ? `\n🧾 Subtotale: ${(subtotal / 100).toFixed(2)}€`
+    : ''
+
   const text = [
     `🛒 *Nuovo ordine #${order.orderId}*`,
     ``,
@@ -46,7 +56,7 @@ async function sendTelegram(order: OrderNotification) {
     `📱 ${order.customerPhone}`,
     ``,
     formatItems(order.items),
-    ``,
+    `${subtotalLine}${discountLine}`,
     `💰 *Totale: ${(order.total / 100).toFixed(2)}€*`,
     `${payLabel}`,
   ].join('\n')
@@ -94,7 +104,19 @@ async function sendEmail(order: OrderNotification) {
             ${formatItemsHtml(order.items)}
           </ul>
 
-          <p style="font-size: 18px; margin-top: 20px; font-weight: bold;">
+          ${order.couponCode && order.discount ? `
+          <table style="width:100%; border-collapse: collapse; margin-top: 16px; font-size: 14px;">
+            <tr>
+              <td style="padding: 4px 0; color:#888;">Subtotale</td>
+              <td style="text-align:right;">${(order.items.reduce((s, i) => s + i.price * i.quantity, 0) / 100).toFixed(2)}€</td>
+            </tr>
+            <tr>
+              <td style="padding: 4px 0; color:#16a34a; font-weight:600;">Sconto (${order.couponCode})</td>
+              <td style="text-align:right; color:#16a34a; font-weight:600;">−${(order.discount / 100).toFixed(2)}€</td>
+            </tr>
+          </table>
+          ` : ''}
+          <p style="font-size: 18px; margin-top: 12px; font-weight: bold;">
             Totale: ${(order.total / 100).toFixed(2)}€
           </p>
 

@@ -11,6 +11,8 @@ const isPublicRoute = createRouteMatcher([
   '/api/preventivo-sessioni/(.*)',
   '/api/scheda-pub/(.*)',
   '/api/shop/orders',
+  '/api/shop/orders/(.*)',
+  '/api/shop/validate-coupon',
   '/api/shop/stripe-webhook',
   '/api/shop/presign-photo',
   // Sito pubblico

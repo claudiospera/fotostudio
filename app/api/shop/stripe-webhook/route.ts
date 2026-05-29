@@ -42,6 +42,8 @@ export async function POST(req: NextRequest) {
           items: order.items,
           total: order.total,
           paymentMethod: 'stripe',
+          couponCode: order.coupon_code ?? undefined,
+          discount: order.discount || undefined,
         })
       }
     }
