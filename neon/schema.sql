@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   telefono    text,
   email       text,
   iban        text,
+  ical_token  text UNIQUE,
   created_at  timestamptz DEFAULT now()
 );
 

@@ -166,8 +166,8 @@ function ClientiContent() {
     fetch('/api/ical-token').then(r => r.ok ? r.json() : null).then(d => { if (d?.token) setIcalToken(d.token) })
   }, [])
 
-  const icalUrl     = icalToken ? `https://storiedaraccontare.it/api/ical?token=${icalToken}` : ''
-  const icalHttpUrl = icalUrl
+  const icalHttpUrl = icalToken ? `https://storiedaraccontare.it/api/ical?token=${icalToken}` : ''
+  const icalUrl     = icalToken ? `webcal://storiedaraccontare.it/api/ical?token=${icalToken}` : ''
 
   const copyIcalUrl = () => {
     if (!icalUrl) return
@@ -404,11 +404,11 @@ function ClientiContent() {
             📅 Sincronizza con iPhone / Mac / Google Calendar
           </p>
           <p style={{ fontSize: 12, color: 'var(--t2)', margin: 0, lineHeight: 1.6 }}>
-            <strong style={{ color: 'var(--tx)' }}>Metodo 1 (più semplice):</strong> apri questa pagina dal browser Safari del tuo iPhone e clicca il pulsante verde.<br />
-            <strong style={{ color: 'var(--tx)' }}>Metodo 2:</strong> copia il link e incollalo in <span style={{ color: 'var(--t3)' }}>Impostazioni → Calendario → Account → Altro → Calendario con iscrizione</span> (rimuovi webcal:// e usa solo il dominio).
+            <strong style={{ color: 'var(--tx)' }}>Metodo 1 — iPhone/iPad (più semplice):</strong> apri questa pagina da Safari sul tuo iPhone e tocca il pulsante verde. iOS aprirà direttamente l&apos;app Calendario e chiederà conferma per la sottoscrizione.<br />
+            <strong style={{ color: 'var(--tx)' }}>Metodo 2 — Mac/Google Calendar:</strong> copia il link e incollalo in <span style={{ color: 'var(--t3)' }}>Impostazioni → Calendario → Account → Altro → Calendario con iscrizione</span> oppure in Google Calendar → Altre agende → Da URL.
           </p>
 
-          {/* Pulsante apri direttamente su iPhone */}
+          {/* Pulsante apri direttamente su iPhone (webcal:// → apre Calendar.app) */}
           <a
             href={icalUrl}
             style={{
@@ -419,7 +419,7 @@ function ClientiContent() {
               opacity: icalUrl ? 1 : 0.4, pointerEvents: icalUrl ? 'auto' : 'none',
             }}
           >
-            📅 Apri Calendario iPhone (clicca da Safari su iPhone)
+            📅 Sottoscrivi su iPhone / iPad (tocca da Safari)
           </a>
 
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>

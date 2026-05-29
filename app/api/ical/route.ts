@@ -104,6 +104,7 @@ export async function GET(req: Request) {
     'X-PUBLISHED-TTL:PT1H',
     ...events,
     'END:VCALENDAR',
+    '', // trailing CRLF richiesto da RFC 5545
   ].join('\r\n')
 
   return new NextResponse(ical, {
