@@ -166,9 +166,8 @@ function ClientiContent() {
     fetch('/api/ical-token').then(r => r.ok ? r.json() : null).then(d => { if (d?.token) setIcalToken(d.token) })
   }, [])
 
-  const icalUrl = icalToken
-    ? `webcal://storiedaraccontare.it/api/ical?token=${icalToken}`
-    : ''
+  const icalUrl     = icalToken ? `webcal://storiedaraccontare.it/api/ical?token=${icalToken}` : ''
+  const icalHttpUrl = icalToken ? `https://storiedaraccontare.it/api/ical?token=${icalToken}` : ''
 
   const copyIcalUrl = () => {
     if (!icalUrl) return
@@ -405,24 +404,43 @@ function ClientiContent() {
             📅 Sincronizza con iPhone / Mac / Google Calendar
           </p>
           <p style={{ fontSize: 12, color: 'var(--t2)', margin: 0, lineHeight: 1.6 }}>
-            Copia il link e aggiungilo come <strong style={{ color: 'var(--tx)' }}>calendario sottoscritto</strong> su iPhone:<br />
-            <span style={{ color: 'var(--t3)', fontSize: 11 }}>Impostazioni → Calendario → Account → Aggiungi account → Altro → Aggiungi calendario sottoscritto</span>
+            <strong style={{ color: 'var(--tx)' }}>Metodo 1 (più semplice):</strong> apri questa pagina dal browser Safari del tuo iPhone e clicca il pulsante verde.<br />
+            <strong style={{ color: 'var(--tx)' }}>Metodo 2:</strong> copia il link e incollalo in <span style={{ color: 'var(--t3)' }}>Impostazioni → Calendario → Account → Altro → Calendario con iscrizione</span> (rimuovi webcal:// e usa solo il dominio).
           </p>
+
+          {/* Pulsante apri direttamente su iPhone */}
+          <a
+            href={icalUrl}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              padding: '10px 16px', borderRadius: 'var(--r2)',
+              background: '#22c55e', color: '#fff',
+              fontSize: 13, fontWeight: 700, textDecoration: 'none',
+              opacity: icalUrl ? 1 : 0.4, pointerEvents: icalUrl ? 'auto' : 'none',
+            }}
+          >
+            📅 Apri Calendario iPhone (clicca da Safari su iPhone)
+          </a>
+
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <code style={{
               flex: 1, fontSize: 11, padding: '8px 12px', borderRadius: 'var(--r2)',
               background: 'var(--s2)', color: 'var(--t2)', border: '1px solid var(--b1)',
               wordBreak: 'break-all', lineHeight: 1.5,
             }}>
-              {icalUrl || 'Caricamento…'}
+              {icalHttpUrl || 'Caricamento…'}
             </code>
             <button
-              onClick={copyIcalUrl} disabled={!icalUrl}
+              onClick={() => {
+                if (!icalHttpUrl) return
+                navigator.clipboard.writeText(icalHttpUrl).then(() => { setIcalCopied(true); setTimeout(() => setIcalCopied(false), 2500) })
+              }}
+              disabled={!icalHttpUrl}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 padding: '8px 14px', borderRadius: 'var(--r2)',
                 background: icalCopied ? '#22c55e' : 'var(--ac)', color: '#111',
-                border: 'none', fontSize: 12, fontWeight: 700, cursor: icalUrl ? 'pointer' : 'not-allowed',
+                border: 'none', fontSize: 12, fontWeight: 700, cursor: icalHttpUrl ? 'pointer' : 'not-allowed',
                 flexShrink: 0, transition: 'background .2s',
               }}
             >
