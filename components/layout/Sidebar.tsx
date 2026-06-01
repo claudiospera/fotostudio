@@ -27,8 +27,8 @@ const lavoroItems = [
 
 // ─── Shop admin ───────────────────────────────────────────────────────────────
 const shopItems = [
-  { href: '/shop/admin/ordini', label: 'Ordini stampe', icon: ShoppingCart },
-  { href: '/shop/admin',        label: 'Vai allo shop',  icon: ShoppingBag  },
+  { href: '/ordini',     label: 'Ordini stampe', icon: ShoppingCart },
+  { href: '/shop/admin', label: 'Vai allo shop',  icon: ShoppingBag  },
 ]
 
 export const Sidebar = () => {
@@ -55,14 +55,16 @@ export const Sidebar = () => {
     return () => document.removeEventListener('keydown', onKey)
   }, [closeSidebar])
 
-  // Badge ordini shop nuovi
+  // Badge ordini nuovi (galleria + shop)
   useEffect(() => {
-    fetch('/api/shop/orders')
-      .then(r => r.ok ? r.json() : [])
-      .then((orders: { status: string }[]) =>
-        setNewShopOrders(orders.filter(o => o.status === 'pending').length)
-      )
-      .catch(() => {})
+    Promise.all([
+      fetch('/api/orders').then(r => r.ok ? r.json() : []),
+      fetch('/api/shop/orders').then(r => r.ok ? r.json() : []),
+    ]).then(([galleryOrders, shopOrders]) => {
+      const nuoviGalleria = Array.isArray(galleryOrders) ? galleryOrders.filter((o: { status: string }) => o.status === 'nuovo').length : 0
+      const nuoviShop = Array.isArray(shopOrders) ? shopOrders.filter((o: { status: string }) => o.status === 'pending').length : 0
+      setNewShopOrders(nuoviGalleria + nuoviShop)
+    }).catch(() => {})
   }, [])
 
   const isActive = (href: string) => {
@@ -185,8 +187,8 @@ export const Sidebar = () => {
             <p className="text-[10px] font-semibold tracking-[0.14em] uppercase px-2 mb-2" style={{ color: 'var(--ac)', opacity: 0.7 }}>
               Shop online
             </p>
-            <NavLink href="/shop/admin/ordini"   label="Ordini stampe"  icon={ShoppingCart} badge={newShopOrders} />
-            <NavLink href="/shop/admin"           label="Vai allo shop"  icon={ShoppingBag}  />
+            <NavLink href="/ordini"      label="Ordini stampe"  icon={ShoppingCart} badge={newShopOrders} />
+            <NavLink href="/shop/admin" label="Vai allo shop"  icon={ShoppingBag}  />
           </div>
 
           {/* ── AZIONI RAPIDE ──────────────────────────── */}
