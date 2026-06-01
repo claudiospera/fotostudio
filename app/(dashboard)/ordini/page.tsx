@@ -619,8 +619,8 @@ export default function OrdiniPage() {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 90px 90px 100px', gap: 12, padding: '6px 14px', fontSize: '10px', fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--t3)' }}>
-                  <span>Cliente</span><span>Galleria</span><span>Data</span><span style={{ textAlign: 'right' }}>Totale</span><span style={{ textAlign: 'center' }}>Stato</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 90px 90px 100px 36px', gap: 12, padding: '6px 14px', fontSize: '10px', fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--t3)' }}>
+                  <span>Cliente</span><span>Galleria</span><span>Data</span><span style={{ textAlign: 'right' }}>Totale</span><span style={{ textAlign: 'center' }}>Stato</span><span />
                 </div>
                 {filteredGallery.map(order => {
                   const st = GALLERY_STATUS[order.status] ?? GALLERY_STATUS.nuovo
@@ -628,7 +628,7 @@ export default function OrdiniPage() {
                     <div
                       key={order.id}
                       onClick={() => setSelectedGalleryOrder(order)}
-                      style={{ display: 'grid', gridTemplateColumns: '1fr 160px 90px 90px 100px', gap: 12, padding: '12px 14px', background: 'var(--s1)', border: `1px solid ${order.status === 'nuovo' ? 'rgba(217,112,112,.2)' : 'var(--b1)'}`, borderRadius: 'var(--r2)', cursor: 'pointer', transition: 'all .15s', alignItems: 'center' }}
+                      style={{ display: 'grid', gridTemplateColumns: '1fr 160px 90px 90px 100px 36px', gap: 12, padding: '12px 14px', background: 'var(--s1)', border: `1px solid ${order.status === 'nuovo' ? 'rgba(217,112,112,.2)' : 'var(--b1)'}`, borderRadius: 'var(--r2)', cursor: 'pointer', transition: 'all .15s', alignItems: 'center' }}
                       onMouseEnter={e => (e.currentTarget.style.background = 'var(--s2)')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'var(--s1)')}
                     >
@@ -642,6 +642,24 @@ export default function OrdiniPage() {
                       <div style={{ display: 'flex', justifyContent: 'center' }}>
                         <span style={{ fontSize: '10px', fontWeight: 600, color: st.color, background: st.bg, borderRadius: 6, padding: '3px 8px', whiteSpace: 'nowrap' }}>{st.label}</span>
                       </div>
+                      <button
+                        onClick={async e => {
+                          e.stopPropagation()
+                          if (!confirm('Eliminare questo ordine?')) return
+                          await fetch(`/api/galleries/${order.gallery_id}/orders`, {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ order_id: order.id }),
+                          })
+                          handleGalleryDelete(order.id)
+                        }}
+                        title="Elimina ordine"
+                        style={{ width: 28, height: 28, background: 'none', border: '1px solid transparent', borderRadius: 6, cursor: 'pointer', color: 'var(--t3)', display: 'grid', placeItems: 'center', transition: 'all .15s', flexShrink: 0 }}
+                        onMouseEnter={e => { e.currentTarget.style.color = 'var(--red)'; e.currentTarget.style.borderColor = 'rgba(217,112,112,.3)'; e.currentTarget.style.background = 'rgba(217,112,112,.07)' }}
+                        onMouseLeave={e => { e.currentTarget.style.color = 'var(--t3)'; e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.background = 'none' }}
+                      >
+                        <svg viewBox="0 0 24 24" width={13} height={13} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>
+                      </button>
                     </div>
                   )
                 })}
@@ -689,8 +707,8 @@ export default function OrdiniPage() {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 90px 90px 110px', gap: 12, padding: '6px 14px', fontSize: '10px', fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--t3)' }}>
-                  <span>Cliente</span><span>Pagamento</span><span>Data</span><span style={{ textAlign: 'right' }}>Totale</span><span style={{ textAlign: 'center' }}>Stato</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 90px 90px 110px 36px', gap: 12, padding: '6px 14px', fontSize: '10px', fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--t3)' }}>
+                  <span>Cliente</span><span>Pagamento</span><span>Data</span><span style={{ textAlign: 'right' }}>Totale</span><span style={{ textAlign: 'center' }}>Stato</span><span />
                 </div>
                 {filteredShop.map(order => {
                   const st = SHOP_STATUS[order.status] ?? SHOP_STATUS.pending
@@ -698,7 +716,7 @@ export default function OrdiniPage() {
                     <div
                       key={order.id}
                       onClick={() => setSelectedShopOrder(order)}
-                      style={{ display: 'grid', gridTemplateColumns: '1fr 120px 90px 90px 110px', gap: 12, padding: '12px 14px', background: 'var(--s1)', border: `1px solid ${order.status === 'pending' ? 'rgba(201,160,90,.2)' : 'var(--b1)'}`, borderRadius: 'var(--r2)', cursor: 'pointer', transition: 'all .15s', alignItems: 'center' }}
+                      style={{ display: 'grid', gridTemplateColumns: '1fr 120px 90px 90px 110px 36px', gap: 12, padding: '12px 14px', background: 'var(--s1)', border: `1px solid ${order.status === 'pending' ? 'rgba(201,160,90,.2)' : 'var(--b1)'}`, borderRadius: 'var(--r2)', cursor: 'pointer', transition: 'all .15s', alignItems: 'center' }}
                       onMouseEnter={e => (e.currentTarget.style.background = 'var(--s2)')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'var(--s1)')}
                     >
@@ -714,6 +732,20 @@ export default function OrdiniPage() {
                       <div style={{ display: 'flex', justifyContent: 'center' }}>
                         <span style={{ fontSize: '10px', fontWeight: 600, color: st.color, background: st.bg, borderRadius: 6, padding: '3px 8px', whiteSpace: 'nowrap' }}>{st.label}</span>
                       </div>
+                      <button
+                        onClick={async e => {
+                          e.stopPropagation()
+                          if (!confirm('Eliminare questo ordine?')) return
+                          await fetch(`/api/shop/orders/${order.id}`, { method: 'DELETE' })
+                          handleShopDelete(order.id)
+                        }}
+                        title="Elimina ordine"
+                        style={{ width: 28, height: 28, background: 'none', border: '1px solid transparent', borderRadius: 6, cursor: 'pointer', color: 'var(--t3)', display: 'grid', placeItems: 'center', transition: 'all .15s', flexShrink: 0 }}
+                        onMouseEnter={e => { e.currentTarget.style.color = 'var(--red)'; e.currentTarget.style.borderColor = 'rgba(217,112,112,.3)'; e.currentTarget.style.background = 'rgba(217,112,112,.07)' }}
+                        onMouseLeave={e => { e.currentTarget.style.color = 'var(--t3)'; e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.background = 'none' }}
+                      >
+                        <svg viewBox="0 0 24 24" width={13} height={13} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>
+                      </button>
                     </div>
                   )
                 })}
