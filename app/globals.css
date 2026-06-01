@@ -165,6 +165,12 @@ body {
   .portal-btn-mobile-count { display: inline; }
 }
 
+/* ─── NAV LABEL (galleria sticky bar + lightbox) ─── */
+/* Su mobile i bottoni mostrano solo l'icona, nascondono il testo */
+@media (max-width: 640px) {
+  .nav-label { display: none; }
+}
+
 /* ─── PREVENTIVI RESPONSIVE ─── */
 .preventivi-layout {
   display: grid;

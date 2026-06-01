@@ -33,7 +33,7 @@ interface PrintOrder {
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
-function fmt(n: number) { return n.toFixed(2).replace('.', ',') + ' €' }
+function fmt(n: number | string) { return Number(n).toFixed(2).replace('.', ',') + ' €' }
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })

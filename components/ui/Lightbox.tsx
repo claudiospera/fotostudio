@@ -127,7 +127,7 @@ export const Lightbox = ({
             <svg viewBox="0 0 24 24" width={16} height={16} fill={isFavorited ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/>
             </svg>
-            <span style={{ fontSize: '13px' }}>Favorite</span>
+            <span className="nav-label" style={{ fontSize: '13px' }}>Favorite</span>
           </button>
         )}
 
@@ -139,7 +139,7 @@ export const Lightbox = ({
               <polyline points="7 10 12 15 17 10"/>
               <line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
-            <span style={{ fontSize: '13px' }}>Download</span>
+            <span className="nav-label" style={{ fontSize: '13px' }}>Download</span>
           </button>
         )}
 
@@ -149,7 +149,7 @@ export const Lightbox = ({
             <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
-            <span style={{ fontSize: '13px' }}>Commento</span>
+            <span className="nav-label" style={{ fontSize: '13px' }}>Commento</span>
           </button>
         )}
 
@@ -160,7 +160,7 @@ export const Lightbox = ({
               <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
               <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
             </svg>
-            <span style={{ fontSize: '13px' }}>Ordina</span>
+            <span className="nav-label" style={{ fontSize: '13px' }}>Ordina</span>
           </button>
         )}
       </div>

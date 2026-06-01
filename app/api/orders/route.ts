@@ -7,7 +7,9 @@ export async function GET() {
   if (!userId) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
   const data = await sql`
-    SELECT o.*, json_build_object('id', g.id, 'name', g.name) AS galleries
+    SELECT o.id, o.gallery_id, o.session_id, o.client_name, o.client_email,
+           o.items, o.total::float8 AS total, o.status, o.notes, o.created_at,
+           json_build_object('id', g.id, 'name', g.name) AS galleries
     FROM print_orders o
     JOIN galleries g ON g.id = o.gallery_id
     WHERE g.user_id = ${userId}

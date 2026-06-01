@@ -78,7 +78,7 @@ function getPriceForBreaks(
   return match ? match.price : fallback
 }
 
-function fmt(n: number) { return n.toFixed(2).replace('.', ',') + ' €' }
+function fmt(n: number | string) { return Number(n).toFixed(2).replace('.', ',') + ' €' }
 
 // ── helpers ────────────────────────────────────────────────────────────────
 

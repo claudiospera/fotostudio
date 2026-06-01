@@ -8,7 +8,7 @@ function buildEmailHtml(order: {
   client_name: string | null
   client_email: string | null
   gallery_name: string
-  items: { photo_url: string; filename: string; type: string; format_label: string; qty: number; unit_price: number; total: number }[]
+  items: { photo_url: string; filename: string; product_name?: string; type?: string; format_label: string; qty: number; unit_price: number; total: number }[]
   total: number
   notes: string | null
 }) {
@@ -19,7 +19,7 @@ function buildEmailHtml(order: {
       </td>
       <td style="padding:10px 8px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#374151;vertical-align:middle">
         <strong style="display:block;margin-bottom:2px">${item.filename}</strong>
-        <span style="color:#6b7280">${item.type === 'carta' ? '📄 Stampa carta' : '🖼️ Stampa su tela'} · ${item.format_label}</span>
+        <span style="color:#6b7280">${item.product_name ?? (item.type === 'carta' ? '📄 Stampa carta' : '🖼️ Stampa su tela')} · ${item.format_label}</span>
       </td>
       <td style="padding:10px 8px;border-bottom:1px solid #e5e7eb;text-align:center;font-size:13px;color:#374151;vertical-align:middle">
         ${item.qty}
@@ -105,7 +105,7 @@ function buildEmailHtml(order: {
 function buildClientConfirmHtml(order: {
   client_name: string | null
   gallery_name: string
-  items: { photo_url: string; filename: string; type: string; format_label: string; qty: number; unit_price: number; total: number }[]
+  items: { photo_url: string; filename: string; product_name?: string; type?: string; format_label: string; qty: number; unit_price: number; total: number }[]
   total: number
   notes: string | null
 }) {
@@ -116,7 +116,7 @@ function buildClientConfirmHtml(order: {
       </td>
       <td style="padding:10px 8px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#374151;vertical-align:middle">
         <strong style="display:block;margin-bottom:2px">${item.filename}</strong>
-        <span style="color:#6b7280">${item.type === 'carta' ? 'Stampa carta' : 'Stampa su tela'} · ${item.format_label}</span>
+        <span style="color:#6b7280">${item.product_name ?? (item.type === 'carta' ? 'Stampa carta' : 'Stampa su tela')} · ${item.format_label}</span>
       </td>
       <td style="padding:10px 8px;border-bottom:1px solid #e5e7eb;text-align:center;font-size:13px;color:#374151;vertical-align:middle">${item.qty}</td>
       <td style="padding:10px 8px;border-bottom:1px solid #e5e7eb;text-align:right;font-size:14px;font-weight:700;color:#111827;vertical-align:middle">
@@ -197,7 +197,9 @@ export async function GET(req: Request) {
   }
 
   const data = await sql`
-    SELECT * FROM print_orders
+    SELECT id, gallery_id, session_id, client_name, client_email,
+           items, total::float8 AS total, status, notes, created_at
+    FROM print_orders
     WHERE session_id = ${session_id} AND gallery_id = ${gallery_id}
     ORDER BY created_at DESC
   `
