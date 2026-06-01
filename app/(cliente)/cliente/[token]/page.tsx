@@ -939,7 +939,6 @@ interface PhotoItemProps {
 
 function PhotoItem({ photo, index, galleryId, isFavorited, commentCount, inCart, showWatermark, showDownloadSingle, onOpenLightbox, onToggleFavorite, onOpenComment, onOpenOrder, gridMode }: PhotoItemProps) {
   const [downloading, setDownloading] = useState(false)
-  const [hovered, setHovered] = useState(false)
 
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -951,8 +950,6 @@ function PhotoItem({ photo, index, galleryId, isFavorited, commentCount, inCart,
   return (
     <div
       style={{ borderRadius: '3px', overflow: 'hidden', background: '#e8e8e6', position: 'relative', breakInside: 'avoid', marginBottom: gridMode ? 0 : 6, cursor: 'pointer', ...(gridMode ? { aspectRatio: '3/2' } : {}) }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
       onClick={() => onOpenLightbox(index)}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -973,13 +970,10 @@ function PhotoItem({ photo, index, galleryId, isFavorited, commentCount, inCart,
       )}
 
       {/* Hover overlay — gradiente + icone bianche */}
-      <div style={{
+      <div className="photo-actions-overlay" style={{
         position: 'absolute', inset: 0,
         background: 'linear-gradient(to top, rgba(0,0,0,.55) 0%, rgba(0,0,0,.05) 45%, transparent 100%)',
-        opacity: hovered ? 1 : 0,
-        transition: 'opacity 0.2s ease',
         display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '12px 12px',
-        pointerEvents: hovered ? 'auto' : 'none',
       }}>
         <div style={{ display: 'flex', gap: 14, justifyContent: 'flex-end', alignItems: 'center' }}>
 
