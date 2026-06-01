@@ -33,50 +33,49 @@ interface PublicGallery {
 }
 
 interface CartItem {
-  id: string          // `${photoId}::${type}::${format}`
+  id: string           // `${photoId}::${productId}::${variantId}`
   photoId: string
   photoUrl: string
   filename: string
-  type: 'carta' | 'tela'
-  format: string
-  formatLabel: string
+  productId: string    // e.g. 'stampe-classiche'
+  productName: string  // e.g. 'Stampe Classiche'
+  variantId: string    // e.g. 'sc-10x15'
+  formatLabel: string  // e.g. '10×15 cm'
+  priceBreaks?: { minQty: number; price: number }[]  // in euros, for qty recalc
   qty: number
-  unitPrice: number
-  total: number
+  unitPrice: number    // in euros
+  total: number        // in euros
 }
 
-// ── price data ─────────────────────────────────────────────────────────────
+// ── shop product types (minimal — matches /api/shop-products response) ──────
 
-const CARTA_FORMATS: { key: string; label: string; tiers: [number, number][] }[] = [
-  { key: '10x15',  label: '10×15 cm',  tiers: [[1,2.00],[2,1.50],[6,0.90],[11,0.80],[21,0.70],[31,0.60],[51,0.50],[71,0.35],[91,0.30],[100,0.20]] },
-  { key: '13x18',  label: '13×18 cm',  tiers: [[1,2.50],[2,2.00],[6,1.50],[11,1.20],[21,1.10],[31,0.90],[51,0.80],[71,0.70],[91,0.50],[200,0.40],[500,0.30]] },
-  { key: '13x19',  label: '13×19 cm',  tiers: [[1,2.50],[2,2.00],[6,1.50],[11,1.20],[21,1.10],[31,0.90],[51,0.80],[71,0.70],[91,0.50],[200,0.40],[500,0.30]] },
-  { key: '15x20',  label: '15×20 cm',  tiers: [[1,3.00],[2,2.50],[11,2.20],[31,2.00],[51,1.80],[100,1.50],[300,1.00]] },
-  { key: '20x30',  label: '20×30 cm',  tiers: [[1,6.00]] },
-  { key: '30x40',  label: '30×40 cm',  tiers: [[1,10.00]] },
-  { key: '30x45',  label: '30×45 cm',  tiers: [[1,12.00]] },
-  { key: '40x50',  label: '40×50 cm',  tiers: [[1,17.00]] },
-  { key: '40x60',  label: '40×60 cm',  tiers: [[1,19.00]] },
-  { key: '50x60',  label: '50×60 cm',  tiers: [[1,23.00]] },
-  { key: '50x70',  label: '50×70 cm',  tiers: [[1,25.00]] },
-  { key: '70x100', label: '70×100 cm', tiers: [[1,50.00]] },
-]
+interface ShopVariant {
+  id: string
+  label: string
+  price: number           // in centesimi
+  priceBreaks?: { minQty: number; price: number }[]  // in centesimi
+}
 
-const TELA_FORMATS: { key: string; label: string; price: number }[] = [
-  { key: '30x30',  label: '30×30 cm',  price: 30 },
-  { key: '30x40',  label: '30×40 cm',  price: 35 },
-  { key: '30x50',  label: '30×50 cm',  price: 40 },
-  { key: '40x40',  label: '40×40 cm',  price: 40 },
-  { key: '40x50',  label: '40×50 cm',  price: 45 },
-  { key: '40x60',  label: '40×60 cm',  price: 47 },
-  { key: '50x70',  label: '50×70 cm',  price: 60 },
-  { key: '70x100', label: '70×100 cm', price: 100 },
-]
+interface ShopProduct {
+  id: string
+  name: string
+  shortDescription: string
+  category: 'stampe' | 'decorazioni' | 'gadget'
+  images: string[]
+  variants: ShopVariant[]
+}
 
-function getCartaUnitPrice(tiers: [number, number][], qty: number): number {
-  let price = tiers[0][1]
-  for (const [min, p] of tiers) { if (qty >= min) price = p }
-  return price
+// ── helpers ─────────────────────────────────────────────────────────────────
+
+function getPriceForBreaks(
+  breaks: { minQty: number; price: number }[] | undefined,
+  qty: number,
+  fallback: number
+): number {
+  if (!breaks?.length) return fallback
+  const sorted = [...breaks].sort((a, b) => b.minQty - a.minQty)
+  const match = sorted.find(b => qty >= b.minQty)
+  return match ? match.price : fallback
 }
 
 function fmt(n: number) { return n.toFixed(2).replace('.', ',') + ' €' }
@@ -135,139 +134,224 @@ interface OrderModalProps {
   onAdd: (item: CartItem) => void
 }
 
-function OrderModal({ photo, onClose, onAdd }: OrderModalProps) {
-  const [tab, setTab] = useState<'carta' | 'tela'>('carta')
-  const [selectedCarta, setSelectedCarta] = useState(CARTA_FORMATS[0].key)
-  const [selectedTela, setSelectedTela]   = useState(TELA_FORMATS[0].key)
-  const [qty, setQty] = useState(1)
+const CATEGORY_TABS: { id: 'stampe' | 'decorazioni' | 'gadget'; label: string; emoji: string }[] = [
+  { id: 'stampe',      label: 'Stampe',      emoji: '📄' },
+  { id: 'decorazioni', label: 'Decorazioni', emoji: '🖼️' },
+  { id: 'gadget',      label: 'Gadget',      emoji: '🎁' },
+]
 
-  useEffect(() => { setQty(1) }, [tab, selectedCarta, selectedTela])
+function OrderModal({ photo, onClose, onAdd }: OrderModalProps) {
+  const [products, setProducts]           = useState<ShopProduct[] | null>(null)
+  const [category, setCategory]           = useState<'stampe' | 'decorazioni' | 'gadget'>('stampe')
+  const [selectedProduct, setSelectedProduct] = useState<ShopProduct | null>(null)
+  const [selectedVariantId, setSelectedVariantId] = useState('')
+  const [qty, setQty]                     = useState(1)
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    fetch('/api/shop-products')
+      .then(r => r.ok ? r.json() : [])
+      .then(setProducts)
+  }, [])
+
+  useEffect(() => {
+    if (selectedProduct) setSelectedVariantId(selectedProduct.variants[0]?.id ?? '')
+    setQty(1)
+  }, [selectedProduct])
+
+  useEffect(() => { setQty(1) }, [selectedVariantId])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { if (selectedProduct) setSelectedProduct(null); else onClose() }
+    }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
+  }, [onClose, selectedProduct])
 
-  const cartaFmt  = CARTA_FORMATS.find(f => f.key === selectedCarta)!
-  const telaFmt   = TELA_FORMATS.find(f => f.key === selectedTela)!
-  const unitPrice = tab === 'carta' ? getCartaUnitPrice(cartaFmt.tiers, qty) : telaFmt.price
+  const variant   = selectedProduct?.variants.find(v => v.id === selectedVariantId)
+  const unitCents = variant ? getPriceForBreaks(
+    variant.priceBreaks?.map(b => ({ minQty: b.minQty, price: b.price })),
+    qty,
+    variant.price
+  ) : 0
+  const unitPrice = unitCents / 100
   const total     = unitPrice * qty
-  const nextTier  = tab === 'carta'
-    ? cartaFmt.tiers.find(([min]) => min > qty)
+  const nextTier  = variant?.priceBreaks
+    ? [...variant.priceBreaks].sort((a, b) => a.minQty - b.minQty).find(b => b.minQty > qty)
     : null
 
   const handleAdd = () => {
-    const format      = tab === 'carta' ? selectedCarta : selectedTela
-    const formatLabel = tab === 'carta' ? cartaFmt.label : telaFmt.label
-    const key = `${photo.id}::${tab}::${format}`
-    onAdd({ id: key, photoId: photo.id, photoUrl: photo.url, filename: photo.filename, type: tab, format, formatLabel, qty, unitPrice, total })
+    if (!selectedProduct || !variant) return
+    const priceBreaks = variant.priceBreaks?.map(b => ({ minQty: b.minQty, price: b.price / 100 }))
+    onAdd({
+      id: `${photo.id}::${selectedProduct.id}::${variant.id}`,
+      photoId: photo.id,
+      photoUrl: photo.url,
+      filename: photo.filename,
+      productId: selectedProduct.id,
+      productName: selectedProduct.name,
+      variantId: variant.id,
+      formatLabel: variant.label,
+      priceBreaks,
+      qty,
+      unitPrice,
+      total,
+    })
     onClose()
   }
 
-  const btnTab: React.CSSProperties = { flex: 1, padding: '8px', fontSize: '12px', fontWeight: 500, border: 'none', cursor: 'pointer', transition: 'all .15s' }
-  const inputStyle: React.CSSProperties = { background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 6, padding: '5px 10px', color: 'var(--tx)', fontSize: '12px', outline: 'none', cursor: 'pointer', transition: 'border-color .15s' }
+  const filtered = products?.filter(p => p.category === category) ?? []
+
+  const ICON_CLOSE = <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+  const ICON_BACK  = <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+  const ICON_CART  = <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+
+  const variantBtnStyle = (selected: boolean): React.CSSProperties => ({
+    background: selected ? 'var(--acd)' : 'var(--s2)',
+    border: `1px solid ${selected ? 'var(--ac)' : 'var(--b1)'}`,
+    borderRadius: 6,
+    padding: '5px 10px',
+    color: selected ? 'var(--ac)' : 'var(--t2)',
+    fontSize: '12px',
+    outline: 'none',
+    cursor: 'pointer',
+    transition: 'all .15s',
+  })
 
   return (
     <div onClick={e => { if (e.target === e.currentTarget) onClose() }} style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(0,0,0,.8)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, animation: 'fadeIn .2s ease' }}>
-      <div style={{ background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 'var(--r)', width: '100%', maxWidth: 480, animation: 'slideUp .25s ease', overflow: 'hidden' }}>
+      <div style={{ background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 'var(--r)', width: '100%', maxWidth: 500, maxHeight: '90vh', display: 'flex', flexDirection: 'column', animation: 'slideUp .25s ease', overflow: 'hidden' }}>
 
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: '1px solid var(--b1)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: '1px solid var(--b1)', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {selectedProduct && (
+              <button onClick={() => setSelectedProduct(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t3)', width: 28, height: 28, display: 'grid', placeItems: 'center', borderRadius: 6, flexShrink: 0 }}>{ICON_BACK}</button>
+            )}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={photo.url} alt="" style={{ width: 40, height: 40, borderRadius: 6, objectFit: 'cover' }} />
+            <img src={photo.url} alt="" style={{ width: 36, height: 36, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} />
             <div>
-              <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--tx)' }}>Ordina stampa</p>
+              <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--tx)' }}>
+                {selectedProduct ? selectedProduct.name : 'Ordina prodotto'}
+              </p>
               <p style={{ fontSize: '11px', color: 'var(--t3)', marginTop: 1 }}>{photo.filename}</p>
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t3)', width: 28, height: 28, display: 'grid', placeItems: 'center', borderRadius: 6 }}>
-            <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-          </button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t3)', width: 28, height: 28, display: 'grid', placeItems: 'center', borderRadius: 6, flexShrink: 0 }}>{ICON_CLOSE}</button>
         </div>
 
-        {/* Tabs */}
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--b1)' }}>
-          <button onClick={() => setTab('carta')} style={{ ...btnTab, background: tab === 'carta' ? 'var(--acd)' : 'transparent', color: tab === 'carta' ? 'var(--ac)' : 'var(--t3)', borderBottom: `2px solid ${tab === 'carta' ? 'var(--ac)' : 'transparent'}` }}>
-            📄 Stampe fotografiche
-          </button>
-          <button onClick={() => setTab('tela')} style={{ ...btnTab, background: tab === 'tela' ? 'var(--acd)' : 'transparent', color: tab === 'tela' ? 'var(--ac)' : 'var(--t3)', borderBottom: `2px solid ${tab === 'tela' ? 'var(--ac)' : 'transparent'}` }}>
-            🖼️ Stampa su tela
-          </button>
-        </div>
-
-        <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
-
-          {/* Formato */}
-          <div>
-            <p style={{ fontSize: '11px', color: 'var(--t3)', fontWeight: 500, marginBottom: 8 }}>Formato</p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {tab === 'carta'
-                ? CARTA_FORMATS.map(f => (
-                    <button key={f.key} onClick={() => setSelectedCarta(f.key)} style={{ ...inputStyle, borderColor: selectedCarta === f.key ? 'var(--ac)' : 'var(--b1)', color: selectedCarta === f.key ? 'var(--ac)' : 'var(--t2)', background: selectedCarta === f.key ? 'var(--acd)' : 'var(--s2)' }}>
-                      {f.label}
-                    </button>
-                  ))
-                : TELA_FORMATS.map(f => (
-                    <button key={f.key} onClick={() => setSelectedTela(f.key)} style={{ ...inputStyle, borderColor: selectedTela === f.key ? 'var(--ac)' : 'var(--b1)', color: selectedTela === f.key ? 'var(--ac)' : 'var(--t2)', background: selectedTela === f.key ? 'var(--acd)' : 'var(--s2)' }}>
-                      {f.label}
-                    </button>
-                  ))
-              }
+        {/* ── STEP 1: product selection ── */}
+        {!selectedProduct && (
+          <>
+            {/* Category tabs */}
+            <div style={{ display: 'flex', borderBottom: '1px solid var(--b1)', flexShrink: 0 }}>
+              {CATEGORY_TABS.map(cat => (
+                <button key={cat.id} onClick={() => setCategory(cat.id)} style={{ flex: 1, padding: '8px 4px', fontSize: '12px', fontWeight: category === cat.id ? 600 : 400, border: 'none', cursor: 'pointer', background: category === cat.id ? 'var(--acd)' : 'transparent', color: category === cat.id ? 'var(--ac)' : 'var(--t3)', borderBottom: `2px solid ${category === cat.id ? 'var(--ac)' : 'transparent'}`, transition: 'all .15s' }}>
+                  {cat.emoji} {cat.label}
+                </button>
+              ))}
             </div>
-          </div>
 
-          {/* Quantità */}
-          <div>
-            <p style={{ fontSize: '11px', color: 'var(--t3)', fontWeight: 500, marginBottom: 8 }}>Quantità</p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <button onClick={() => setQty(q => Math.max(1, q - 1))} style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--s2)', border: '1px solid var(--b1)', color: 'var(--tx)', fontSize: '16px', cursor: 'pointer', display: 'grid', placeItems: 'center' }}>−</button>
-              <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '20px', color: 'var(--tx)', minWidth: 40, textAlign: 'center' }}>{qty}</span>
-              <button onClick={() => setQty(q => q + 1)} style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--s2)', border: '1px solid var(--b1)', color: 'var(--tx)', fontSize: '16px', cursor: 'pointer', display: 'grid', placeItems: 'center' }}>+</button>
-              {tab === 'carta' && (
-                <span style={{ fontSize: '11px', color: 'var(--t3)', marginLeft: 4 }}>
-                  {fmt(unitPrice)} / copia
-                </span>
+            {/* Product list */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {products === null ? (
+                <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
+                  <div style={{ width: 22, height: 22, border: '2px solid var(--ac)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .7s linear infinite' }} />
+                </div>
+              ) : filtered.length === 0 ? (
+                <p style={{ fontSize: '13px', color: 'var(--t3)', textAlign: 'center', padding: 32 }}>Nessun prodotto disponibile</p>
+              ) : filtered.map(p => {
+                const minPrice = Math.min(...p.variants.map(v => v.price)) / 100
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => setSelectedProduct(p)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 'var(--r2)', cursor: 'pointer', textAlign: 'left', transition: 'all .15s', width: '100%' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(142,201,176,.3)'; e.currentTarget.style.background = 'var(--s3)' }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--b1)'; e.currentTarget.style.background = 'var(--s2)' }}
+                  >
+                    {p.images[0] && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={p.images[0]} alt="" style={{ width: 52, height: 52, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
+                    )}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--tx)' }}>{p.name}</p>
+                      <p style={{ fontSize: '11px', color: 'var(--t3)', marginTop: 2, lineHeight: 1.4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{p.shortDescription}</p>
+                    </div>
+                    <div style={{ flexShrink: 0, textAlign: 'right' }}>
+                      <p style={{ fontSize: '11px', color: 'var(--t3)' }}>da</p>
+                      <p style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '14px', color: 'var(--ac)' }}>{fmt(minPrice)}</p>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </>
+        )}
+
+        {/* ── STEP 2: product configuration ── */}
+        {selectedProduct && variant && (
+          <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+            {/* Variante */}
+            <div>
+              <p style={{ fontSize: '11px', color: 'var(--t3)', fontWeight: 500, marginBottom: 8 }}>
+                {selectedProduct.variants.length > 1 ? 'Formato / Variante' : 'Variante'}
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {selectedProduct.variants.map(v => (
+                  <button key={v.id} onClick={() => setSelectedVariantId(v.id)} style={variantBtnStyle(v.id === selectedVariantId)}>
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Quantità */}
+            <div>
+              <p style={{ fontSize: '11px', color: 'var(--t3)', fontWeight: 500, marginBottom: 8 }}>Quantità</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <button onClick={() => setQty(q => Math.max(1, q - 1))} style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--s2)', border: '1px solid var(--b1)', color: 'var(--tx)', fontSize: '16px', cursor: 'pointer', display: 'grid', placeItems: 'center' }}>−</button>
+                <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '20px', color: 'var(--tx)', minWidth: 40, textAlign: 'center' }}>{qty}</span>
+                <button onClick={() => setQty(q => q + 1)} style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--s2)', border: '1px solid var(--b1)', color: 'var(--tx)', fontSize: '16px', cursor: 'pointer', display: 'grid', placeItems: 'center' }}>+</button>
+                <span style={{ fontSize: '11px', color: 'var(--t3)', marginLeft: 4 }}>{fmt(unitPrice)} / pz</span>
+              </div>
+              {nextTier && (
+                <p style={{ fontSize: '10px', color: 'var(--amber)', marginTop: 6 }}>
+                  💡 Da {nextTier.minQty} pz → {fmt(nextTier.price / 100)} / pz
+                </p>
               )}
             </div>
 
-            {/* Info scaglione successivo */}
-            {nextTier && tab === 'carta' && (
-              <p style={{ fontSize: '10px', color: 'var(--amber)', marginTop: 6 }}>
-                💡 Da {nextTier[0]} copie → {fmt(nextTier[1])} / copia
-              </p>
-            )}
-          </div>
-
-          {/* Totale + scaglioni carta */}
-          {tab === 'carta' && cartaFmt.tiers.length > 1 && (
-            <div style={{ background: 'var(--s2)', borderRadius: 8, padding: '8px 12px' }}>
-              <p style={{ fontSize: '10px', color: 'var(--t3)', marginBottom: 5, fontWeight: 500 }}>Scaglioni di prezzo</p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 12px' }}>
-                {cartaFmt.tiers.map(([min, price], i) => {
-                  const isActive = qty >= min && (i === cartaFmt.tiers.length - 1 || qty < cartaFmt.tiers[i + 1][0])
-                  return (
-                    <span key={min} style={{ fontSize: '10px', color: isActive ? 'var(--ac)' : 'var(--t3)', fontWeight: isActive ? 600 : 400 }}>
-                      {min}+ → {fmt(price)}
-                    </span>
-                  )
-                })}
+            {/* Scaglioni prezzo */}
+            {variant.priceBreaks && variant.priceBreaks.length > 1 && (
+              <div style={{ background: 'var(--s2)', borderRadius: 8, padding: '8px 12px' }}>
+                <p style={{ fontSize: '10px', color: 'var(--t3)', marginBottom: 5, fontWeight: 500 }}>Scaglioni di prezzo</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 12px' }}>
+                  {[...variant.priceBreaks].sort((a, b) => a.minQty - b.minQty).map((b, i, arr) => {
+                    const isActive = qty >= b.minQty && (i === arr.length - 1 || qty < arr[i + 1].minQty)
+                    return (
+                      <span key={b.minQty} style={{ fontSize: '10px', color: isActive ? 'var(--ac)' : 'var(--t3)', fontWeight: isActive ? 600 : 400 }}>
+                        {b.minQty}+ → {fmt(b.price / 100)}
+                      </span>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Totale e CTA */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 4 }}>
-            <div>
-              <p style={{ fontSize: '11px', color: 'var(--t3)' }}>Totale</p>
-              <p style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '22px', color: 'var(--tx)' }}>{fmt(total)}</p>
+            {/* Totale + CTA */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 4 }}>
+              <div>
+                <p style={{ fontSize: '11px', color: 'var(--t3)' }}>Totale</p>
+                <p style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '22px', color: 'var(--tx)' }}>{fmt(total)}</p>
+              </div>
+              <button onClick={handleAdd} style={{ background: 'var(--ac)', color: '#111', border: 'none', borderRadius: 'var(--r2)', padding: '10px 20px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                {ICON_CART} Aggiungi al carrello
+              </button>
             </div>
-            <button onClick={handleAdd} style={{ background: 'var(--ac)', color: '#111', border: 'none', borderRadius: 'var(--r2)', padding: '10px 20px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-              Aggiungi al carrello
-            </button>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )
@@ -275,11 +359,22 @@ function OrderModal({ photo, onClose, onAdd }: OrderModalProps) {
 
 // ── OrderHistoryDrawer ─────────────────────────────────────────────────────
 
+// Items come back from DB in snake_case (as stored)
+interface HistoryItem {
+  photo_url: string
+  filename: string
+  product_name?: string   // new format
+  format_label: string
+  qty: number
+  unit_price: number
+  total: number
+}
+
 interface PastOrder {
   id: string
   client_name: string | null
   client_email: string | null
-  items: CartItem[]
+  items: HistoryItem[]
   total: number
   status: 'nuovo' | 'visto' | 'completato'
   notes: string | null
@@ -346,11 +441,11 @@ function OrderHistoryDrawer({ orders, onClose }: OrderHistoryDrawerProps) {
                   {order.items.map((item, i) => (
                     <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={item.photoUrl} alt="" style={{ width: 40, height: 40, borderRadius: 5, objectFit: 'cover', flexShrink: 0 }} />
+                      <img src={item.photo_url} alt="" style={{ width: 40, height: 40, borderRadius: 5, objectFit: 'cover', flexShrink: 0 }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{ fontSize: '11px', color: 'var(--tx)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.filename}</p>
                         <p style={{ fontSize: '10px', color: 'var(--t3)', marginTop: 2 }}>
-                          {item.type === 'carta' ? '📄' : '🖼️'} {item.formatLabel} × {item.qty}
+                          {item.product_name ?? '📦'} · {item.format_label} × {item.qty}
                         </p>
                       </div>
                       <span style={{ fontSize: '12px', color: 'var(--t2)', flexShrink: 0 }}>{fmt(item.total)}</span>
@@ -388,7 +483,7 @@ interface CartDrawerProps {
 const PHOTOGRAPHER_WA = '393897855581'
 
 function buildWaLink(items: CartItem[], total: number, clientName: string, galleryId: string): string {
-  const lines = items.map(i => `• ${i.qty}x ${i.type === 'carta' ? 'Carta' : 'Tela'} ${i.formatLabel} — ${fmt(i.unitPrice * i.qty)}`).join('\n')
+  const lines = items.map(i => `• ${i.qty}x ${i.productName} ${i.formatLabel} — ${fmt(i.unitPrice * i.qty)}`).join('\n')
   const msg = [
     `Ciao Claudio! Ho appena effettuato un ordine di stampe 🖼️`,
     ``,
@@ -428,7 +523,8 @@ function CartDrawer({ cart, galleryId, onClose, onRemove, onUpdateQty, onClear, 
         client_email: email.trim() || null,
         items: items.map(i => ({
           photo_id: i.photoId, photo_url: i.photoUrl, filename: i.filename,
-          type: i.type, format: i.format, format_label: i.formatLabel,
+          product_id: i.productId, product_name: i.productName,
+          variant_id: i.variantId, format_label: i.formatLabel,
           qty: i.qty, unit_price: i.unitPrice, total: i.total,
         })),
         total: cartTotal,
@@ -508,24 +604,23 @@ function CartDrawer({ cart, galleryId, onClose, onRemove, onUpdateQty, onClear, 
           <>
             <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
               {items.map(item => {
-                const cartaFmt   = item.type === 'carta' ? CARTA_FORMATS.find(f => f.key === item.format) : null
-                const unitPrice  = (qty: number) => cartaFmt ? getCartaUnitPrice(cartaFmt.tiers, qty) : item.unitPrice
+                const curUnitPrice = getPriceForBreaks(item.priceBreaks, item.qty, item.unitPrice)
                 return (
                   <div key={item.id} style={{ background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 10, padding: '10px 12px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={item.photoUrl} alt="" style={{ width: 50, height: 50, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontSize: '11px', color: 'var(--tx)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.filename}</p>
-                      <p style={{ fontSize: '10px', color: 'var(--t3)', marginTop: 2 }}>{item.type === 'carta' ? '📄' : '🖼️'} {item.formatLabel}</p>
+                      <p style={{ fontSize: '10px', color: 'var(--t3)', marginTop: 2 }}>{item.productName} · {item.formatLabel}</p>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 7 }}>
                         <button onClick={() => onUpdateQty(item.id, Math.max(1, item.qty - 1))} style={{ width: 22, height: 22, borderRadius: 5, background: 'var(--s3)', border: 'none', color: 'var(--tx)', fontSize: '14px', cursor: 'pointer', display: 'grid', placeItems: 'center' }}>−</button>
                         <span style={{ fontSize: '12px', color: 'var(--tx)', minWidth: 20, textAlign: 'center' }}>{item.qty}</span>
                         <button onClick={() => onUpdateQty(item.id, item.qty + 1)} style={{ width: 22, height: 22, borderRadius: 5, background: 'var(--s3)', border: 'none', color: 'var(--tx)', fontSize: '14px', cursor: 'pointer', display: 'grid', placeItems: 'center' }}>+</button>
-                        <span style={{ fontSize: '10px', color: 'var(--t3)', marginLeft: 2 }}>{fmt(unitPrice(item.qty))} / copia</span>
+                        <span style={{ fontSize: '10px', color: 'var(--t3)', marginLeft: 2 }}>{fmt(curUnitPrice)} / pz</span>
                       </div>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
-                      <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '13px', color: 'var(--tx)' }}>{fmt(unitPrice(item.qty) * item.qty)}</span>
+                      <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '13px', color: 'var(--tx)' }}>{fmt(curUnitPrice * item.qty)}</span>
                       <button onClick={() => onRemove(item.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t3)', padding: 2 }}>
                         <svg viewBox="0 0 24 24" width={13} height={13} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
                       </button>
@@ -900,33 +995,8 @@ export default function ClientePortalPage() {
     const res = await fetch(`/api/public/orders?gallery_id=${galleryId}&session_id=${sessionId.current}`)
     if (res.ok) {
       const data = await res.json()
-      // mappa i campi dal formato DB al formato CartItem
-      const mapped = data.map((o: {
-        id: string; client_name: string | null; client_email: string | null;
-        items: { photo_id: string; photo_url: string; filename: string; type: 'carta' | 'tela'; format: string; format_label: string; qty: number; unit_price: number; total: number }[];
-        total: number; status: 'nuovo' | 'visto' | 'completato'; notes: string | null; created_at: string
-      }) => ({
-        id: o.id,
-        client_name: o.client_name,
-        client_email: o.client_email,
-        items: o.items.map(i => ({
-          id: `${i.photo_id}::${i.type}::${i.format}`,
-          photoId: i.photo_id,
-          photoUrl: i.photo_url,
-          filename: i.filename,
-          type: i.type,
-          format: i.format,
-          formatLabel: i.format_label,
-          qty: i.qty,
-          unitPrice: i.unit_price,
-          total: i.total,
-        })),
-        total: o.total,
-        status: o.status,
-        notes: o.notes,
-        created_at: o.created_at,
-      }))
-      setPastOrders(mapped)
+      // items arrivano già in snake_case dal DB — compatibile con HistoryItem
+      setPastOrders(data)
     }
   }, [])
 
@@ -1005,8 +1075,7 @@ export default function ClientePortalPage() {
       const existing = next.get(item.id)
       if (existing) {
         const newQty = existing.qty + item.qty
-        const cartaFmt = item.type === 'carta' ? CARTA_FORMATS.find(f => f.key === item.format) : null
-        const newUnit = cartaFmt ? getCartaUnitPrice(cartaFmt.tiers, newQty) : item.unitPrice
+        const newUnit = getPriceForBreaks(existing.priceBreaks, newQty, existing.unitPrice)
         next.set(item.id, { ...existing, qty: newQty, unitPrice: newUnit, total: newUnit * newQty })
       } else {
         next.set(item.id, item)
@@ -1024,8 +1093,7 @@ export default function ClientePortalPage() {
       const n = new Map(prev)
       const item = n.get(itemId)
       if (!item) return prev
-      const cartaFmt = item.type === 'carta' ? CARTA_FORMATS.find(f => f.key === item.format) : null
-      const newUnit = cartaFmt ? getCartaUnitPrice(cartaFmt.tiers, qty) : item.unitPrice
+      const newUnit = getPriceForBreaks(item.priceBreaks, qty, item.unitPrice)
       n.set(itemId, { ...item, qty, unitPrice: newUnit, total: newUnit * qty })
       return n
     })

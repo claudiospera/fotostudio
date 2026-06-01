@@ -8,8 +8,9 @@ interface OrderItem {
   photo_id: string
   photo_url: string
   filename: string
-  type: 'carta' | 'tela'
-  format: string
+  product_name?: string  // new format
+  type?: 'carta' | 'tela'
+  format?: string
   format_label: string
   qty: number
   unit_price: number
@@ -139,7 +140,7 @@ function OrderDetail({ order, onClose, onStatusChange, onDelete }: OrderDetailPr
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: '12px', color: 'var(--tx)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.filename}</p>
                     <p style={{ fontSize: '11px', color: 'var(--t3)', marginTop: 2 }}>
-                      {item.type === 'carta' ? '📄 Stampa carta' : '🖼️ Stampa tela'} · {item.format_label}
+                      {item.product_name ?? (item.type === 'carta' ? '📄 Stampa carta' : '🖼️ Stampa tela')} · {item.format_label}
                     </p>
                     <p style={{ fontSize: '11px', color: 'var(--t2)', marginTop: 3 }}>
                       {item.qty} × {fmt(item.unit_price)}
