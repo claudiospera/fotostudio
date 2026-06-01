@@ -33,18 +33,25 @@ interface PublicGallery {
 }
 
 interface CartItem {
-  id: string           // `${photoId}::${productId}::${variantId}`
+  id: string           // `${photoId}::${productId}::${variantId}::${frameId}::${ppId}::${ptId}`
   photoId: string
   photoUrl: string
   filename: string
-  productId: string    // e.g. 'stampe-classiche'
-  productName: string  // e.g. 'Stampe Classiche'
-  variantId: string    // e.g. 'sc-10x15'
-  formatLabel: string  // e.g. '10×15 cm'
-  priceBreaks?: { minQty: number; price: number }[]  // in euros, for qty recalc
+  productId: string
+  productName: string
+  variantId: string
+  formatLabel: string
+  priceBreaks?: { minQty: number; price: number }[]  // in euros
   qty: number
-  unitPrice: number    // in euros
+  unitPrice: number    // in euros (incl. extras opzioni)
   total: number        // in euros
+  // opzioni prodotto
+  frameId?: string
+  frameLabel?: string
+  passepartoutId?: string
+  passepartoutLabel?: string
+  printTypeId?: string
+  printTypeLabel?: string
 }
 
 // ── shop product types (minimal — matches /api/shop-products response) ──────
@@ -56,6 +63,12 @@ interface ShopVariant {
   priceBreaks?: { minQty: number; price: number }[]  // in centesimi
 }
 
+interface ShopProductOptions {
+  frames?: { id: string; label: string; color: string; border: string }[]
+  printTypes?: { id: string; label: string; description: string; extraPrice: number }[]
+  passepartout?: { id: string; label: string; color?: string; extraPrice: number }[]
+}
+
 interface ShopProduct {
   id: string
   name: string
@@ -63,6 +76,7 @@ interface ShopProduct {
   category: 'stampe' | 'decorazioni' | 'gadget'
   images: string[]
   variants: ShopVariant[]
+  options?: ShopProductOptions
 }
 
 // ── helpers ─────────────────────────────────────────────────────────────────
@@ -129,7 +143,7 @@ async function downloadPhoto(photo: Photo) {
 // ── OrderModal ─────────────────────────────────────────────────────────────
 
 interface OrderModalProps {
-  photo: Photo
+  photos: Photo[]
   onClose: () => void
   onAdd: (item: CartItem) => void
 }
@@ -146,12 +160,19 @@ const CATEGORY_TABS: { id: 'stampe' | 'decorazioni' | 'gadget'; label: string }[
   { id: 'gadget',      label: 'Gadget'      },
 ]
 
-function OrderModal({ photo, onClose, onAdd }: OrderModalProps) {
+function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
   const [products, setProducts]           = useState<ShopProduct[] | null>(null)
   const [category, setCategory]           = useState<'stampe' | 'decorazioni' | 'gadget'>('stampe')
   const [selectedProduct, setSelectedProduct] = useState<ShopProduct | null>(null)
   const [selectedVariantId, setSelectedVariantId] = useState('')
   const [qty, setQty]                     = useState(1)
+  // options
+  const [frameId, setFrameId]             = useState('')
+  const [passepartoutId, setPassepartoutId] = useState('none')
+  const [printTypeId, setPrintTypeId]     = useState('')
+
+  const isBatch = photos.length > 1
+  const photo   = photos[0]  // preview foto: prima selezionata
 
   useEffect(() => {
     fetch('/api/shop-products')
@@ -160,7 +181,13 @@ function OrderModal({ photo, onClose, onAdd }: OrderModalProps) {
   }, [])
 
   useEffect(() => {
-    if (selectedProduct) setSelectedVariantId(selectedProduct.variants[0]?.id ?? '')
+    if (selectedProduct) {
+      setSelectedVariantId(selectedProduct.variants[0]?.id ?? '')
+      // inizializza opzioni con i default
+      setFrameId(selectedProduct.options?.frames?.[0]?.id ?? '')
+      setPassepartoutId(selectedProduct.options?.passepartout?.[0]?.id ?? 'none')
+      setPrintTypeId(selectedProduct.options?.printTypes?.[0]?.id ?? '')
+    }
     setQty(1)
   }, [selectedProduct])
 
@@ -174,34 +201,53 @@ function OrderModal({ photo, onClose, onAdd }: OrderModalProps) {
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose, selectedProduct])
 
-  const variant   = selectedProduct?.variants.find(v => v.id === selectedVariantId)
-  const unitCents = variant ? getPriceForBreaks(
+  const variant          = selectedProduct?.variants.find(v => v.id === selectedVariantId)
+  const printTypeExtra   = selectedProduct?.options?.printTypes?.find(pt => pt.id === printTypeId)?.extraPrice ?? 0
+  const passepartoutExtra = selectedProduct?.options?.passepartout?.find(pp => pp.id === passepartoutId)?.extraPrice ?? 0
+  const extraCents       = printTypeExtra + passepartoutExtra
+  const baseCents        = variant ? getPriceForBreaks(
     variant.priceBreaks?.map(b => ({ minQty: b.minQty, price: b.price })),
     qty,
     variant.price
   ) : 0
-  const unitPrice = unitCents / 100
-  const total     = unitPrice * qty
-  const nextTier  = variant?.priceBreaks
+  const unitCents  = baseCents + extraCents
+  const unitPrice  = unitCents / 100
+  const totalPerPhoto = unitPrice * qty
+  const grandTotal = totalPerPhoto * (isBatch ? photos.length : 1)
+  const nextTier   = variant?.priceBreaks
     ? [...variant.priceBreaks].sort((a, b) => a.minQty - b.minQty).find(b => b.minQty > qty)
     : null
+
+  const frameLabel        = selectedProduct?.options?.frames?.find(f => f.id === frameId)?.label
+  const passepartoutLabel = selectedProduct?.options?.passepartout?.find(pp => pp.id === passepartoutId)?.label
+  const printTypeLabel    = selectedProduct?.options?.printTypes?.find(pt => pt.id === printTypeId)?.label
 
   const handleAdd = () => {
     if (!selectedProduct || !variant) return
     const priceBreaks = variant.priceBreaks?.map(b => ({ minQty: b.minQty, price: b.price / 100 }))
-    onAdd({
-      id: `${photo.id}::${selectedProduct.id}::${variant.id}`,
-      photoId: photo.id,
-      photoUrl: photo.url,
-      filename: photo.filename,
-      productId: selectedProduct.id,
-      productName: selectedProduct.name,
-      variantId: variant.id,
-      formatLabel: variant.label,
-      priceBreaks,
-      qty,
-      unitPrice,
-      total,
+    const optionsSuffix = `${frameId}::${passepartoutId}::${printTypeId}`
+    const photosToAdd = isBatch ? photos : [photo]
+    photosToAdd.forEach(p => {
+      onAdd({
+        id: `${p.id}::${selectedProduct.id}::${variant.id}::${optionsSuffix}`,
+        photoId: p.id,
+        photoUrl: p.url,
+        filename: p.filename,
+        productId: selectedProduct.id,
+        productName: selectedProduct.name,
+        variantId: variant.id,
+        formatLabel: variant.label,
+        priceBreaks,
+        qty,
+        unitPrice,
+        total: unitPrice * qty,
+        frameId: frameId || undefined,
+        frameLabel: frameLabel || undefined,
+        passepartoutId: passepartoutId !== 'none' ? passepartoutId : undefined,
+        passepartoutLabel: passepartoutId !== 'none' ? passepartoutLabel : undefined,
+        printTypeId: printTypeId || undefined,
+        printTypeLabel: printTypeLabel || undefined,
+      })
     })
     onClose()
   }
@@ -235,17 +281,30 @@ function OrderModal({ photo, onClose, onAdd }: OrderModalProps) {
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--b1)', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
             {selectedProduct && (
               <button onClick={() => setSelectedProduct(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t3)', width: 32, height: 32, display: 'grid', placeItems: 'center', borderRadius: 8, flexShrink: 0 }}>{ICON_BACK}</button>
             )}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={photo.url} alt="" style={{ width: 42, height: 42, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
-            <div>
+            {/* Anteprima foto: singola o strip di thumbnails */}
+            {isBatch ? (
+              <div style={{ display: 'flex', gap: 3, flexShrink: 0 }}>
+                {photos.slice(0, 5).map((p, i) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={p.id} src={p.url} alt="" style={{ width: 36, height: 36, borderRadius: 6, objectFit: 'cover', opacity: i < 4 ? 1 : 0.5 }} />
+                ))}
+                {photos.length > 5 && <div style={{ width: 36, height: 36, borderRadius: 6, background: 'var(--s3)', display: 'grid', placeItems: 'center', fontSize: '11px', fontWeight: 700, color: 'var(--t2)', flexShrink: 0 }}>+{photos.length - 5}</div>}
+              </div>
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={photo.url} alt="" style={{ width: 42, height: 42, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
+            )}
+            <div style={{ minWidth: 0 }}>
               <p style={{ fontSize: '15px', fontFamily: 'Syne, sans-serif', fontWeight: 700, color: 'var(--tx)' }}>
                 {selectedProduct ? selectedProduct.name : 'Tutti i prodotti'}
               </p>
-              <p style={{ fontSize: '11px', color: 'var(--t3)', marginTop: 1 }}>{photo.filename}</p>
+              <p style={{ fontSize: '11px', color: 'var(--t3)', marginTop: 1 }}>
+                {isBatch ? `${photos.length} foto selezionate` : photo.filename}
+              </p>
             </div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t3)', width: 32, height: 32, display: 'grid', placeItems: 'center', borderRadius: 8, flexShrink: 0 }}>{ICON_CLOSE}</button>
@@ -356,16 +415,78 @@ function OrderModal({ photo, onClose, onAdd }: OrderModalProps) {
                   </div>
                 </div>
               )}
+
+              {/* ── OPZIONI CORNICE ── */}
+              {selectedProduct.options?.frames && selectedProduct.options.frames.length > 0 && (
+                <div style={{ marginBottom: 18 }}>
+                  <p style={{ fontSize: '11px', color: 'var(--t3)', fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 10 }}>Colore cornice</p>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {selectedProduct.options.frames.map(f => (
+                      <button
+                        key={f.id}
+                        onClick={() => setFrameId(f.id)}
+                        title={f.label}
+                        style={{ width: 32, height: 32, borderRadius: '50%', background: f.color, border: `3px solid ${frameId === f.id ? 'var(--ac)' : f.border}`, cursor: 'pointer', boxShadow: frameId === f.id ? '0 0 0 2px var(--ac)' : 'none', transition: 'all .15s', outline: 'none', flexShrink: 0 }}
+                      />
+                    ))}
+                    {frameId && <span style={{ display: 'flex', alignItems: 'center', fontSize: '12px', color: 'var(--t2)', marginLeft: 4 }}>{selectedProduct.options.frames.find(f => f.id === frameId)?.label}</span>}
+                  </div>
+                </div>
+              )}
+
+              {/* ── TIPO CARTA ── */}
+              {selectedProduct.options?.printTypes && selectedProduct.options.printTypes.length > 0 && (
+                <div style={{ marginBottom: 18 }}>
+                  <p style={{ fontSize: '11px', color: 'var(--t3)', fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 10 }}>Tipo carta</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                    {selectedProduct.options.printTypes.map(pt => (
+                      <label key={pt.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', borderRadius: 8, border: `1px solid ${printTypeId === pt.id ? 'var(--ac)' : 'var(--b1)'}`, background: printTypeId === pt.id ? 'var(--acd)' : 'var(--s2)', cursor: 'pointer', transition: 'all .15s' }}>
+                        <input type="radio" name="printType" value={pt.id} checked={printTypeId === pt.id} onChange={() => setPrintTypeId(pt.id)} style={{ marginTop: 2, accentColor: 'var(--ac)' }} />
+                        <div>
+                          <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--tx)', margin: 0 }}>{pt.label}</p>
+                          <p style={{ fontSize: '10px', color: 'var(--t3)', margin: '2px 0 0' }}>
+                            {pt.description}{pt.extraPrice > 0 ? ` · +${fmt(pt.extraPrice / 100)}` : ' · Incluso'}
+                          </p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ── PASSEPARTOUT ── */}
+              {selectedProduct.options?.passepartout && selectedProduct.options.passepartout.length > 0 && (
+                <div style={{ marginBottom: 18 }}>
+                  <p style={{ fontSize: '11px', color: 'var(--t3)', fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 10 }}>Passepartout</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+                    {selectedProduct.options.passepartout.map(pp => (
+                      <button key={pp.id} onClick={() => setPassepartoutId(pp.id)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 6, border: `1px solid ${passepartoutId === pp.id ? 'var(--ac)' : 'var(--b1)'}`, background: passepartoutId === pp.id ? 'var(--acd)' : 'var(--s2)', cursor: 'pointer', fontSize: '12px', color: passepartoutId === pp.id ? 'var(--ac)' : 'var(--t2)', fontWeight: passepartoutId === pp.id ? 600 : 400, transition: 'all .15s' }}>
+                        {pp.color && <span style={{ width: 14, height: 14, borderRadius: '50%', background: pp.color, border: '1px solid var(--b2)', flexShrink: 0 }} />}
+                        {pp.label}{pp.extraPrice > 0 ? ` (+${fmt(pp.extraPrice / 100)})` : ''}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Extra costi opzioni */}
+              {extraCents > 0 && (
+                <div style={{ background: 'var(--s2)', borderRadius: 8, padding: '10px 14px', marginBottom: 6, fontSize: '11px', color: 'var(--t3)' }}>
+                  Prezzo base {fmt(baseCents / 100)} + opzioni {fmt(extraCents / 100)} = {fmt(unitCents / 100)} / pz
+                </div>
+              )}
             </div>
 
             {/* Footer fisso */}
             <div style={{ padding: '16px 20px', borderTop: '1px solid var(--b1)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
               <div>
-                <p style={{ fontSize: '11px', color: 'var(--t3)', margin: 0 }}>Totale</p>
-                <p style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '26px', color: 'var(--tx)', margin: 0 }}>{fmt(total)}</p>
+                <p style={{ fontSize: '11px', color: 'var(--t3)', margin: 0 }}>
+                  {isBatch ? `Totale (${photos.length} foto × ${qty} pz)` : 'Totale'}
+                </p>
+                <p style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '26px', color: 'var(--tx)', margin: 0 }}>{fmt(grandTotal)}</p>
               </div>
               <button onClick={handleAdd} style={{ background: 'var(--ac)', color: '#111', border: 'none', borderRadius: 'var(--r2)', padding: '12px 24px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                {ICON_CART} Aggiungi al carrello
+                {ICON_CART} {isBatch ? `Aggiungi ${photos.length} foto` : 'Aggiungi al carrello'}
               </button>
             </div>
           </>
@@ -677,7 +798,12 @@ function CartDrawer({ cart, galleryId, onClose, onRemove, onUpdateQty, onClear, 
                     <img src={item.photoUrl} alt="" style={{ width: 52, height: 52, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontSize: '12px', color: 'var(--tx)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.productName}</p>
-                      <p style={{ fontSize: '11px', color: 'var(--t3)', marginTop: 1 }}>{item.formatLabel}</p>
+                      <p style={{ fontSize: '11px', color: 'var(--t3)', marginTop: 1 }}>
+                        {item.formatLabel}
+                        {item.frameLabel ? ` · ${item.frameLabel}` : ''}
+                        {item.passepartoutLabel ? ` · ${item.passepartoutLabel}` : ''}
+                        {item.printTypeLabel ? ` · ${item.printTypeLabel}` : ''}
+                      </p>
                       <p style={{ fontSize: '10px', color: 'var(--t3)', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', opacity: .7 }}>{item.filename}</p>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
                         <button onClick={() => onUpdateQty(item.id, Math.max(1, item.qty - 1))} style={{ width: 24, height: 24, borderRadius: 5, background: 'var(--s3)', border: 'none', color: 'var(--tx)', fontSize: '15px', cursor: 'pointer', display: 'grid', placeItems: 'center' }}>−</button>
@@ -935,9 +1061,12 @@ interface PhotoItemProps {
   onOpenComment: (photo: Photo) => void
   onOpenOrder: (photo: Photo) => void
   gridMode?: boolean
+  selectMode?: boolean
+  isSelected?: boolean
+  onSelect?: (photoId: string) => void
 }
 
-function PhotoItem({ photo, index, galleryId, isFavorited, commentCount, inCart, showWatermark, showDownloadSingle, onOpenLightbox, onToggleFavorite, onOpenComment, onOpenOrder, gridMode }: PhotoItemProps) {
+function PhotoItem({ photo, index, galleryId, isFavorited, commentCount, inCart, showWatermark, showDownloadSingle, onOpenLightbox, onToggleFavorite, onOpenComment, onOpenOrder, gridMode, selectMode, isSelected, onSelect }: PhotoItemProps) {
   const [downloading, setDownloading] = useState(false)
 
   const handleDownload = async (e: React.MouseEvent) => {
@@ -947,16 +1076,21 @@ function PhotoItem({ photo, index, galleryId, isFavorited, commentCount, inCart,
     setDownloading(false)
   }
 
+  const handleClick = () => {
+    if (selectMode) { onSelect?.(photo.id) }
+    else onOpenLightbox(index)
+  }
+
   return (
     <div
-      style={{ borderRadius: '3px', overflow: 'hidden', background: '#e8e8e6', position: 'relative', breakInside: 'avoid', marginBottom: gridMode ? 0 : 6, cursor: 'pointer', ...(gridMode ? { aspectRatio: '3/2' } : {}) }}
-      onClick={() => onOpenLightbox(index)}
+      style={{ borderRadius: '3px', overflow: 'hidden', background: '#e8e8e6', position: 'relative', breakInside: 'avoid', marginBottom: gridMode ? 0 : 6, cursor: 'pointer', ...(gridMode ? { aspectRatio: '3/2' } : {}), outline: isSelected ? '3px solid #8ec9b0' : 'none', outlineOffset: -3 }}
+      onClick={handleClick}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={photo.url} alt={photo.filename} loading="lazy" style={{ width: '100%', height: gridMode ? '100%' : 'auto', objectFit: gridMode ? 'cover' : undefined, display: 'block' }} />
+      <img src={photo.url} alt={photo.filename} loading="lazy" style={{ width: '100%', height: gridMode ? '100%' : 'auto', objectFit: gridMode ? 'cover' : undefined, display: 'block', transition: 'opacity .15s', opacity: selectMode && !isSelected ? 0.7 : 1 }} />
 
       {/* Watermark overlay */}
-      {showWatermark && (
+      {showWatermark && !selectMode && (
         <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
           <span style={{
             fontSize: 'clamp(8px, 2.5vw, 13px)', fontWeight: 700, color: 'rgba(255,255,255,0.35)',
@@ -969,42 +1103,53 @@ function PhotoItem({ photo, index, galleryId, isFavorited, commentCount, inCart,
         </div>
       )}
 
-      {/* Hover overlay — gradiente + icone bianche */}
-      <div className="photo-actions-overlay" style={{
-        position: 'absolute', inset: 0,
-        background: 'linear-gradient(to top, rgba(0,0,0,.55) 0%, rgba(0,0,0,.05) 45%, transparent 100%)',
-        display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '12px 12px',
-      }}>
-        <div style={{ display: 'flex', gap: 14, justifyContent: 'flex-end', alignItems: 'center' }}>
-
-          {/* ♡ Preferita */}
-          <button onClick={e => { e.stopPropagation(); onToggleFavorite(photo.id) }} title={isFavorited ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'grid', placeItems: 'center', transition: 'transform .15s' }}>
-            <svg viewBox="0 0 24 24" width={20} height={20} fill={isFavorited ? '#fff' : 'none'} stroke="#fff" strokeWidth={1.8} strokeLinecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg>
-          </button>
-
-          {/* ↓ Download singolo */}
-          {showDownloadSingle && (
-            <button onClick={handleDownload} title="Scarica foto" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'grid', placeItems: 'center', opacity: downloading ? .5 : 1, transition: 'transform .15s' }}>
-              {downloading
-                ? <div style={{ width: 12, height: 12, border: '1.5px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .7s linear infinite' }} />
-                : <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              }
-            </button>
-          )}
-
-          {/* 💬 Commento */}
-          <button onClick={e => { e.stopPropagation(); onOpenComment(photo) }} title="Lascia un commento" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 3, transition: 'transform .15s' }}>
-            <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            {commentCount > 0 && <span style={{ fontSize: '11px', color: '#fff', fontWeight: 700 }}>{commentCount}</span>}
-          </button>
-
-          {/* 🛒 Ordina */}
-          <button onClick={e => { e.stopPropagation(); onOpenOrder(photo) }} title="Ordina stampa" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'grid', placeItems: 'center', transition: 'transform .15s' }}>
-            <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke={inCart ? '#8ec9b0' : '#fff'} strokeWidth={1.8} strokeLinecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-          </button>
-
+      {/* Select mode overlay */}
+      {selectMode && (
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', padding: 8, background: isSelected ? 'rgba(142,201,176,.2)' : 'transparent' }}>
+          <div style={{ width: 22, height: 22, borderRadius: '50%', border: `2.5px solid ${isSelected ? '#8ec9b0' : 'rgba(255,255,255,.8)'}`, background: isSelected ? '#8ec9b0' : 'rgba(0,0,0,.25)', display: 'grid', placeItems: 'center', flexShrink: 0, boxShadow: '0 1px 4px rgba(0,0,0,.3)', transition: 'all .15s' }}>
+            {isSelected && <svg viewBox="0 0 24 24" width={12} height={12} fill="none" stroke="#111" strokeWidth={3} strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Hover overlay — gradiente + icone bianche — hidden in selectMode */}
+      {!selectMode && (
+        <div className="photo-actions-overlay" style={{
+          position: 'absolute', inset: 0,
+          background: 'linear-gradient(to top, rgba(0,0,0,.55) 0%, rgba(0,0,0,.05) 45%, transparent 100%)',
+          display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '12px 12px',
+        }}>
+          <div style={{ display: 'flex', gap: 14, justifyContent: 'flex-end', alignItems: 'center' }}>
+
+            {/* ♡ Preferita */}
+            <button onClick={e => { e.stopPropagation(); onToggleFavorite(photo.id) }} title={isFavorited ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'grid', placeItems: 'center', transition: 'transform .15s' }}>
+              <svg viewBox="0 0 24 24" width={20} height={20} fill={isFavorited ? '#fff' : 'none'} stroke="#fff" strokeWidth={1.8} strokeLinecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            </button>
+
+            {/* ↓ Download singolo */}
+            {showDownloadSingle && (
+              <button onClick={handleDownload} title="Scarica foto" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'grid', placeItems: 'center', opacity: downloading ? .5 : 1, transition: 'transform .15s' }}>
+                {downloading
+                  ? <div style={{ width: 12, height: 12, border: '1.5px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .7s linear infinite' }} />
+                  : <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                }
+              </button>
+            )}
+
+            {/* 💬 Commento */}
+            <button onClick={e => { e.stopPropagation(); onOpenComment(photo) }} title="Lascia un commento" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 3, transition: 'transform .15s' }}>
+              <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              {commentCount > 0 && <span style={{ fontSize: '11px', color: '#fff', fontWeight: 700 }}>{commentCount}</span>}
+            </button>
+
+            {/* 🛒 Ordina */}
+            <button onClick={e => { e.stopPropagation(); onOpenOrder(photo) }} title="Ordina stampa" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'grid', placeItems: 'center', transition: 'transform .15s' }}>
+              <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke={inCart ? '#8ec9b0' : '#fff'} strokeWidth={1.8} strokeLinecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+            </button>
+
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -1114,9 +1259,13 @@ export default function ClientePortalPage() {
   const [commentPhoto, setCommentPhoto]   = useState<Photo | null>(null)
 
   // cart
-  const [cart, setCart]             = useState<Map<string, CartItem>>(new Map())
-  const [orderPhoto, setOrderPhoto] = useState<Photo | null>(null)
-  const [cartOpen, setCartOpen]     = useState(false)
+  const [cart, setCart]               = useState<Map<string, CartItem>>(new Map())
+  const [orderPhotos, setOrderPhotos] = useState<Photo[] | null>(null)
+  const [cartOpen, setCartOpen]       = useState(false)
+
+  // select mode
+  const [selectMode, setSelectMode]         = useState(false)
+  const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set())
 
   // slideshow
   const [slideshowOpen, setSlideshowOpen] = useState(false)
@@ -1246,8 +1395,23 @@ export default function ClientePortalPage() {
 
   const clearCart = useCallback(() => setCart(new Map()), [])
 
-  const cartCount = Array.from(cart.values()).reduce((s, i) => s + i.qty, 0)
+  const cartCount  = Array.from(cart.values()).reduce((s, i) => s + i.qty, 0)
   const cartPhotos = new Set(Array.from(cart.values()).map(i => i.photoId))
+
+  // ── select mode ───────────────────────────────────────────────────────────
+  const toggleSelectPhoto = useCallback((photoId: string) => {
+    setSelectedPhotos(prev => { const n = new Set(prev); n.has(photoId) ? n.delete(photoId) : n.add(photoId); return n })
+  }, [])
+
+  const exitSelectMode = useCallback(() => { setSelectMode(false); setSelectedPhotos(new Set()) }, [])
+
+  const openOrderForSelected = useCallback(() => {
+    if (!gallery || selectedPhotos.size === 0) return
+    const photosToOrder = Array.from(selectedPhotos)
+      .map(id => gallery.photos.find(p => p.id === id))
+      .filter(Boolean) as Photo[]
+    setOrderPhotos(photosToOrder)
+  }, [selectedPhotos, gallery])
 
   const closeLb    = useCallback(() => setLbIndex(null), [])
   const navigateLb = useCallback((i: number) => setLbIndex(i), [])
@@ -1358,10 +1522,15 @@ export default function ClientePortalPage() {
           {/* Destra: azioni con testo */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
 
-            {/* Favorites */}
+            {/* Favorites + badge */}
             <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'none', border: 'none', cursor: 'default', color: favorites.size > 0 ? theme.navText : theme.navSub, fontSize: '12px', fontWeight: 500, letterSpacing: '.01em' }}>
-              <svg viewBox="0 0 24 24" width={16} height={16} fill={favorites.size > 0 ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={1.8}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg>
-              <span className="nav-label">Favorites{favorites.size > 0 ? ` (${favorites.size})` : ''}</span>
+              <span style={{ position: 'relative', display: 'inline-flex' }}>
+                <svg viewBox="0 0 24 24" width={16} height={16} fill={favorites.size > 0 ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={1.8}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                {favorites.size > 0 && (
+                  <span style={{ position: 'absolute', top: -5, right: -7, background: theme.navText, color: theme.navBg, borderRadius: '50%', fontSize: '9px', fontWeight: 800, width: 14, height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, pointerEvents: 'none' }}>{favorites.size}</span>
+                )}
+              </span>
+              <span className="nav-label">Preferiti{favorites.size > 0 ? ` (${favorites.size})` : ''}</span>
             </button>
 
             {/* Download */}
@@ -1400,6 +1569,20 @@ export default function ClientePortalPage() {
               <span className="nav-label">Slideshow</span>
             </button>
 
+            {/* Seleziona / Esci selezione */}
+            {photos.length > 0 && (
+              <button
+                onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: selectMode ? theme.navText : 'none', border: 'none', cursor: 'pointer', color: selectMode ? theme.navBg : theme.navSub, fontSize: '12px', fontWeight: selectMode ? 700 : 500, letterSpacing: '.01em', borderRadius: 6, transition: 'all .15s' }}
+              >
+                {selectMode
+                  ? <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                  : <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><polyline points="17 9 19 11 23 7"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><line x1="17" y1="17" x2="23" y2="17"/><line x1="20" y1="14" x2="20" y2="20"/></svg>
+                }
+                <span className="nav-label">{selectMode ? `Chiudi (${selectedPhotos.size})` : 'Seleziona'}</span>
+              </button>
+            )}
+
             {/* I miei ordini */}
             {pastOrders.length > 0 && (
               <button onClick={() => setOrdersOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer', color: theme.navSub, fontSize: '12px', fontWeight: 500, letterSpacing: '.01em' }}>
@@ -1432,8 +1615,11 @@ export default function ClientePortalPage() {
                   onOpenLightbox={setLbIndex}
                   onToggleFavorite={toggleFavorite}
                   onOpenComment={setCommentPhoto}
-                  onOpenOrder={setOrderPhoto}
+                  onOpenOrder={p => setOrderPhotos([p])}
                   gridMode
+                  selectMode={selectMode}
+                  isSelected={selectedPhotos.has(photo.id)}
+                  onSelect={toggleSelectPhoto}
                 />
               ))}
             </div>
@@ -1453,12 +1639,53 @@ export default function ClientePortalPage() {
                   onOpenLightbox={setLbIndex}
                   onToggleFavorite={toggleFavorite}
                   onOpenComment={setCommentPhoto}
-                  onOpenOrder={setOrderPhoto}
+                  onOpenOrder={p => setOrderPhotos([p])}
+                  selectMode={selectMode}
+                  isSelected={selectedPhotos.has(photo.id)}
+                  onSelect={toggleSelectPhoto}
                 />
               ))}
             </div>
           )}
         </div>
+
+        {/* ── SELECTION ACTION BAR ───────────────────────────────────────── */}
+        {selectMode && (
+          <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200, background: 'rgba(20,20,20,.97)', backdropFilter: 'blur(8px)', borderTop: '1px solid rgba(255,255,255,.1)', padding: '12px clamp(16px, 4vw, 40px)', display: 'flex', alignItems: 'center', gap: 12, animation: 'slideUp .2s ease' }}>
+            {/* Thumbnails preview */}
+            <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+              {Array.from(selectedPhotos).slice(0, 4).map(id => {
+                const p = gallery.photos.find(ph => ph.id === id)
+                if (!p) return null
+                return (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={id} src={p.url} alt="" style={{ width: 34, height: 34, borderRadius: 5, objectFit: 'cover', border: '2px solid #8ec9b0' }} />
+                )
+              })}
+              {selectedPhotos.size > 4 && <div style={{ width: 34, height: 34, borderRadius: 5, background: 'rgba(255,255,255,.1)', display: 'grid', placeItems: 'center', fontSize: '10px', fontWeight: 700, color: '#8ec9b0', border: '2px solid rgba(142,201,176,.3)' }}>+{selectedPhotos.size - 4}</div>}
+            </div>
+
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '13px', color: '#fff', margin: 0 }}>
+                {selectedPhotos.size === 0 ? 'Tocca le foto per selezionarle' : `${selectedPhotos.size} ${selectedPhotos.size === 1 ? 'foto selezionata' : 'foto selezionate'}`}
+              </p>
+              {selectedPhotos.size > 0 && (
+                <button onClick={() => setSelectedPhotos(new Set())} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,.4)', fontSize: '10px', padding: 0, letterSpacing: '.03em' }}>
+                  Deseleziona tutto
+                </button>
+              )}
+            </div>
+
+            <button
+              onClick={openOrderForSelected}
+              disabled={selectedPhotos.size === 0}
+              style={{ background: selectedPhotos.size > 0 ? '#8ec9b0' : 'rgba(255,255,255,.1)', color: selectedPhotos.size > 0 ? '#111' : 'rgba(255,255,255,.3)', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: '13px', fontWeight: 700, cursor: selectedPhotos.size > 0 ? 'pointer' : 'default', transition: 'all .2s', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}
+            >
+              <svg viewBox="0 0 24 24" width={15} height={15} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+              Ordina {selectedPhotos.size > 0 ? `(${selectedPhotos.size})` : ''}
+            </button>
+          </div>
+        )}
 
         {/* ── BANNER STAMPA ──────────────────────────────────────────────── */}
         {photos.length > 0 && (
@@ -1599,7 +1826,7 @@ export default function ClientePortalPage() {
           onOpenComment={setCommentPhoto}
           onDownload={gallery?.settings?.download_singolo !== false ? downloadPhoto : undefined}
           showDownload={gallery?.settings?.download_singolo !== false}
-          onOpenOrder={setOrderPhoto}
+          onOpenOrder={p => setOrderPhotos([p])}
           showOrder={true}
         />
       )}
@@ -1608,7 +1835,7 @@ export default function ClientePortalPage() {
       {commentPhoto && <CommentModal photo={commentPhoto} galleryId={gallery.id} onClose={() => setCommentPhoto(null)} onSaved={handleCommentSaved} />}
 
       {/* Order modal */}
-      {orderPhoto && <OrderModal photo={orderPhoto} onClose={() => setOrderPhoto(null)} onAdd={addToCart} />}
+      {orderPhotos && <OrderModal photos={orderPhotos} onClose={() => { setOrderPhotos(null); if (selectMode) exitSelectMode() }} onAdd={addToCart} />}
 
       {/* Cart drawer */}
       {cartOpen && <CartDrawer cart={cart} galleryId={gallery.id} onClose={() => setCartOpen(false)} onRemove={removeFromCart} onUpdateQty={updateCartQty} onClear={clearCart} onOrderPlaced={() => fetchPastOrders(gallery.id)} />}
