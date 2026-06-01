@@ -212,7 +212,8 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose, selectedProduct])
 
-  const variant           = selectedProduct?.variants.find(v => v.id === selectedVariantId)
+  // Fallback al primo variant per evitare il frame vuoto tra setSelectedProduct e l'useEffect che aggiorna selectedVariantId
+  const variant           = selectedProduct?.variants.find(v => v.id === selectedVariantId) ?? selectedProduct?.variants[0]
   const printTypeExtra    = selectedProduct?.options?.printTypes?.find(pt => pt.id === printTypeId)?.extraPrice ?? 0
   const passepartoutExtra = selectedProduct?.options?.passepartout?.find(pp => pp.id === passepartoutId)?.extraPrice ?? 0
   const extraCents        = printTypeExtra + passepartoutExtra
@@ -560,7 +561,7 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
               {/* ── OPZIONI CORNICE ── */}
               {selectedProduct.options?.frames && selectedProduct.options.frames.length > 0 && (
                 <div style={{ marginBottom: 18 }}>
-                  <p style={{ fontSize: '11px', color: 'var(--t3)', fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 10 }}>Colore cornice</p>
+                  <p style={{ fontSize: '11px', color: 'var(--t3)', fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 10 }}>{selectedProduct.id === 'stampe-instax' ? 'Grafica bordo' : 'Colore cornice'}</p>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     {selectedProduct.options.frames.map(f => (
                       <button
@@ -1559,6 +1560,7 @@ export default function ClientePortalPage() {
 
   // ── select mode ───────────────────────────────────────────────────────────
   const toggleSelectPhoto = useCallback((photoId: string) => {
+    setSelectMode(true)  // attiva select mode se non già attivo
     setSelectedPhotos(prev => { const n = new Set(prev); n.has(photoId) ? n.delete(photoId) : n.add(photoId); return n })
   }, [])
 
@@ -1987,6 +1989,8 @@ export default function ClientePortalPage() {
           showDownload={gallery?.settings?.download_singolo !== false}
           onOpenOrder={p => setOrderPhotos([p])}
           showOrder={true}
+          selectedPhotos={selectedPhotos}
+          onToggleSelect={toggleSelectPhoto}
         />
       )}
 

@@ -16,16 +16,21 @@ interface LightboxProps {
   showDownload?: boolean
   onOpenOrder?: (photo: Photo) => void
   showOrder?: boolean
+  // selection
+  selectedPhotos?: Set<string>
+  onToggleSelect?: (photoId: string) => void
 }
 
 export const Lightbox = ({
   photos, currentIndex, onClose, onNavigate,
   favorites, onToggleFavorite, onOpenComment, onDownload, showDownload, onOpenOrder, showOrder,
+  selectedPhotos, onToggleSelect,
 }: LightboxProps) => {
   const photo = photos[currentIndex]
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const isFavorited = favorites?.has(photo?.id ?? '') ?? false
+  const isSelected  = selectedPhotos?.has(photo?.id ?? '') ?? false
 
   // Keyboard navigation
   useEffect(() => {
@@ -161,6 +166,20 @@ export const Lightbox = ({
               <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
             </svg>
             <span className="nav-label" style={{ fontSize: '13px' }}>Ordina</span>
+          </button>
+        )}
+
+        {/* ☑ Seleziona */}
+        {onToggleSelect && (
+          <button
+            onClick={() => onToggleSelect(photo.id)}
+            style={{ ...topBtn, color: isSelected ? '#8ec9b0' : '#666', fontWeight: isSelected ? 700 : 500 }}
+          >
+            <svg viewBox="0 0 24 24" width={16} height={16} fill={isSelected ? '#8ec9b0' : 'none'} stroke={isSelected ? '#8ec9b0' : 'currentColor'} strokeWidth={1.8} strokeLinecap="round">
+              <rect x="3" y="3" width="18" height="18" rx="3"/>
+              {isSelected && <polyline points="8 12 11 15 16 9"/>}
+            </svg>
+            <span className="nav-label" style={{ fontSize: '13px' }}>{isSelected ? 'Selezionata' : 'Seleziona'}</span>
           </button>
         )}
       </div>
