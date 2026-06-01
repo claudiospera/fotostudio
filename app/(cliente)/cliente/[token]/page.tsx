@@ -744,9 +744,22 @@ function CartDrawer({ cart, galleryId, onClose, onRemove, onUpdateQty, onClear, 
   const [submitError, setSubmitError] = useState('')
   const [waLink, setWaLink]         = useState('')
 
-  const items     = Array.from(cart.values())
-  const cartTotal = items.reduce((s, i) => s + getPriceForBreaks(i.priceBreaks, i.qty, i.unitPrice) * i.qty, 0)
-  const discount  = coupon ? coupon.discount / 100 : 0
+  const items = Array.from(cart.values())
+
+  // Aggrega qty totale per formato — permette di applicare gli scaglioni
+  // sul totale stampe dello stesso prodotto+variante nel carrello
+  const qtyByVariant = new Map<string, number>()
+  for (const item of items) {
+    const key = `${item.productId}::${item.variantId}`
+    qtyByVariant.set(key, (qtyByVariant.get(key) ?? 0) + item.qty)
+  }
+  const effectiveUnitPrice = (item: CartItem) => {
+    const totalQty = qtyByVariant.get(`${item.productId}::${item.variantId}`) ?? item.qty
+    return getPriceForBreaks(item.priceBreaks, totalQty, item.unitPrice)
+  }
+
+  const cartTotal  = items.reduce((s, i) => s + effectiveUnitPrice(i) * i.qty, 0)
+  const discount   = coupon ? coupon.discount / 100 : 0
   const finalTotal = Math.max(0, cartTotal - discount)
 
   const inputSt: React.CSSProperties = { width: '100%', background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 8, padding: '10px 12px', color: 'var(--tx)', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }
@@ -792,7 +805,7 @@ function CartDrawer({ cart, galleryId, onClose, onRemove, onUpdateQty, onClear, 
             photo_id: i.photoId, photo_url: i.photoUrl, filename: i.filename,
             product_id: i.productId, product_name: i.productName,
             variant_id: i.variantId, format_label: i.formatLabel,
-            qty: i.qty, unit_price: i.unitPrice, total: getPriceForBreaks(i.priceBreaks, i.qty, i.unitPrice) * i.qty,
+            qty: i.qty, unit_price: effectiveUnitPrice(i), total: effectiveUnitPrice(i) * i.qty,
             frame_label: i.frameLabel ?? null,
             passepartout_label: i.passepartoutLabel ?? null,
             print_type_label: i.printTypeLabel ?? null,
@@ -890,7 +903,7 @@ function CartDrawer({ cart, galleryId, onClose, onRemove, onUpdateQty, onClear, 
           <>
             <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
               {items.map(item => {
-                const curUnitPrice = getPriceForBreaks(item.priceBreaks, item.qty, item.unitPrice)
+                const curUnitPrice = effectiveUnitPrice(item)
                 return (
                   <div key={item.id} style={{ background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 10, padding: '10px 12px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -942,7 +955,7 @@ function CartDrawer({ cart, galleryId, onClose, onRemove, onUpdateQty, onClear, 
               <div style={{ background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 10, padding: '14px 16px' }}>
                 <span style={sectionLabel}>Riepilogo ordine</span>
                 {items.map(item => {
-                  const u = getPriceForBreaks(item.priceBreaks, item.qty, item.unitPrice)
+                  const u = effectiveUnitPrice(item)
                   return (
                     <div key={item.id} style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10 }}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
