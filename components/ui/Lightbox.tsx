@@ -173,13 +173,23 @@ export const Lightbox = ({
         {onToggleSelect && (
           <button
             onClick={() => onToggleSelect(photo.id)}
-            style={{ ...topBtn, color: isSelected ? '#8ec9b0' : '#666', fontWeight: isSelected ? 700 : 500 }}
+            style={{
+              ...topBtn,
+              color: isSelected ? '#8ec9b0' : '#666',
+              fontWeight: isSelected ? 700 : 500,
+              background: isSelected ? 'rgba(142,201,176,.12)' : 'none',
+              border: isSelected ? '1px solid rgba(142,201,176,.35)' : '1px solid transparent',
+              borderRadius: 7,
+              padding: '5px 9px',
+            }}
           >
-            <svg viewBox="0 0 24 24" width={16} height={16} fill={isSelected ? '#8ec9b0' : 'none'} stroke={isSelected ? '#8ec9b0' : 'currentColor'} strokeWidth={1.8} strokeLinecap="round">
+            <svg viewBox="0 0 24 24" width={15} height={15} fill={isSelected ? '#8ec9b0' : 'none'} stroke={isSelected ? '#8ec9b0' : 'currentColor'} strokeWidth={1.8} strokeLinecap="round">
               <rect x="3" y="3" width="18" height="18" rx="3"/>
               {isSelected && <polyline points="8 12 11 15 16 9"/>}
             </svg>
-            <span className="nav-label" style={{ fontSize: '13px' }}>{isSelected ? 'Selezionata' : 'Seleziona'}</span>
+            <span style={{ fontSize: '11px', fontWeight: isSelected ? 700 : 500, letterSpacing: '.01em' }}>
+              {isSelected ? '✓ Sel.' : 'Sel.'}
+            </span>
           </button>
         )}
       </div>
