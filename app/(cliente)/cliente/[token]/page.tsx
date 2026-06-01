@@ -52,6 +52,8 @@ interface CartItem {
   passepartoutLabel?: string
   printTypeId?: string
   printTypeLabel?: string
+  cropX?: number   // 0-100 (posizione orizzontale, default 50 = centro)
+  cropY?: number   // 0-100 (posizione verticale, default 50 = centro)
 }
 
 // ── shop product types (minimal — matches /api/shop-products response) ──────
@@ -61,6 +63,8 @@ interface ShopVariant {
   label: string
   price: number           // in centesimi
   priceBreaks?: { minQty: number; price: number }[]  // in centesimi
+  widthCm?: number
+  heightCm?: number
 }
 
 interface ShopProductOptions {
@@ -170,6 +174,9 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
   const [frameId, setFrameId]             = useState('')
   const [passepartoutId, setPassepartoutId] = useState('none')
   const [printTypeId, setPrintTypeId]     = useState('')
+  // crop/position (percentuali 0-100, default centro)
+  const [cropX, setCropX] = useState(50)
+  const [cropY, setCropY] = useState(50)
 
   const isBatch = photos.length > 1
   const photo   = photos[0]  // preview foto: prima selezionata
@@ -191,7 +198,7 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
     setQty(1)
   }, [selectedProduct])
 
-  useEffect(() => { setQty(1) }, [selectedVariantId])
+  useEffect(() => { setQty(1); setCropX(50); setCropY(50) }, [selectedVariantId])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -201,21 +208,22 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose, selectedProduct])
 
-  const variant          = selectedProduct?.variants.find(v => v.id === selectedVariantId)
-  const printTypeExtra   = selectedProduct?.options?.printTypes?.find(pt => pt.id === printTypeId)?.extraPrice ?? 0
+  const variant           = selectedProduct?.variants.find(v => v.id === selectedVariantId)
+  const printTypeExtra    = selectedProduct?.options?.printTypes?.find(pt => pt.id === printTypeId)?.extraPrice ?? 0
   const passepartoutExtra = selectedProduct?.options?.passepartout?.find(pp => pp.id === passepartoutId)?.extraPrice ?? 0
-  const extraCents       = printTypeExtra + passepartoutExtra
-  const baseCents        = variant ? getPriceForBreaks(
+  const extraCents        = printTypeExtra + passepartoutExtra
+  // In batch, gli scaglioni si basano sul totale stampe (N foto × qty ciascuna)
+  const effectiveQty = qty * (isBatch ? photos.length : 1)
+  const baseCents    = variant ? getPriceForBreaks(
     variant.priceBreaks?.map(b => ({ minQty: b.minQty, price: b.price })),
-    qty,
+    effectiveQty,
     variant.price
   ) : 0
-  const unitCents  = baseCents + extraCents
-  const unitPrice  = unitCents / 100
-  const totalPerPhoto = unitPrice * qty
-  const grandTotal = totalPerPhoto * (isBatch ? photos.length : 1)
-  const nextTier   = variant?.priceBreaks
-    ? [...variant.priceBreaks].sort((a, b) => a.minQty - b.minQty).find(b => b.minQty > qty)
+  const unitCents    = baseCents + extraCents
+  const unitPrice    = unitCents / 100
+  const grandTotal   = unitPrice * effectiveQty
+  const nextTier     = variant?.priceBreaks
+    ? [...variant.priceBreaks].sort((a, b) => a.minQty - b.minQty).find(b => b.minQty > effectiveQty)
     : null
 
   const frameLabel        = selectedProduct?.options?.frames?.find(f => f.id === frameId)?.label
@@ -247,6 +255,8 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
         passepartoutLabel: passepartoutId !== 'none' ? passepartoutLabel : undefined,
         printTypeId: printTypeId || undefined,
         printTypeLabel: printTypeLabel || undefined,
+        cropX,
+        cropY,
       })
     })
     onClose()
@@ -363,11 +373,77 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
           <>
             <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 0' }}>
 
-              {/* Immagine prodotto */}
-              {selectedProduct.images[0] && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={selectedProduct.images[0]} alt={selectedProduct.name} style={{ width: '100%', height: 200, objectFit: 'cover', borderRadius: 'var(--r2)', marginBottom: 20 }} />
-              )}
+              {/* ── Anteprima inquadratura (drag per riposizionare) ── */}
+              {(() => {
+                const w = variant.widthCm
+                const h = variant.heightCm
+                if (!w || !h) {
+                  // Nessun formato fisico → mostra immagine prodotto normale
+                  return selectedProduct.images[0] ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={selectedProduct.images[0]} alt={selectedProduct.name} style={{ width: '100%', height: 200, objectFit: 'cover', borderRadius: 'var(--r2)', marginBottom: 20 }} />
+                  ) : null
+                }
+                const aspectRatio = h / w  // paddingBottom trick
+                // Drag handler
+                const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+                  e.preventDefault()
+                  const el = (e.currentTarget as HTMLElement).parentElement!
+                  const rect = el.getBoundingClientRect()
+                  const isTouch = 'touches' in e
+                  const startX = isTouch ? e.touches[0].clientX : (e as React.MouseEvent).clientX
+                  const startY = isTouch ? e.touches[0].clientY : (e as React.MouseEvent).clientY
+                  const startCropX = cropX
+                  const startCropY = cropY
+                  const onMove = (ev: MouseEvent | TouchEvent) => {
+                    const cx = 'touches' in ev ? ev.touches[0].clientX : (ev as MouseEvent).clientX
+                    const cy = 'touches' in ev ? ev.touches[0].clientY : (ev as MouseEvent).clientY
+                    const dx = ((startX - cx) / rect.width) * 100
+                    const dy = ((startY - cy) / rect.height) * 100
+                    setCropX(Math.max(0, Math.min(100, startCropX + dx)))
+                    setCropY(Math.max(0, Math.min(100, startCropY + dy)))
+                  }
+                  const onUp = () => {
+                    window.removeEventListener('mousemove', onMove)
+                    window.removeEventListener('mouseup', onUp)
+                    window.removeEventListener('touchmove', onMove)
+                    window.removeEventListener('touchend', onUp)
+                  }
+                  window.addEventListener('mousemove', onMove)
+                  window.addEventListener('mouseup', onUp)
+                  window.addEventListener('touchmove', onMove, { passive: false })
+                  window.addEventListener('touchend', onUp)
+                }
+                return (
+                  <div style={{ marginBottom: 20 }}>
+                    <p style={{ fontSize: '11px', color: 'var(--t3)', fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 8 }}>
+                      Anteprima formato {w}×{h} cm — trascina per inquadrare
+                    </p>
+                    <div style={{ position: 'relative', width: '100%', paddingBottom: `${aspectRatio * 100}%`, borderRadius: 'var(--r2)', overflow: 'hidden', background: 'var(--s3)', border: '1px solid var(--b1)', cursor: 'grab', userSelect: 'none', touchAction: 'none' }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={photo.url}
+                        alt=""
+                        draggable={false}
+                        onMouseDown={handleDragStart}
+                        onTouchStart={handleDragStart}
+                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${cropX}% ${cropY}%`, cursor: 'grab', userSelect: 'none', pointerEvents: 'auto' }}
+                      />
+                      {/* Guida griglia */}
+                      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', backgroundImage: 'linear-gradient(rgba(255,255,255,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.12) 1px, transparent 1px)', backgroundSize: '33.33% 33.33%' }} />
+                      {/* Reset button */}
+                      {(cropX !== 50 || cropY !== 50) && (
+                        <button
+                          onClick={e => { e.stopPropagation(); setCropX(50); setCropY(50) }}
+                          style={{ position: 'absolute', bottom: 8, right: 8, background: 'rgba(0,0,0,.6)', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: '10px', cursor: 'pointer', fontWeight: 600, letterSpacing: '.04em' }}
+                        >
+                          Centra
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )
+              })()}
 
               {/* Variante */}
               <div style={{ marginBottom: 18 }}>
@@ -394,7 +470,8 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
                 </div>
                 {nextTier && (
                   <p style={{ fontSize: '11px', color: 'var(--amber)', marginTop: 8 }}>
-                    💡 Da {nextTier.minQty} pz → {fmt(nextTier.price / 100)} / pz
+                    💡 Da {nextTier.minQty} stampe totali → {fmt(nextTier.price / 100)} / pz
+                    {isBatch && nextTier.minQty > effectiveQty ? ` (ora ${effectiveQty})` : ''}
                   </p>
                 )}
               </div>
@@ -405,7 +482,7 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
                   <p style={{ fontSize: '10px', color: 'var(--t3)', marginBottom: 7, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase' }}>Scaglioni di prezzo</p>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px 14px' }}>
                     {[...variant.priceBreaks].sort((a, b) => a.minQty - b.minQty).map((b, i, arr) => {
-                      const isActive = qty >= b.minQty && (i === arr.length - 1 || qty < arr[i + 1].minQty)
+                      const isActive = effectiveQty >= b.minQty && (i === arr.length - 1 || effectiveQty < arr[i + 1].minQty)
                       return (
                         <span key={b.minQty} style={{ fontSize: '11px', color: isActive ? 'var(--ac)' : 'var(--t3)', fontWeight: isActive ? 700 : 400 }}>
                           {b.minQty}+ → {fmt(b.price / 100)}
@@ -481,7 +558,7 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
             <div style={{ padding: '16px 20px', borderTop: '1px solid var(--b1)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
               <div>
                 <p style={{ fontSize: '11px', color: 'var(--t3)', margin: 0 }}>
-                  {isBatch ? `Totale (${photos.length} foto × ${qty} pz)` : 'Totale'}
+                  {isBatch ? `Totale (${photos.length} foto × ${qty} pz = ${effectiveQty} stampe)` : 'Totale'}
                 </p>
                 <p style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '26px', color: 'var(--tx)', margin: 0 }}>{fmt(grandTotal)}</p>
               </div>

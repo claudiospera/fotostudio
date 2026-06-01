@@ -242,6 +242,15 @@ export default function OrdiniPage() {
       .then(async r => {
         const data = await r.json()
         if (!r.ok) throw new Error(data?.error ?? `HTTP ${r.status}`)
+        // Se la risposta è {orders, debug} invece di array diretto
+        if (Array.isArray(data)) return data
+        if (data.orders) {
+          if (data.debug) {
+            console.warn('[ordini] debug info:', data.debug)
+            setError(`Nessun ordine trovato per userId="${data.debug.userId}". Totale ordini nel DB: ${data.debug.totalOrders}. Gallerie associate: ${data.debug.myGalleries}. Verifica che gli ordini siano associati alle gallerie corrette.`)
+          }
+          return data.orders
+        }
         return data
       })
       .then(setOrders)
