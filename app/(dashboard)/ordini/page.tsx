@@ -233,13 +233,19 @@ function OrderDetail({ order, onClose, onStatusChange, onDelete }: OrderDetailPr
 export default function OrdiniPage() {
   const [orders, setOrders]         = useState<PrintOrder[]>([])
   const [loading, setLoading]       = useState(true)
+  const [error, setError]           = useState<string | null>(null)
   const [selectedOrder, setSelectedOrder] = useState<PrintOrder | null>(null)
   const [filter, setFilter]         = useState<'tutti' | PrintOrder['status']>('tutti')
 
   useEffect(() => {
     fetch('/api/orders')
-      .then(r => r.ok ? r.json() : [])
+      .then(async r => {
+        const data = await r.json()
+        if (!r.ok) throw new Error(data?.error ?? `HTTP ${r.status}`)
+        return data
+      })
       .then(setOrders)
+      .catch(err => setError(String(err)))
       .finally(() => setLoading(false))
   }, [])
 
@@ -298,7 +304,11 @@ export default function OrdiniPage() {
 
       {/* Content */}
       <div style={{ padding: '0 28px 40px' }}>
-        {loading ? (
+        {error ? (
+          <div style={{ background: 'rgba(217,112,112,.1)', border: '1px solid rgba(217,112,112,.3)', borderRadius: 'var(--r2)', padding: '16px 20px', color: 'var(--red)', fontSize: '13px', fontFamily: 'monospace' }}>
+            Errore caricamento ordini: {error}
+          </div>
+        ) : loading ? (
           <div style={{ textAlign: 'center', padding: '80px 20px', color: 'var(--t3)' }}>
             <div style={{ width: 28, height: 28, border: '2px solid var(--ac)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .7s linear infinite', margin: '0 auto 12px' }} />
             <p style={{ fontSize: '13px' }}>Caricamento ordini…</p>
