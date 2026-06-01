@@ -177,6 +177,8 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
   // crop/position (percentuali 0-100, default centro)
   const [cropX, setCropX] = useState(50)
   const [cropY, setCropY] = useState(50)
+  // orientamento anteprima (scambia larghezza/altezza)
+  const [rotated, setRotated] = useState(false)
 
   const isBatch = photos.length > 1
   const photo   = photos[0]  // preview foto: prima selezionata
@@ -198,7 +200,7 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
     setQty(1)
   }, [selectedProduct])
 
-  useEffect(() => { setQty(1); setCropX(50); setCropY(50) }, [selectedVariantId])
+  useEffect(() => { setQty(1); setCropX(50); setCropY(50); setRotated(false) }, [selectedVariantId])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -375,15 +377,18 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
 
               {/* ── Anteprima inquadratura (drag per riposizionare) ── */}
               {(() => {
-                const w = variant.widthCm
-                const h = variant.heightCm
-                if (!w || !h) {
+                const wRaw = variant.widthCm
+                const hRaw = variant.heightCm
+                if (!wRaw || !hRaw) {
                   // Nessun formato fisico → mostra immagine prodotto normale
                   return selectedProduct.images[0] ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={selectedProduct.images[0]} alt={selectedProduct.name} style={{ width: '100%', height: 200, objectFit: 'cover', borderRadius: 'var(--r2)', marginBottom: 20 }} />
                   ) : null
                 }
+                const canRotate = wRaw !== hRaw
+                const w = rotated ? hRaw : wRaw
+                const h = rotated ? wRaw : hRaw
                 const aspectRatio = h / w  // paddingBottom trick
                 // Drag handler
                 const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
@@ -416,9 +421,21 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
                 }
                 return (
                   <div style={{ marginBottom: 20 }}>
-                    <p style={{ fontSize: '11px', color: 'var(--t3)', fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 8 }}>
-                      Anteprima formato {w}×{h} cm — trascina per inquadrare
-                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <p style={{ fontSize: '11px', color: 'var(--t3)', fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase' }}>
+                        Anteprima {w}×{h} cm — trascina per inquadrare
+                      </p>
+                      {canRotate && (
+                        <button
+                          onClick={() => { setRotated(r => !r); setCropX(50); setCropY(50) }}
+                          title="Ruota orientamento"
+                          style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 6, padding: '4px 10px', fontSize: '11px', fontWeight: 600, color: 'var(--t2)', cursor: 'pointer', flexShrink: 0 }}
+                        >
+                          <svg viewBox="0 0 24 24" width={13} height={13} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.9"/></svg>
+                          {rotated ? 'Verticale' : 'Orizzontale'}
+                        </button>
+                      )}
+                    </div>
                     <div style={{ position: 'relative', width: '100%', paddingBottom: `${aspectRatio * 100}%`, borderRadius: 'var(--r2)', overflow: 'hidden', background: 'var(--s3)', border: '1px solid var(--b1)', cursor: 'grab', userSelect: 'none', touchAction: 'none' }}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
@@ -776,6 +793,11 @@ function CartDrawer({ cart, galleryId, onClose, onRemove, onUpdateQty, onClear, 
             product_id: i.productId, product_name: i.productName,
             variant_id: i.variantId, format_label: i.formatLabel,
             qty: i.qty, unit_price: i.unitPrice, total: getPriceForBreaks(i.priceBreaks, i.qty, i.unitPrice) * i.qty,
+            frame_label: i.frameLabel ?? null,
+            passepartout_label: i.passepartoutLabel ?? null,
+            print_type_label: i.printTypeLabel ?? null,
+            crop_x: i.cropX ?? null,
+            crop_y: i.cropY ?? null,
           })),
           total: finalTotal,
           payment_method: paymentMethod,

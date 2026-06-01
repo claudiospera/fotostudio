@@ -15,6 +15,11 @@ interface GalleryOrderItem {
   qty: number
   unit_price: number
   total: number
+  frame_label?: string | null
+  passepartout_label?: string | null
+  print_type_label?: string | null
+  crop_x?: number | null
+  crop_y?: number | null
 }
 
 interface GalleryOrder {
@@ -160,24 +165,54 @@ function GalleryOrderDetail({
           </div>
 
           <div>
-            <p style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--t3)', marginBottom: 10 }}>Prodotti ordinati</p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <p style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--t3)' }}>Prodotti ordinati</p>
+              {order.items.some(i => i.photo_url) && (
+                <a
+                  href={`/api/galleries/${order.gallery_id}/orders/${order.id}/download`}
+                  style={{ fontSize: '11px', fontWeight: 600, color: 'var(--ac)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}
+                >
+                  <svg viewBox="0 0 24 24" width={12} height={12} fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Scarica tutte le foto
+                </a>
+              )}
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {order.items.map((item, i) => (
-                <div key={i} style={{ background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 'var(--r2)', padding: '10px 12px', display: 'flex', gap: 12, alignItems: 'center' }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={item.photo_url} alt="" style={{ width: 52, height: 52, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: '12px', color: 'var(--tx)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.filename}</p>
-                    <p style={{ fontSize: '11px', color: 'var(--t3)', marginTop: 2 }}>
-                      {item.product_name ?? (item.type === 'carta' ? 'Stampa carta' : 'Stampa tela')} · {item.format_label}
-                    </p>
-                    <p style={{ fontSize: '11px', color: 'var(--t2)', marginTop: 3 }}>{item.qty} × {fmtEur(item.unit_price)}</p>
+              {order.items.map((item, i) => {
+                // Dettagli produzione
+                const details = [
+                  item.frame_label && `Cornice: ${item.frame_label}`,
+                  item.passepartout_label && `Passepartout: ${item.passepartout_label}`,
+                  item.print_type_label && `Carta: ${item.print_type_label}`,
+                  (item.crop_x != null && item.crop_y != null) && `Inquadratura: ${Math.round(item.crop_x ?? 50)}% H · ${Math.round(item.crop_y ?? 50)}% V`,
+                ].filter(Boolean)
+                return (
+                  <div key={i} style={{ background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 'var(--r2)', padding: '10px 12px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                    {/* Foto con link download */}
+                    <a href={`/api/shop/download-photo?url=${encodeURIComponent(item.photo_url)}&filename=${encodeURIComponent(item.filename)}`} style={{ flexShrink: 0 }} title="Scarica foto originale">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={item.photo_url} alt="" style={{ width: 52, height: 52, borderRadius: 6, objectFit: 'cover', display: 'block' }} />
+                    </a>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: '12px', color: 'var(--tx)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.filename}</p>
+                      <p style={{ fontSize: '11px', color: 'var(--t3)', marginTop: 2 }}>
+                        {item.product_name ?? (item.type === 'carta' ? 'Stampa carta' : 'Stampa tela')} · {item.format_label}
+                      </p>
+                      {details.length > 0 && (
+                        <div style={{ marginTop: 5, display: 'flex', flexWrap: 'wrap', gap: '3px 8px' }}>
+                          {details.map((d, j) => (
+                            <span key={j} style={{ fontSize: '10px', color: 'var(--ac)', background: 'var(--acd)', borderRadius: 4, padding: '2px 6px', fontWeight: 500 }}>{d as string}</span>
+                          ))}
+                        </div>
+                      )}
+                      <p style={{ fontSize: '11px', color: 'var(--t2)', marginTop: 4 }}>{item.qty} × {fmtEur(item.unit_price)}</p>
+                    </div>
+                    <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '14px', color: 'var(--tx)', flexShrink: 0 }}>
+                      {fmtEur(item.qty * item.unit_price)}
+                    </span>
                   </div>
-                  <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '14px', color: 'var(--tx)', flexShrink: 0 }}>
-                    {fmtEur(item.qty * item.unit_price)}
-                  </span>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
 
