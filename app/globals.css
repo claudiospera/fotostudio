@@ -169,6 +169,8 @@ body {
 /* Su mobile i bottoni mostrano solo l'icona, nascondono il testo */
 @media (max-width: 640px) {
   .nav-label { display: none; }
+  /* Griglia foto: masonry da 4 a 2 colonne, grid usa minmax adattivo */
+  .gallery-masonry { columns: 2 !important; }
 }
 
 /* ─── PREVENTIVI RESPONSIVE ─── */

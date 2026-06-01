@@ -1383,8 +1383,21 @@ export default function ClientePortalPage() {
 
             {/* Carrello / Share */}
             <button onClick={() => setCartOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer', color: cartCount > 0 ? theme.navText : theme.navSub, fontSize: '12px', fontWeight: cartCount > 0 ? 600 : 500, letterSpacing: '.01em', transition: 'color .15s' }}>
-              <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-              <span className="nav-label">{cartCount > 0 ? `Carrello (${cartCount})` : 'Share'}</span>
+              {cartCount > 0 ? (
+                <>
+                  {/* Icona carrello + badge sempre visibile */}
+                  <span style={{ position: 'relative', display: 'inline-flex' }}>
+                    <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                    <span style={{ position: 'absolute', top: -6, right: -8, background: theme.navText, color: theme.navBg, borderRadius: '50%', fontSize: '9px', fontWeight: 800, width: 14, height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, pointerEvents: 'none' }}>{cartCount}</span>
+                  </span>
+                  <span className="nav-label">Carrello ({cartCount})</span>
+                </>
+              ) : (
+                <>
+                  <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                  <span className="nav-label">Share</span>
+                </>
+              )}
             </button>
 
             {/* Slideshow */}
@@ -1410,7 +1423,7 @@ export default function ClientePortalPage() {
               <p style={{ fontSize: '14px' }}>Le foto sono in arrivo…</p>
             </div>
           ) : gridId === 'grid' ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 6 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(260px, calc(50% - 3px)), 1fr))', gap: 6 }}>
               {photos.map((photo, i) => (
                 <PhotoItem
                   key={photo.id}
@@ -1431,7 +1444,7 @@ export default function ClientePortalPage() {
               ))}
             </div>
           ) : (
-            <div style={{ columns: 4, columnGap: 6 }}>
+            <div className="gallery-masonry" style={{ columns: 4, columnGap: 6 }}>
               {photos.map((photo, i) => (
                 <PhotoItem
                   key={photo.id}
