@@ -134,10 +134,16 @@ interface OrderModalProps {
   onAdd: (item: CartItem) => void
 }
 
-const CATEGORY_TABS: { id: 'stampe' | 'decorazioni' | 'gadget'; label: string; emoji: string }[] = [
-  { id: 'stampe',      label: 'Stampe',      emoji: '📄' },
-  { id: 'decorazioni', label: 'Decorazioni', emoji: '🖼️' },
-  { id: 'gadget',      label: 'Gadget',      emoji: '🎁' },
+const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  stampe:      <svg viewBox="0 0 24 24" width={15} height={15} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>,
+  decorazioni: <svg viewBox="0 0 24 24" width={15} height={15} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M2 7h20M7 2v5M17 2v5"/></svg>,
+  gadget:      <svg viewBox="0 0 24 24" width={15} height={15} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><path d="M12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>,
+}
+
+const CATEGORY_TABS: { id: 'stampe' | 'decorazioni' | 'gadget'; label: string }[] = [
+  { id: 'stampe',      label: 'Stampe'      },
+  { id: 'decorazioni', label: 'Decorazioni' },
+  { id: 'gadget',      label: 'Gadget'      },
 ]
 
 function OrderModal({ photo, onClose, onAdd }: OrderModalProps) {
@@ -251,8 +257,8 @@ function OrderModal({ photo, onClose, onAdd }: OrderModalProps) {
             {/* Category tabs */}
             <div style={{ display: 'flex', borderBottom: '1px solid var(--b1)', flexShrink: 0, padding: '0 20px' }}>
               {CATEGORY_TABS.map(cat => (
-                <button key={cat.id} onClick={() => setCategory(cat.id)} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: category === cat.id ? 600 : 400, border: 'none', cursor: 'pointer', background: 'transparent', color: category === cat.id ? 'var(--ac)' : 'var(--t3)', borderBottom: `2px solid ${category === cat.id ? 'var(--ac)' : 'transparent'}`, transition: 'all .15s', whiteSpace: 'nowrap' }}>
-                  {cat.emoji} {cat.label}
+                <button key={cat.id} onClick={() => setCategory(cat.id)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '12px 16px', fontSize: '13px', fontWeight: category === cat.id ? 600 : 400, border: 'none', cursor: 'pointer', background: 'transparent', color: category === cat.id ? 'var(--ac)' : 'var(--t3)', borderBottom: `2px solid ${category === cat.id ? 'var(--ac)' : 'transparent'}`, transition: 'all .15s', whiteSpace: 'nowrap' }}>
+                  {CATEGORY_ICONS[cat.id]} {cat.label}
                 </button>
               ))}
             </div>
@@ -513,13 +519,14 @@ function CartDrawer({ cart, galleryId, onClose, onRemove, onUpdateQty, onClear, 
   const [name, setName]             = useState('')
   const [email, setEmail]           = useState('')
   const [phone, setPhone]           = useState('')
-  const [notes, setNotes]           = useState('')
+  const [notesValue, setNotesValue] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'online' | 'studio'>('studio')
   const [couponCode, setCouponCode] = useState('')
   const [coupon, setCoupon]         = useState<{ label: string; discount: number } | null>(null)
   const [couponLoading, setCouponLoading] = useState(false)
   const [couponError, setCouponError]     = useState('')
   const [sending, setSending]       = useState(false)
+  const [submitError, setSubmitError] = useState('')
   const [waLink, setWaLink]         = useState('')
 
   const items     = Array.from(cart.values())
@@ -555,35 +562,46 @@ function CartDrawer({ cart, galleryId, onClose, onRemove, onUpdateQty, onClear, 
   const submit = async () => {
     if (!items.length) return
     setSending(true)
-    setWaLink(buildWaLink(items, finalTotal, name.trim(), galleryId))
-    await fetch('/api/public/orders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        gallery_id: galleryId,
-        session_id: getSessionId(),
-        client_name: name.trim() || null,
-        client_email: email.trim() || null,
-        items: items.map(i => ({
-          photo_id: i.photoId, photo_url: i.photoUrl, filename: i.filename,
-          product_id: i.productId, product_name: i.productName,
-          variant_id: i.variantId, format_label: i.formatLabel,
-          qty: i.qty, unit_price: i.unitPrice, total: getPriceForBreaks(i.priceBreaks, i.qty, i.unitPrice) * i.qty,
-        })),
-        total: finalTotal,
-        payment_method: paymentMethod,
-        coupon_code: coupon ? couponCode.trim().toUpperCase() : null,
-        discount: coupon?.discount ?? 0,
-        notes: [
-          phone.trim() ? `Tel: ${phone.trim()}` : '',
-          notes.trim(),
-        ].filter(Boolean).join('\n') || null,
-      }),
-    })
-    setSending(false)
-    setStep('success')
-    onClear()
-    onOrderPlaced()
+    setSubmitError('')
+    try {
+      setWaLink(buildWaLink(items, finalTotal, name.trim(), galleryId))
+      const res = await fetch('/api/public/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gallery_id: galleryId,
+          session_id: getSessionId(),
+          client_name: name.trim() || null,
+          client_email: email.trim() || null,
+          items: items.map(i => ({
+            photo_id: i.photoId, photo_url: i.photoUrl, filename: i.filename,
+            product_id: i.productId, product_name: i.productName,
+            variant_id: i.variantId, format_label: i.formatLabel,
+            qty: i.qty, unit_price: i.unitPrice, total: getPriceForBreaks(i.priceBreaks, i.qty, i.unitPrice) * i.qty,
+          })),
+          total: finalTotal,
+          payment_method: paymentMethod,
+          coupon_code: coupon ? couponCode.trim().toUpperCase() : null,
+          discount: coupon?.discount ?? 0,
+          notes: [
+            phone.trim() ? `Tel: ${phone.trim()}` : '',
+            notesValue.trim(),
+          ].filter(Boolean).join('\n') || null,
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        setSubmitError(err.error || 'Errore durante l\'invio. Riprova.')
+        return
+      }
+      setStep('success')
+      onClear()
+      onOrderPlaced()
+    } catch {
+      setSubmitError('Errore di connessione. Riprova.')
+    } finally {
+      setSending(false)
+    }
   }
 
   const ICON_CART = <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="var(--ac)" strokeWidth={2} strokeLinecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
@@ -790,12 +808,17 @@ function CartDrawer({ cart, galleryId, onClose, onRemove, onUpdateQty, onClear, 
                   <input value={name} onChange={e => setName(e.target.value)} placeholder="Nome e cognome" style={inputSt} />
                   <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email (per ricevere conferma)" type="email" style={inputSt} />
                   <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Telefono" type="tel" style={inputSt} />
-                  <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Note aggiuntive (opzionale)…" rows={3} style={{ ...inputSt, resize: 'none', fontFamily: 'DM Sans, sans-serif', lineHeight: 1.5 }} />
+                  <textarea value={notesValue} onChange={e => setNotesValue(e.target.value)} placeholder="Note aggiuntive (opzionale)…" rows={3} style={{ ...inputSt, resize: 'none', fontFamily: 'DM Sans, sans-serif', lineHeight: 1.5 }} />
                 </div>
               </div>
             </div>
 
             <div style={{ padding: '16px 20px', borderTop: '1px solid var(--b1)', flexShrink: 0 }}>
+              {submitError && (
+                <p style={{ fontSize: '12px', color: 'var(--red)', background: 'rgba(217,112,112,.1)', border: '1px solid rgba(217,112,112,.25)', borderRadius: 8, padding: '8px 12px', marginBottom: 10 }}>
+                  {submitError}
+                </p>
+              )}
               <button onClick={submit} disabled={sending} style={{ width: '100%', background: sending ? 'var(--s3)' : 'var(--ac)', color: sending ? 'var(--t3)' : '#111', border: 'none', borderRadius: 'var(--r2)', padding: '13px 0', fontSize: '14px', fontWeight: 700, cursor: sending ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
                 {sending
                   ? <><div style={{ width: 14, height: 14, border: '2px solid var(--t3)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .7s linear infinite' }} /> Invio…</>
