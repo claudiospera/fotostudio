@@ -218,69 +218,73 @@ function OrderModal({ photo, onClose, onAdd }: OrderModalProps) {
     transition: 'all .15s',
   })
 
+  // ── pannello laterale destro (stile Pixieset) ──
   return (
-    <div onClick={e => { if (e.target === e.currentTarget) onClose() }} style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(0,0,0,.8)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, animation: 'fadeIn .2s ease' }}>
-      <div style={{ background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 'var(--r)', width: '100%', maxWidth: 500, maxHeight: '90vh', display: 'flex', flexDirection: 'column', animation: 'slideUp .25s ease', overflow: 'hidden' }}>
+    <>
+      {/* Overlay cliccabile */}
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(0,0,0,.45)', animation: 'fadeIn .2s ease' }} />
+
+      {/* Pannello */}
+      <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 401, width: '100%', maxWidth: 580, background: 'var(--s1)', borderLeft: '1px solid var(--b1)', display: 'flex', flexDirection: 'column', animation: 'slideInRight .25s ease' }}>
 
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: '1px solid var(--b1)', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--b1)', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {selectedProduct && (
-              <button onClick={() => setSelectedProduct(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t3)', width: 28, height: 28, display: 'grid', placeItems: 'center', borderRadius: 6, flexShrink: 0 }}>{ICON_BACK}</button>
+              <button onClick={() => setSelectedProduct(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t3)', width: 32, height: 32, display: 'grid', placeItems: 'center', borderRadius: 8, flexShrink: 0 }}>{ICON_BACK}</button>
             )}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={photo.url} alt="" style={{ width: 36, height: 36, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} />
+            <img src={photo.url} alt="" style={{ width: 42, height: 42, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
             <div>
-              <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--tx)' }}>
-                {selectedProduct ? selectedProduct.name : 'Ordina prodotto'}
+              <p style={{ fontSize: '15px', fontFamily: 'Syne, sans-serif', fontWeight: 700, color: 'var(--tx)' }}>
+                {selectedProduct ? selectedProduct.name : 'Tutti i prodotti'}
               </p>
               <p style={{ fontSize: '11px', color: 'var(--t3)', marginTop: 1 }}>{photo.filename}</p>
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t3)', width: 28, height: 28, display: 'grid', placeItems: 'center', borderRadius: 6, flexShrink: 0 }}>{ICON_CLOSE}</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t3)', width: 32, height: 32, display: 'grid', placeItems: 'center', borderRadius: 8, flexShrink: 0 }}>{ICON_CLOSE}</button>
         </div>
 
-        {/* ── STEP 1: product selection ── */}
+        {/* ── STEP 1: selezione prodotto ── */}
         {!selectedProduct && (
           <>
             {/* Category tabs */}
-            <div style={{ display: 'flex', borderBottom: '1px solid var(--b1)', flexShrink: 0 }}>
+            <div style={{ display: 'flex', borderBottom: '1px solid var(--b1)', flexShrink: 0, padding: '0 20px' }}>
               {CATEGORY_TABS.map(cat => (
-                <button key={cat.id} onClick={() => setCategory(cat.id)} style={{ flex: 1, padding: '8px 4px', fontSize: '12px', fontWeight: category === cat.id ? 600 : 400, border: 'none', cursor: 'pointer', background: category === cat.id ? 'var(--acd)' : 'transparent', color: category === cat.id ? 'var(--ac)' : 'var(--t3)', borderBottom: `2px solid ${category === cat.id ? 'var(--ac)' : 'transparent'}`, transition: 'all .15s' }}>
+                <button key={cat.id} onClick={() => setCategory(cat.id)} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: category === cat.id ? 600 : 400, border: 'none', cursor: 'pointer', background: 'transparent', color: category === cat.id ? 'var(--ac)' : 'var(--t3)', borderBottom: `2px solid ${category === cat.id ? 'var(--ac)' : 'transparent'}`, transition: 'all .15s', whiteSpace: 'nowrap' }}>
                   {cat.emoji} {cat.label}
                 </button>
               ))}
             </div>
 
-            {/* Product list */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {/* Product grid */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, alignContent: 'start' }}>
               {products === null ? (
-                <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
-                  <div style={{ width: 22, height: 22, border: '2px solid var(--ac)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .7s linear infinite' }} />
+                <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'center', padding: 60 }}>
+                  <div style={{ width: 24, height: 24, border: '2px solid var(--ac)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .7s linear infinite' }} />
                 </div>
               ) : filtered.length === 0 ? (
-                <p style={{ fontSize: '13px', color: 'var(--t3)', textAlign: 'center', padding: 32 }}>Nessun prodotto disponibile</p>
+                <p style={{ gridColumn: '1 / -1', fontSize: '13px', color: 'var(--t3)', textAlign: 'center', padding: 40 }}>Nessun prodotto disponibile</p>
               ) : filtered.map(p => {
                 const minPrice = Math.min(...p.variants.map(v => v.price)) / 100
                 return (
                   <button
                     key={p.id}
                     onClick={() => setSelectedProduct(p)}
-                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 'var(--r2)', cursor: 'pointer', textAlign: 'left', transition: 'all .15s', width: '100%' }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(142,201,176,.3)'; e.currentTarget.style.background = 'var(--s3)' }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--b1)'; e.currentTarget.style.background = 'var(--s2)' }}
+                    style={{ display: 'flex', flexDirection: 'column', background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 'var(--r)', cursor: 'pointer', textAlign: 'left', transition: 'all .15s', overflow: 'hidden', padding: 0 }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(142,201,176,.4)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--b1)'; e.currentTarget.style.transform = 'none' }}
                   >
-                    {p.images[0] && (
+                    {p.images[0] ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.images[0]} alt="" style={{ width: 52, height: 52, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
+                      <img src={p.images[0]} alt="" style={{ width: '100%', height: 130, objectFit: 'cover' }} />
+                    ) : (
+                      <div style={{ width: '100%', height: 130, background: 'var(--s3)', display: 'grid', placeItems: 'center', fontSize: 32 }}>📦</div>
                     )}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--tx)' }}>{p.name}</p>
-                      <p style={{ fontSize: '11px', color: 'var(--t3)', marginTop: 2, lineHeight: 1.4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{p.shortDescription}</p>
-                    </div>
-                    <div style={{ flexShrink: 0, textAlign: 'right' }}>
-                      <p style={{ fontSize: '11px', color: 'var(--t3)' }}>da</p>
-                      <p style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '14px', color: 'var(--ac)' }}>{fmt(minPrice)}</p>
+                    <div style={{ padding: '10px 12px 12px' }}>
+                      <p style={{ fontSize: '13px', fontWeight: 700, color: 'var(--tx)', marginBottom: 3 }}>{p.name}</p>
+                      <p style={{ fontSize: '10px', color: 'var(--t3)', lineHeight: 1.4, marginBottom: 8, display: '-webkit-box', overflow: 'hidden', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{p.shortDescription}</p>
+                      <p style={{ fontSize: '11px', color: 'var(--t3)', margin: 0 }}>da <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '14px', color: 'var(--ac)' }}>{fmt(minPrice)}</span></p>
                     </div>
                   </button>
                 )
@@ -289,71 +293,79 @@ function OrderModal({ photo, onClose, onAdd }: OrderModalProps) {
           </>
         )}
 
-        {/* ── STEP 2: product configuration ── */}
+        {/* ── STEP 2: configurazione prodotto ── */}
         {selectedProduct && variant && (
-          <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 0' }}>
 
-            {/* Variante */}
-            <div>
-              <p style={{ fontSize: '11px', color: 'var(--t3)', fontWeight: 500, marginBottom: 8 }}>
-                {selectedProduct.variants.length > 1 ? 'Formato / Variante' : 'Variante'}
-              </p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {selectedProduct.variants.map(v => (
-                  <button key={v.id} onClick={() => setSelectedVariantId(v.id)} style={variantBtnStyle(v.id === selectedVariantId)}>
-                    {v.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+              {/* Immagine prodotto */}
+              {selectedProduct.images[0] && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={selectedProduct.images[0]} alt={selectedProduct.name} style={{ width: '100%', height: 200, objectFit: 'cover', borderRadius: 'var(--r2)', marginBottom: 20 }} />
+              )}
 
-            {/* Quantità */}
-            <div>
-              <p style={{ fontSize: '11px', color: 'var(--t3)', fontWeight: 500, marginBottom: 8 }}>Quantità</p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <button onClick={() => setQty(q => Math.max(1, q - 1))} style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--s2)', border: '1px solid var(--b1)', color: 'var(--tx)', fontSize: '16px', cursor: 'pointer', display: 'grid', placeItems: 'center' }}>−</button>
-                <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '20px', color: 'var(--tx)', minWidth: 40, textAlign: 'center' }}>{qty}</span>
-                <button onClick={() => setQty(q => q + 1)} style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--s2)', border: '1px solid var(--b1)', color: 'var(--tx)', fontSize: '16px', cursor: 'pointer', display: 'grid', placeItems: 'center' }}>+</button>
-                <span style={{ fontSize: '11px', color: 'var(--t3)', marginLeft: 4 }}>{fmt(unitPrice)} / pz</span>
-              </div>
-              {nextTier && (
-                <p style={{ fontSize: '10px', color: 'var(--amber)', marginTop: 6 }}>
-                  💡 Da {nextTier.minQty} pz → {fmt(nextTier.price / 100)} / pz
+              {/* Variante */}
+              <div style={{ marginBottom: 18 }}>
+                <p style={{ fontSize: '11px', color: 'var(--t3)', fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 10 }}>
+                  {selectedProduct.variants.length > 1 ? 'Formato / Variante' : 'Variante'}
                 </p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+                  {selectedProduct.variants.map(v => (
+                    <button key={v.id} onClick={() => setSelectedVariantId(v.id)} style={variantBtnStyle(v.id === selectedVariantId)}>
+                      {v.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quantità */}
+              <div style={{ marginBottom: 18 }}>
+                <p style={{ fontSize: '11px', color: 'var(--t3)', fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 10 }}>Quantità</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <button onClick={() => setQty(q => Math.max(1, q - 1))} style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--s2)', border: '1px solid var(--b1)', color: 'var(--tx)', fontSize: '18px', cursor: 'pointer', display: 'grid', placeItems: 'center' }}>−</button>
+                  <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '22px', color: 'var(--tx)', minWidth: 48, textAlign: 'center' }}>{qty}</span>
+                  <button onClick={() => setQty(q => q + 1)} style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--s2)', border: '1px solid var(--b1)', color: 'var(--tx)', fontSize: '18px', cursor: 'pointer', display: 'grid', placeItems: 'center' }}>+</button>
+                  <span style={{ fontSize: '12px', color: 'var(--t3)' }}>{fmt(unitPrice)} / pz</span>
+                </div>
+                {nextTier && (
+                  <p style={{ fontSize: '11px', color: 'var(--amber)', marginTop: 8 }}>
+                    💡 Da {nextTier.minQty} pz → {fmt(nextTier.price / 100)} / pz
+                  </p>
+                )}
+              </div>
+
+              {/* Scaglioni prezzo */}
+              {variant.priceBreaks && variant.priceBreaks.length > 1 && (
+                <div style={{ background: 'var(--s2)', borderRadius: 8, padding: '10px 14px', marginBottom: 18 }}>
+                  <p style={{ fontSize: '10px', color: 'var(--t3)', marginBottom: 7, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase' }}>Scaglioni di prezzo</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px 14px' }}>
+                    {[...variant.priceBreaks].sort((a, b) => a.minQty - b.minQty).map((b, i, arr) => {
+                      const isActive = qty >= b.minQty && (i === arr.length - 1 || qty < arr[i + 1].minQty)
+                      return (
+                        <span key={b.minQty} style={{ fontSize: '11px', color: isActive ? 'var(--ac)' : 'var(--t3)', fontWeight: isActive ? 700 : 400 }}>
+                          {b.minQty}+ → {fmt(b.price / 100)}
+                        </span>
+                      )
+                    })}
+                  </div>
+                </div>
               )}
             </div>
 
-            {/* Scaglioni prezzo */}
-            {variant.priceBreaks && variant.priceBreaks.length > 1 && (
-              <div style={{ background: 'var(--s2)', borderRadius: 8, padding: '8px 12px' }}>
-                <p style={{ fontSize: '10px', color: 'var(--t3)', marginBottom: 5, fontWeight: 500 }}>Scaglioni di prezzo</p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 12px' }}>
-                  {[...variant.priceBreaks].sort((a, b) => a.minQty - b.minQty).map((b, i, arr) => {
-                    const isActive = qty >= b.minQty && (i === arr.length - 1 || qty < arr[i + 1].minQty)
-                    return (
-                      <span key={b.minQty} style={{ fontSize: '10px', color: isActive ? 'var(--ac)' : 'var(--t3)', fontWeight: isActive ? 600 : 400 }}>
-                        {b.minQty}+ → {fmt(b.price / 100)}
-                      </span>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Totale + CTA */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 4 }}>
+            {/* Footer fisso */}
+            <div style={{ padding: '16px 20px', borderTop: '1px solid var(--b1)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
               <div>
-                <p style={{ fontSize: '11px', color: 'var(--t3)' }}>Totale</p>
-                <p style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '22px', color: 'var(--tx)' }}>{fmt(total)}</p>
+                <p style={{ fontSize: '11px', color: 'var(--t3)', margin: 0 }}>Totale</p>
+                <p style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '26px', color: 'var(--tx)', margin: 0 }}>{fmt(total)}</p>
               </div>
-              <button onClick={handleAdd} style={{ background: 'var(--ac)', color: '#111', border: 'none', borderRadius: 'var(--r2)', padding: '10px 20px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <button onClick={handleAdd} style={{ background: 'var(--ac)', color: '#111', border: 'none', borderRadius: 'var(--r2)', padding: '12px 24px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                 {ICON_CART} Aggiungi al carrello
               </button>
             </div>
-          </div>
+          </>
         )}
       </div>
-    </div>
+    </>
   )
 }
 
@@ -497,22 +509,53 @@ function buildWaLink(items: CartItem[], total: number, clientName: string, galle
 }
 
 function CartDrawer({ cart, galleryId, onClose, onRemove, onUpdateQty, onClear, onOrderPlaced }: CartDrawerProps) {
-  const [step, setStep]       = useState<'cart' | 'checkout' | 'success'>('cart')
-  const [name, setName]       = useState('')
-  const [email, setEmail]     = useState('')
-  const [notes, setNotes]     = useState('')
-  const [sending, setSending] = useState(false)
-  const [waLink, setWaLink]   = useState('')
+  const [step, setStep]             = useState<'cart' | 'checkout' | 'success'>('cart')
+  const [name, setName]             = useState('')
+  const [email, setEmail]           = useState('')
+  const [phone, setPhone]           = useState('')
+  const [notes, setNotes]           = useState('')
+  const [paymentMethod, setPaymentMethod] = useState<'online' | 'studio'>('studio')
+  const [couponCode, setCouponCode] = useState('')
+  const [coupon, setCoupon]         = useState<{ label: string; discount: number } | null>(null)
+  const [couponLoading, setCouponLoading] = useState(false)
+  const [couponError, setCouponError]     = useState('')
+  const [sending, setSending]       = useState(false)
+  const [waLink, setWaLink]         = useState('')
 
   const items     = Array.from(cart.values())
-  const cartTotal = items.reduce((s, i) => s + i.total, 0)
-  const inputSt: React.CSSProperties = { width: '100%', background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 8, padding: '9px 12px', color: 'var(--tx)', fontSize: '13px', outline: 'none' }
+  const cartTotal = items.reduce((s, i) => s + getPriceForBreaks(i.priceBreaks, i.qty, i.unitPrice) * i.qty, 0)
+  const discount  = coupon ? coupon.discount / 100 : 0
+  const finalTotal = Math.max(0, cartTotal - discount)
+
+  const inputSt: React.CSSProperties = { width: '100%', background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 8, padding: '10px 12px', color: 'var(--tx)', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }
+
+  const applyCoupon = async () => {
+    if (!couponCode.trim()) return
+    setCouponLoading(true)
+    setCouponError('')
+    setCoupon(null)
+    try {
+      const res = await fetch('/api/shop/validate-coupon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: couponCode.trim(),
+          total: Math.round(cartTotal * 100),
+          items: items.map(i => ({ productId: i.productId, price: Math.round(i.unitPrice * 100), quantity: i.qty })),
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setCouponError(data.error || 'Codice non valido'); return }
+      setCoupon({ label: data.label, discount: data.discount })
+    } finally {
+      setCouponLoading(false)
+    }
+  }
 
   const submit = async () => {
     if (!items.length) return
     setSending(true)
-    // Salva il link WA prima di svuotare il carrello
-    setWaLink(buildWaLink(items, cartTotal, name.trim(), galleryId))
+    setWaLink(buildWaLink(items, finalTotal, name.trim(), galleryId))
     await fetch('/api/public/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -525,10 +568,16 @@ function CartDrawer({ cart, galleryId, onClose, onRemove, onUpdateQty, onClear, 
           photo_id: i.photoId, photo_url: i.photoUrl, filename: i.filename,
           product_id: i.productId, product_name: i.productName,
           variant_id: i.variantId, format_label: i.formatLabel,
-          qty: i.qty, unit_price: i.unitPrice, total: i.total,
+          qty: i.qty, unit_price: i.unitPrice, total: getPriceForBreaks(i.priceBreaks, i.qty, i.unitPrice) * i.qty,
         })),
-        total: cartTotal,
-        notes: notes.trim() || null,
+        total: finalTotal,
+        payment_method: paymentMethod,
+        coupon_code: coupon ? couponCode.trim().toUpperCase() : null,
+        discount: coupon?.discount ?? 0,
+        notes: [
+          phone.trim() ? `Tel: ${phone.trim()}` : '',
+          notes.trim(),
+        ].filter(Boolean).join('\n') || null,
       }),
     })
     setSending(false)
@@ -540,10 +589,12 @@ function CartDrawer({ cart, galleryId, onClose, onRemove, onUpdateQty, onClear, 
   const ICON_CART = <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="var(--ac)" strokeWidth={2} strokeLinecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
   const ICON_X    = <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
 
+  const sectionLabel: React.CSSProperties = { fontSize: '11px', fontWeight: 700, color: 'var(--t3)', letterSpacing: '.09em', textTransform: 'uppercase', marginBottom: 10, display: 'block' }
+
   return (
     <>
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 450, background: 'rgba(0,0,0,.6)' }} />
-      <div style={{ position: 'fixed', right: 0, top: 0, bottom: 0, zIndex: 460, width: '100%', maxWidth: 440, background: 'var(--s1)', borderLeft: '1px solid var(--b1)', display: 'flex', flexDirection: 'column', animation: 'slideInRight .25s ease' }}>
+      <div style={{ position: 'fixed', right: 0, top: 0, bottom: 0, zIndex: 460, width: '100%', maxWidth: 460, background: 'var(--s1)', borderLeft: '1px solid var(--b1)', display: 'flex', flexDirection: 'column', animation: 'slideInRight .25s ease' }}>
 
         {/* Header */}
         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--b1)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
@@ -555,15 +606,13 @@ function CartDrawer({ cart, galleryId, onClose, onRemove, onUpdateQty, onClear, 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
             {ICON_CART}
             <p style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '15px', color: 'var(--tx)' }}>
-              {step === 'cart' ? 'Il tuo carrello' : step === 'checkout' ? 'Conferma ordine' : 'Ordine confermato'}
+              {step === 'cart' ? 'Il tuo carrello' : step === 'checkout' ? 'Completa l\'ordine' : 'Ordine confermato'}
             </p>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t3)', width: 28, height: 28, display: 'grid', placeItems: 'center', borderRadius: 6 }}>
-            {ICON_X}
-          </button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t3)', width: 28, height: 28, display: 'grid', placeItems: 'center', borderRadius: 6 }}>{ICON_X}</button>
         </div>
 
-        {/* ── STEP: SUCCESS ─────────────────────────────────────────────── */}
+        {/* ── SUCCESS ── */}
         {step === 'success' && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 32, textAlign: 'center' }}>
             <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'rgba(142,201,176,.15)', border: '2px solid rgba(142,201,176,.3)', display: 'grid', placeItems: 'center' }}>
@@ -572,15 +621,14 @@ function CartDrawer({ cart, galleryId, onClose, onRemove, onUpdateQty, onClear, 
             <div>
               <p style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '18px', color: 'var(--tx)', marginBottom: 8 }}>Ordine inviato!</p>
               <p style={{ fontSize: '13px', color: 'var(--t2)', lineHeight: 1.6 }}>
-                Il fotografo ha ricevuto il tuo ordine. Clicca il pulsante qui sotto per confermare su WhatsApp.
+                {paymentMethod === 'online'
+                  ? 'Il fotografo ha ricevuto il tuo ordine. Ti contatterà per i dettagli del pagamento.'
+                  : 'Il fotografo ha ricevuto il tuo ordine. Potrai pagare al momento del ritiro in studio.'
+                }
               </p>
             </div>
-            <a
-              href={waLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#25D366', color: '#fff', border: 'none', borderRadius: 'var(--r2)', padding: '12px 24px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', textDecoration: 'none', width: '100%', justifyContent: 'center' }}
-            >
+            <a href={waLink} target="_blank" rel="noopener noreferrer"
+              style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#25D366', color: '#fff', border: 'none', borderRadius: 'var(--r2)', padding: '12px 24px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', textDecoration: 'none', width: '100%', justifyContent: 'center' }}>
               <svg viewBox="0 0 24 24" width={18} height={18} fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
               Conferma su WhatsApp
             </a>
@@ -590,16 +638,16 @@ function CartDrawer({ cart, galleryId, onClose, onRemove, onUpdateQty, onClear, 
           </div>
         )}
 
-        {/* ── STEP: EMPTY ───────────────────────────────────────────────── */}
+        {/* ── EMPTY ── */}
         {step === 'cart' && items.length === 0 && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, color: 'var(--t3)' }}>
             <svg viewBox="0 0 24 24" width={36} height={36} fill="none" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round" style={{ opacity: .4 }}><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
             <p style={{ fontSize: '13px' }}>Il carrello è vuoto</p>
-            <p style={{ fontSize: '11px' }}>Clicca 🛒 su una foto per aggiungere stampe</p>
+            <p style={{ fontSize: '11px' }}>Clicca 🛒 su una foto per aggiungere prodotti</p>
           </div>
         )}
 
-        {/* ── STEP: CART ────────────────────────────────────────────────── */}
+        {/* ── CART ── */}
         {step === 'cart' && items.length > 0 && (
           <>
             <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -608,19 +656,20 @@ function CartDrawer({ cart, galleryId, onClose, onRemove, onUpdateQty, onClear, 
                 return (
                   <div key={item.id} style={{ background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 10, padding: '10px 12px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={item.photoUrl} alt="" style={{ width: 50, height: 50, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} />
+                    <img src={item.photoUrl} alt="" style={{ width: 52, height: 52, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: '11px', color: 'var(--tx)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.filename}</p>
-                      <p style={{ fontSize: '10px', color: 'var(--t3)', marginTop: 2 }}>{item.productName} · {item.formatLabel}</p>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 7 }}>
-                        <button onClick={() => onUpdateQty(item.id, Math.max(1, item.qty - 1))} style={{ width: 22, height: 22, borderRadius: 5, background: 'var(--s3)', border: 'none', color: 'var(--tx)', fontSize: '14px', cursor: 'pointer', display: 'grid', placeItems: 'center' }}>−</button>
-                        <span style={{ fontSize: '12px', color: 'var(--tx)', minWidth: 20, textAlign: 'center' }}>{item.qty}</span>
-                        <button onClick={() => onUpdateQty(item.id, item.qty + 1)} style={{ width: 22, height: 22, borderRadius: 5, background: 'var(--s3)', border: 'none', color: 'var(--tx)', fontSize: '14px', cursor: 'pointer', display: 'grid', placeItems: 'center' }}>+</button>
-                        <span style={{ fontSize: '10px', color: 'var(--t3)', marginLeft: 2 }}>{fmt(curUnitPrice)} / pz</span>
+                      <p style={{ fontSize: '12px', color: 'var(--tx)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.productName}</p>
+                      <p style={{ fontSize: '11px', color: 'var(--t3)', marginTop: 1 }}>{item.formatLabel}</p>
+                      <p style={{ fontSize: '10px', color: 'var(--t3)', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', opacity: .7 }}>{item.filename}</p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
+                        <button onClick={() => onUpdateQty(item.id, Math.max(1, item.qty - 1))} style={{ width: 24, height: 24, borderRadius: 5, background: 'var(--s3)', border: 'none', color: 'var(--tx)', fontSize: '15px', cursor: 'pointer', display: 'grid', placeItems: 'center' }}>−</button>
+                        <span style={{ fontSize: '13px', color: 'var(--tx)', minWidth: 24, textAlign: 'center' }}>{item.qty}</span>
+                        <button onClick={() => onUpdateQty(item.id, item.qty + 1)} style={{ width: 24, height: 24, borderRadius: 5, background: 'var(--s3)', border: 'none', color: 'var(--tx)', fontSize: '15px', cursor: 'pointer', display: 'grid', placeItems: 'center' }}>+</button>
+                        <span style={{ fontSize: '10px', color: 'var(--t3)' }}>{fmt(curUnitPrice)} / pz</span>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
-                      <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '13px', color: 'var(--tx)' }}>{fmt(curUnitPrice * item.qty)}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, flexShrink: 0 }}>
+                      <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '14px', color: 'var(--tx)' }}>{fmt(curUnitPrice * item.qty)}</span>
                       <button onClick={() => onRemove(item.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t3)', padding: 2 }}>
                         <svg viewBox="0 0 24 24" width={13} height={13} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
                       </button>
@@ -631,49 +680,128 @@ function CartDrawer({ cart, galleryId, onClose, onRemove, onUpdateQty, onClear, 
             </div>
             <div style={{ padding: '14px 16px', borderTop: '1px solid var(--b1)', flexShrink: 0 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <span style={{ fontSize: '13px', color: 'var(--t2)' }}>Totale ordine</span>
+                <span style={{ fontSize: '13px', color: 'var(--t2)' }}>Totale</span>
                 <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '22px', color: 'var(--tx)' }}>{fmt(cartTotal)}</span>
               </div>
-              <button onClick={() => setStep('checkout')} style={{ width: '100%', background: 'var(--ac)', color: '#111', border: 'none', borderRadius: 'var(--r2)', padding: '11px 0', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                Conferma ordine →
+              <button onClick={() => setStep('checkout')} style={{ width: '100%', background: 'var(--ac)', color: '#111', border: 'none', borderRadius: 'var(--r2)', padding: '12px 0', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                Procedi all&apos;ordine →
               </button>
             </div>
           </>
         )}
 
-        {/* ── STEP: CHECKOUT ────────────────────────────────────────────── */}
+        {/* ── CHECKOUT ── */}
         {step === 'checkout' && (
           <>
-            <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 0' }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 8px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+
               {/* Riepilogo */}
-              <div style={{ background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 10, padding: '12px 14px', marginBottom: 20 }}>
-                <p style={{ fontSize: '11px', color: 'var(--t3)', marginBottom: 8, fontWeight: 500 }}>{items.length} prodott{items.length === 1 ? 'o' : 'i'} nel carrello</p>
-                {items.map(item => (
-                  <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--t2)', marginBottom: 4 }}>
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{item.filename} · {item.formatLabel} × {item.qty}</span>
-                    <span style={{ flexShrink: 0, marginLeft: 8, fontWeight: 600, color: 'var(--tx)' }}>{fmt(item.total)}</span>
+              <div style={{ background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 10, padding: '14px 16px' }}>
+                <span style={sectionLabel}>Riepilogo ordine</span>
+                {items.map(item => {
+                  const u = getPriceForBreaks(item.priceBreaks, item.qty, item.unitPrice)
+                  return (
+                    <div key={item.id} style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10 }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={item.photoUrl} alt="" style={{ width: 38, height: 38, borderRadius: 5, objectFit: 'cover', flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--tx)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.productName} · {item.formatLabel}</p>
+                        <p style={{ fontSize: '11px', color: 'var(--t3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.filename} × {item.qty}</p>
+                      </div>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--tx)', flexShrink: 0 }}>{fmt(u * item.qty)}</span>
+                    </div>
+                  )
+                })}
+                <div style={{ borderTop: '1px solid var(--b1)', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--t3)' }}>
+                    <span>Ritiro in studio</span><span style={{ color: 'var(--ac)', fontWeight: 600 }}>Gratis</span>
                   </div>
-                ))}
-                <div style={{ borderTop: '1px solid var(--b1)', marginTop: 8, paddingTop: 8, display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--tx)' }}>Totale</span>
-                  <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '16px', color: 'var(--tx)' }}>{fmt(cartTotal)}</span>
+                  {coupon && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                      <span style={{ color: '#4ade80', fontWeight: 600 }}>{coupon.label}</span>
+                      <span style={{ color: '#4ade80', fontWeight: 600 }}>−{fmt(coupon.discount / 100)}</span>
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--b1)', paddingTop: 8, marginTop: 4 }}>
+                    <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--tx)' }}>Totale</span>
+                    <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '18px', color: 'var(--tx)' }}>{fmt(finalTotal)}</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Form cliente */}
-              <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--t3)', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 12 }}>I tuoi dati</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <input value={name} onChange={e => setName(e.target.value)} placeholder="Nome e cognome" style={inputSt} />
-                <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email (per ricevere conferma)" type="email" style={inputSt} />
-                <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Note aggiuntive (opzionale)…" rows={3} style={{ ...inputSt, resize: 'none', fontFamily: 'DM Sans, sans-serif', lineHeight: 1.5 }} />
+              {/* Coupon */}
+              <div>
+                <span style={sectionLabel}>Codice sconto</span>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    value={couponCode}
+                    onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponError(''); setCoupon(null) }}
+                    placeholder="Es. FOTO10"
+                    style={{ ...inputSt, flex: 1, textTransform: 'uppercase', letterSpacing: '.05em' }}
+                  />
+                  <button
+                    onClick={applyCoupon}
+                    disabled={couponLoading || !couponCode.trim()}
+                    style={{ background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 8, padding: '10px 14px', fontSize: '12px', fontWeight: 600, color: 'var(--ac)', cursor: couponLoading ? 'wait' : 'pointer', flexShrink: 0 }}
+                  >
+                    {couponLoading ? '…' : 'Applica'}
+                  </button>
+                </div>
+                {couponError && <p style={{ fontSize: '11px', color: 'var(--red)', marginTop: 5 }}>{couponError}</p>}
+                {coupon && <p style={{ fontSize: '11px', color: '#4ade80', marginTop: 5 }}>✓ {coupon.label}</p>}
+              </div>
+
+              {/* Ritiro */}
+              <div>
+                <span style={sectionLabel}>Ritiro</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: 'var(--acd)', border: '1px solid rgba(142,201,176,.25)', borderRadius: 'var(--r2)' }}>
+                  <span style={{ fontSize: 20 }}>📍</span>
+                  <div>
+                    <p style={{ fontSize: '13px', fontWeight: 700, color: 'var(--tx)', margin: 0 }}>Ritiro in studio</p>
+                    <p style={{ fontSize: '11px', color: 'var(--t3)', margin: '2px 0 0' }}>Riceverai una mail di conferma. Nessuna spedizione.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pagamento */}
+              <div>
+                <span style={sectionLabel}>Metodo di pagamento</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {([
+                    { value: 'online', label: 'Paga ora online', sub: 'Carta di credito / debito', icon: '💳' },
+                    { value: 'studio', label: 'Paga al ritiro', sub: 'Contanti o POS in studio', icon: '🏠' },
+                  ] as const).map(opt => (
+                    <label key={opt.value} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 'var(--r2)', cursor: 'pointer', border: paymentMethod === opt.value ? '2px solid var(--ac)' : '1px solid var(--b1)', background: paymentMethod === opt.value ? 'var(--acd)' : 'var(--s2)', transition: 'all .15s' }}>
+                      <input type="radio" name="payment" value={opt.value} checked={paymentMethod === opt.value} onChange={() => setPaymentMethod(opt.value)} style={{ accentColor: 'var(--ac)' }} />
+                      <span style={{ fontSize: 18 }}>{opt.icon}</span>
+                      <div>
+                        <p style={{ fontSize: '13px', fontWeight: 700, color: 'var(--tx)', margin: 0 }}>{opt.label}</p>
+                        <p style={{ fontSize: '11px', color: 'var(--t3)', margin: '2px 0 0' }}>{opt.sub}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Dati cliente */}
+              <div>
+                <span style={sectionLabel}>I tuoi dati</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <input value={name} onChange={e => setName(e.target.value)} placeholder="Nome e cognome" style={inputSt} />
+                  <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email (per ricevere conferma)" type="email" style={inputSt} />
+                  <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Telefono" type="tel" style={inputSt} />
+                  <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Note aggiuntive (opzionale)…" rows={3} style={{ ...inputSt, resize: 'none', fontFamily: 'DM Sans, sans-serif', lineHeight: 1.5 }} />
+                </div>
               </div>
             </div>
 
             <div style={{ padding: '16px 20px', borderTop: '1px solid var(--b1)', flexShrink: 0 }}>
-              <button onClick={submit} disabled={sending} style={{ width: '100%', background: sending ? 'var(--s3)' : 'var(--ac)', color: sending ? 'var(--t3)' : '#111', border: 'none', borderRadius: 'var(--r2)', padding: '12px 0', fontSize: '13px', fontWeight: 600, cursor: sending ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
+              <button onClick={submit} disabled={sending} style={{ width: '100%', background: sending ? 'var(--s3)' : 'var(--ac)', color: sending ? 'var(--t3)' : '#111', border: 'none', borderRadius: 'var(--r2)', padding: '13px 0', fontSize: '14px', fontWeight: 700, cursor: sending ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
                 {sending
-                  ? <><div style={{ width: 14, height: 14, border: '2px solid var(--t3)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .7s linear infinite' }} /> Invio in corso…</>
-                  : <><svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Invia ordine al fotografo</>
+                  ? <><div style={{ width: 14, height: 14, border: '2px solid var(--t3)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .7s linear infinite' }} /> Invio…</>
+                  : paymentMethod === 'online'
+                    ? <><svg viewBox="0 0 24 24" width={15} height={15} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Procedi al pagamento →</>
+                    : <><svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg> Conferma ordine →</>
                 }
               </button>
               <p style={{ fontSize: '10px', color: 'var(--t3)', textAlign: 'center', marginTop: 8 }}>Il fotografo riceverà subito una notifica via email</p>
