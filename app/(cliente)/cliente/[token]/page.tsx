@@ -177,6 +177,8 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
   // crop/position (percentuali 0-100, default centro)
   const [cropX, setCropX] = useState(50)
   const [cropY, setCropY] = useState(50)
+  // zoom (1.0 = nessuno zoom, max 4.0)
+  const [zoom, setZoom] = useState(1)
   // orientamento anteprima (scambia larghezza/altezza)
   const [rotated, setRotated] = useState(false)
 
@@ -200,7 +202,7 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
     setQty(1)
   }, [selectedProduct])
 
-  useEffect(() => { setQty(1); setCropX(50); setCropY(50); setRotated(false) }, [selectedVariantId])
+  useEffect(() => { setQty(1); setCropX(50); setCropY(50); setZoom(1); setRotated(false) }, [selectedVariantId])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -390,12 +392,34 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
                 const w = rotated ? hRaw : wRaw
                 const h = rotated ? wRaw : hRaw
                 const aspectRatio = h / w  // paddingBottom trick
-                // Drag handler
-                const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+                // Drag + pinch handler
+                const handlePointerStart = (e: React.MouseEvent | React.TouchEvent) => {
                   e.preventDefault()
-                  const el = (e.currentTarget as HTMLElement).parentElement!
+                  const el = (e.currentTarget as HTMLElement)
                   const rect = el.getBoundingClientRect()
                   const isTouch = 'touches' in e
+
+                  // pinch-to-zoom (2 dita)
+                  if (isTouch && e.touches.length === 2) {
+                    const t = e.touches
+                    let initDist = Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY)
+                    let initZoom = zoom
+                    const onPinchMove = (ev: TouchEvent) => {
+                      if (ev.touches.length < 2) return
+                      ev.preventDefault()
+                      const d = Math.hypot(ev.touches[0].clientX - ev.touches[1].clientX, ev.touches[0].clientY - ev.touches[1].clientY)
+                      setZoom(Math.max(1, Math.min(4, initZoom * d / initDist)))
+                    }
+                    const onPinchEnd = () => {
+                      window.removeEventListener('touchmove', onPinchMove)
+                      window.removeEventListener('touchend', onPinchEnd)
+                    }
+                    window.addEventListener('touchmove', onPinchMove, { passive: false })
+                    window.addEventListener('touchend', onPinchEnd)
+                    return
+                  }
+
+                  // drag singolo (mouse o 1 dito)
                   const startX = isTouch ? e.touches[0].clientX : (e as React.MouseEvent).clientX
                   const startY = isTouch ? e.touches[0].clientY : (e as React.MouseEvent).clientY
                   const startCropX = cropX
@@ -403,8 +427,9 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
                   const onMove = (ev: MouseEvent | TouchEvent) => {
                     const cx = 'touches' in ev ? ev.touches[0].clientX : (ev as MouseEvent).clientX
                     const cy = 'touches' in ev ? ev.touches[0].clientY : (ev as MouseEvent).clientY
-                    const dx = ((startX - cx) / rect.width) * 100
-                    const dy = ((startY - cy) / rect.height) * 100
+                    // sensibilità drag inversamente proporzionale allo zoom
+                    const dx = ((startX - cx) / rect.width) * 100 / zoom
+                    const dy = ((startY - cy) / rect.height) * 100 / zoom
                     setCropX(Math.max(0, Math.min(100, startCropX + dx)))
                     setCropY(Math.max(0, Math.min(100, startCropY + dy)))
                   }
@@ -419,40 +444,62 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
                   window.addEventListener('touchmove', onMove, { passive: false })
                   window.addEventListener('touchend', onUp)
                 }
+
+                // scroll wheel zoom (desktop)
+                const handleWheel = (e: React.WheelEvent) => {
+                  e.preventDefault()
+                  setZoom(z => Math.max(1, Math.min(4, z - e.deltaY * 0.005)))
+                }
+
                 return (
                   <div style={{ marginBottom: 20 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                      <p style={{ fontSize: '11px', color: 'var(--t3)', fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase' }}>
-                        Anteprima {w}×{h} cm — trascina per inquadrare
+                    {/* Riga header: label + ruota + zoom controls */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, gap: 6 }}>
+                      <p style={{ fontSize: '11px', color: 'var(--t3)', fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', flex: 1 }}>
+                        Anteprima {w}×{h} cm — trascina · pizzica
                       </p>
-                      {canRotate && (
-                        <button
-                          onClick={() => { setRotated(r => !r); setCropX(50); setCropY(50) }}
-                          title="Ruota orientamento"
-                          style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 6, padding: '4px 10px', fontSize: '11px', fontWeight: 600, color: 'var(--t2)', cursor: 'pointer', flexShrink: 0 }}
-                        >
-                          <svg viewBox="0 0 24 24" width={13} height={13} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.9"/></svg>
-                          {rotated ? 'Verticale' : 'Orizzontale'}
-                        </button>
-                      )}
+                      <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                        {canRotate && (
+                          <button
+                            onClick={() => { setRotated(r => !r); setCropX(50); setCropY(50); setZoom(1) }}
+                            title="Ruota orientamento"
+                            style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 6, padding: '4px 8px', fontSize: '11px', fontWeight: 600, color: 'var(--t2)', cursor: 'pointer' }}
+                          >
+                            <svg viewBox="0 0 24 24" width={12} height={12} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.9"/></svg>
+                            {rotated ? 'Vert.' : 'Oriz.'}
+                          </button>
+                        )}
+                        {/* Zoom controls */}
+                        <button onClick={() => setZoom(z => Math.max(1, +(z - 0.25).toFixed(2)))} style={{ width: 28, height: 28, background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 6, color: 'var(--t2)', fontSize: '16px', cursor: 'pointer', display: 'grid', placeItems: 'center', lineHeight: 1 }}>−</button>
+                        <span style={{ fontSize: '11px', color: 'var(--t3)', minWidth: 32, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>{Math.round(zoom * 100)}%</span>
+                        <button onClick={() => setZoom(z => Math.min(4, +(z + 0.25).toFixed(2)))} style={{ width: 28, height: 28, background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 6, color: 'var(--t2)', fontSize: '16px', cursor: 'pointer', display: 'grid', placeItems: 'center', lineHeight: 1 }}>+</button>
+                      </div>
                     </div>
-                    <div style={{ position: 'relative', width: '100%', paddingBottom: `${aspectRatio * 100}%`, borderRadius: 'var(--r2)', overflow: 'hidden', background: 'var(--s3)', border: '1px solid var(--b1)', cursor: 'grab', userSelect: 'none', touchAction: 'none' }}>
+                    <div
+                      onWheel={handleWheel}
+                      style={{ position: 'relative', width: '100%', paddingBottom: `${aspectRatio * 100}%`, borderRadius: 'var(--r2)', overflow: 'hidden', background: 'var(--s3)', border: '1px solid var(--b1)', cursor: zoom > 1 ? 'move' : 'grab', userSelect: 'none', touchAction: 'none' }}
+                    >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={photo.url}
                         alt=""
                         draggable={false}
-                        onMouseDown={handleDragStart}
-                        onTouchStart={handleDragStart}
-                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${cropX}% ${cropY}%`, cursor: 'grab', userSelect: 'none', pointerEvents: 'auto' }}
+                        onMouseDown={handlePointerStart}
+                        onTouchStart={handlePointerStart}
+                        style={{
+                          position: 'absolute', inset: 0, width: '100%', height: '100%',
+                          objectFit: 'cover', objectPosition: `${cropX}% ${cropY}%`,
+                          transform: `scale(${zoom})`, transformOrigin: `${cropX}% ${cropY}%`,
+                          userSelect: 'none', pointerEvents: 'auto',
+                        }}
                       />
                       {/* Guida griglia */}
                       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', backgroundImage: 'linear-gradient(rgba(255,255,255,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.12) 1px, transparent 1px)', backgroundSize: '33.33% 33.33%' }} />
                       {/* Reset button */}
-                      {(cropX !== 50 || cropY !== 50) && (
+                      {(cropX !== 50 || cropY !== 50 || zoom !== 1) && (
                         <button
-                          onClick={e => { e.stopPropagation(); setCropX(50); setCropY(50) }}
-                          style={{ position: 'absolute', bottom: 8, right: 8, background: 'rgba(0,0,0,.6)', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: '10px', cursor: 'pointer', fontWeight: 600, letterSpacing: '.04em' }}
+                          onClick={e => { e.stopPropagation(); setCropX(50); setCropY(50); setZoom(1) }}
+                          style={{ position: 'absolute', bottom: 8, right: 8, background: 'rgba(0,0,0,.6)', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: '10px', cursor: 'pointer', fontWeight: 600, letterSpacing: '.04em' }}
                         >
                           Centra
                         </button>
