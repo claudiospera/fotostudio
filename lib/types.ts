@@ -53,6 +53,9 @@ export interface GallerySettings {
   theme_palette?: string    // 'agave' | 'black' | 'warm' | 'white' | 'dark' | 'cool'
   theme_font?: string       // 'syne' | 'playfair' | 'bodoni' | 'inter'
   theme_grid?: string       // 'masonry' | 'grid'
+  text_color?: string       // hex override del colore testo hero (es. '#ffffff'). Vuoto = usa palette
+  text_position?: string    // 'top-left' | 'top-center' | 'top-right' | 'center-left' | 'center-center' | 'center-right' | 'bottom-left' | 'bottom-center' | 'bottom-right'
+  photo_position?: string   // stesso set di valori — controlla objectPosition della cover
 }
 
 export interface Photo {

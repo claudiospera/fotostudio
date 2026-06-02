@@ -27,6 +27,9 @@ interface PublicGallery {
     theme_font?: string
     theme_grid?: string
     theme_template?: string
+    text_color?: string
+    text_position?: string
+    photo_position?: string
   }
   photos: Photo[]
   profiles?: { name?: string; studio_name?: string }
@@ -124,6 +127,24 @@ const FONT_MAP: Record<string, { family: string; googleId: string; weight: strin
   playfair: { family: "'Playfair Display', serif",  googleId: 'Playfair+Display:wght@400;700',  weight: '700' },
   bodoni:   { family: "'Bodoni Moda', serif",       googleId: 'Bodoni+Moda:ital,wght@0,400;0,700', weight: '700' },
   inter:    { family: "'Inter', sans-serif",        googleId: 'Inter:wght@300;400;600',          weight: '400' },
+}
+
+const TEXT_POSITION_STYLES: Record<string, { jc: string; ai: string; ta: 'left' | 'center' | 'right' }> = {
+  'top-left':     { jc: 'flex-start', ai: 'flex-start', ta: 'left'   },
+  'top-center':   { jc: 'flex-start', ai: 'center',     ta: 'center' },
+  'top-right':    { jc: 'flex-start', ai: 'flex-end',   ta: 'right'  },
+  'center-left':  { jc: 'center',     ai: 'flex-start', ta: 'left'   },
+  'center-center':{ jc: 'center',     ai: 'center',     ta: 'center' },
+  'center-right': { jc: 'center',     ai: 'flex-end',   ta: 'right'  },
+  'bottom-left':  { jc: 'flex-end',   ai: 'flex-start', ta: 'left'   },
+  'bottom-center':{ jc: 'flex-end',   ai: 'center',     ta: 'center' },
+  'bottom-right': { jc: 'flex-end',   ai: 'flex-end',   ta: 'right'  },
+}
+
+const PHOTO_POSITION_CSS: Record<string, string> = {
+  'top-left':     'left top',    'top-center':    'center top',    'top-right':    'right top',
+  'center-left':  'left center', 'center-center': 'center center', 'center-right': 'right center',
+  'bottom-left':  'left bottom', 'bottom-center': 'center bottom', 'bottom-right': 'right bottom',
 }
 
 function getSessionId(): string {
@@ -1605,6 +1626,10 @@ export default function ClientePortalPage() {
   const showSubtitle = gallery.settings?.show_subtitle !== false
   const showDate     = gallery.settings?.show_date     !== false
 
+  const heroTextColor = gallery.settings?.text_color || theme.heroTextColor
+  const textPos       = TEXT_POSITION_STYLES[gallery.settings?.text_position ?? 'center-center'] ?? TEXT_POSITION_STYLES['center-center']
+  const photoObjPos   = PHOTO_POSITION_CSS[gallery.settings?.photo_position ?? 'center-center'] ?? 'center center'
+
   return (
     <>
       {/* Dynamic font link */}
@@ -1625,7 +1650,7 @@ export default function ClientePortalPage() {
             const heroUrl = gallery.cover_url || (photos.length > 0 ? photos[0].url : null)
             return heroUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={heroUrl} alt={gallery.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+              <img src={heroUrl} alt={gallery.name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: photoObjPos, display: 'block' }} />
             ) : (
               <div style={{ width: '100%', height: '100%', background: `linear-gradient(135deg, ${coverBg} 0%, color-mix(in srgb, ${coverBg} 60%, #0a0a0a) 100%)` }} />
             )
@@ -1642,22 +1667,22 @@ export default function ClientePortalPage() {
             </div>
           </nav>
 
-          {/* Hero content — centrato */}
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px clamp(20px, 6vw, 80px) 20px', textAlign: 'center' }}>
+          {/* Hero content */}
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: textPos.ai, justifyContent: textPos.jc, padding: '80px clamp(20px, 6vw, 80px) 32px', textAlign: textPos.ta }}>
             {gallery.type && (
-              <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '.22em', textTransform: 'uppercase', color: `${theme.heroTextColor}88`, marginBottom: 20 }}>{gallery.type}</div>
+              <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '.22em', textTransform: 'uppercase', color: `${heroTextColor}88`, marginBottom: 20 }}>{gallery.type}</div>
             )}
             {showTitle && (
-              <h1 style={{ fontFamily: fontDef.family, fontWeight: fontDef.weight as React.CSSProperties['fontWeight'], fontSize: 'clamp(32px, 7vw, 96px)', color: theme.heroTextColor, letterSpacing: '-0.02em', lineHeight: 1, marginBottom: 8, textTransform: 'uppercase' }}>{gallery.name}</h1>
+              <h1 style={{ fontFamily: fontDef.family, fontWeight: fontDef.weight as React.CSSProperties['fontWeight'], fontSize: 'clamp(32px, 7vw, 96px)', color: heroTextColor, letterSpacing: '-0.02em', lineHeight: 1, marginBottom: 8, textTransform: 'uppercase' }}>{gallery.name}</h1>
             )}
             {(showSubtitle || showDate) && (gallery.subtitle || gallery.date) && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 36 }}>
-                {showSubtitle && gallery.subtitle && <span style={{ fontSize: '15px', color: `${theme.heroTextColor}88`, fontStyle: 'italic' }}>{gallery.subtitle}</span>}
-                {showDate && gallery.date && <span style={{ fontSize: '13px', color: `${theme.heroTextColor}66`, letterSpacing: '.04em' }}>{formatDate(gallery.date)}</span>}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: textPos.ai, marginBottom: 36 }}>
+                {showSubtitle && gallery.subtitle && <span style={{ fontSize: '15px', color: `${heroTextColor}88`, fontStyle: 'italic' }}>{gallery.subtitle}</span>}
+                {showDate && gallery.date && <span style={{ fontSize: '13px', color: `${heroTextColor}66`, letterSpacing: '.04em' }}>{formatDate(gallery.date)}</span>}
               </div>
             )}
             {!(showSubtitle && gallery.subtitle) && !(showDate && gallery.date) && <div style={{ marginBottom: 36 }} />}
-            <a href="#photos" style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.22em', textTransform: 'uppercase', color: `${theme.heroTextColor}e0`, textDecoration: 'none', borderBottom: `1px solid ${theme.heroTextColor}77`, paddingBottom: 4, transition: 'color .15s' }}>
+            <a href="#photos" style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.22em', textTransform: 'uppercase', color: `${heroTextColor}e0`, textDecoration: 'none', borderBottom: `1px solid ${heroTextColor}77`, paddingBottom: 4, transition: 'color .15s' }}>
               View Gallery
             </a>
           </div>

@@ -108,6 +108,42 @@ const APPEARANCE_FONTS = [
   { id: 'inter',    label: 'Inter',    style: { fontFamily: "'Inter', sans-serif",           fontWeight: 300 } },
 ]
 
+// Used for the live cover preview inside the Aspetto tab
+const PALETTE_HERO: Record<string, { overlay: string; textColor: string }> = {
+  agave:  { overlay: 'linear-gradient(to top, rgba(10,30,20,.78) 0%, transparent 55%)',  textColor: '#fff' },
+  black:  { overlay: 'linear-gradient(to top, rgba(0,0,0,.85) 0%, transparent 55%)',     textColor: '#fff' },
+  warm:   { overlay: 'linear-gradient(to top, rgba(25,12,0,.80) 0%, transparent 55%)',   textColor: '#fff' },
+  white:  { overlay: 'linear-gradient(to top, rgba(0,0,0,.65) 0%, transparent 55%)',     textColor: '#fff' },
+  dark:   { overlay: 'linear-gradient(to top, rgba(0,0,0,.92) 0%, transparent 55%)',     textColor: '#e0e0e0' },
+  cool:   { overlay: 'linear-gradient(to top, rgba(5,15,35,.82) 0%, transparent 55%)',   textColor: '#fff' },
+}
+
+const ASPECT_TEXT_POS: Record<string, { jc: string; ai: string; ta: string }> = {
+  'top-left':     { jc: 'flex-start', ai: 'flex-start', ta: 'left'   },
+  'top-center':   { jc: 'flex-start', ai: 'center',     ta: 'center' },
+  'top-right':    { jc: 'flex-start', ai: 'flex-end',   ta: 'right'  },
+  'center-left':  { jc: 'center',     ai: 'flex-start', ta: 'left'   },
+  'center-center':{ jc: 'center',     ai: 'center',     ta: 'center' },
+  'center-right': { jc: 'center',     ai: 'flex-end',   ta: 'right'  },
+  'bottom-left':  { jc: 'flex-end',   ai: 'flex-start', ta: 'left'   },
+  'bottom-center':{ jc: 'flex-end',   ai: 'center',     ta: 'center' },
+  'bottom-right': { jc: 'flex-end',   ai: 'flex-end',   ta: 'right'  },
+}
+
+const ASPECT_PHOTO_POS: Record<string, string> = {
+  'top-left':     'left top',    'top-center':    'center top',    'top-right':    'right top',
+  'center-left':  'left center', 'center-center': 'center center', 'center-right': 'right center',
+  'bottom-left':  'left bottom', 'bottom-center': 'center bottom', 'bottom-right': 'right bottom',
+}
+
+const TEXT_COLOR_PRESETS = [
+  { value: '',        label: 'Auto' },
+  { value: '#ffffff', label: 'Bianco' },
+  { value: '#f5f0e8', label: 'Crema' },
+  { value: '#111111', label: 'Nero' },
+  { value: '#c8b89a', label: 'Sabbia' },
+]
+
 const ORDER_STATUS: Record<string, { label: string; style: React.CSSProperties }> = {
   nuovo:      { label: 'Nuovo',      style: { background: 'rgba(142,201,176,.18)', color: 'var(--ac)',    border: '1px solid rgba(142,201,176,.28)' } },
   confermato: { label: 'Confermato', style: { background: 'rgba(201,160,90,.18)',  color: 'var(--amber)', border: '1px solid rgba(201,160,90,.28)' } },
@@ -1506,6 +1542,45 @@ export default function GalleryDetailPage() {
         {tab === 'aspetto' && gallery && (
           <div style={{ animation: 'fadeIn .2s ease', maxWidth: '720px' }}>
 
+            {/* ── Anteprima cover live ── */}
+            {(() => {
+              const paletteId  = gallery.settings?.theme_palette ?? 'agave'
+              const fontId     = gallery.settings?.theme_font    ?? 'syne'
+              const textPosId  = gallery.settings?.text_position ?? 'center-center'
+              const photoPosId = gallery.settings?.photo_position ?? 'center-center'
+              const pHero      = PALETTE_HERO[paletteId] ?? PALETTE_HERO['agave']
+              const baseTxtClr = pHero.textColor
+              const txtColor   = gallery.settings?.text_color || baseTxtClr
+              const fontStyle  = APPEARANCE_FONTS.find(f => f.id === fontId)?.style ?? APPEARANCE_FONTS[0].style
+              const tps        = ASPECT_TEXT_POS[textPosId] ?? ASPECT_TEXT_POS['center-center']
+              const photoPos   = ASPECT_PHOTO_POS[photoPosId] ?? 'center center'
+              const coverUrl   = gallery.cover_url || photos[0]?.url
+              const showTitlePrev    = gallery.settings?.show_title    !== false
+              const showSubtitlePrev = gallery.settings?.show_subtitle !== false
+              return (
+                <div style={{ marginBottom: 28 }}>
+                  <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', color: 'var(--t3)', textTransform: 'uppercase', marginBottom: 12 }}>Anteprima cover</p>
+                  <div style={{ position: 'relative', width: '100%', aspectRatio: '16 / 6', borderRadius: 'var(--r)', overflow: 'hidden', background: '#111', border: '1px solid var(--b1)' }}>
+                    {coverUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={coverUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: photoPos, display: 'block' }} />
+                    ) : (
+                      <div style={{ position: 'absolute', inset: 0, background: gallery.cover_color ?? '#2a3830' }} />
+                    )}
+                    <div style={{ position: 'absolute', inset: 0, background: pHero.overlay }} />
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: tps.ai, justifyContent: tps.jc, textAlign: tps.ta as React.CSSProperties['textAlign'], padding: '14px 20px', gap: 4 }}>
+                      {showTitlePrev && (
+                        <p style={{ ...fontStyle, fontSize: 'clamp(13px, 2.5vw, 20px)', color: txtColor, letterSpacing: '-0.02em', lineHeight: 1.1, textTransform: 'uppercase', margin: 0 }}>{gallery.name}</p>
+                      )}
+                      {showSubtitlePrev && gallery.subtitle && (
+                        <p style={{ fontSize: '11px', color: `${txtColor}88`, fontStyle: 'italic', margin: 0 }}>{gallery.subtitle}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
+
             {/* ── Sezione visibilità hero ── */}
             <div style={{ marginBottom: 28 }}>
               <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', color: 'var(--t3)', textTransform: 'uppercase', marginBottom: 12 }}>Visibilità nel portale</p>
@@ -1529,6 +1604,116 @@ export default function GalleryDetailPage() {
                         <span style={{ position: 'absolute', top: 3, left: val ? 21 : 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left .2s', display: 'block' }} />
                       </button>
                     </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* ── Colore testo ── */}
+            <div style={{ marginBottom: 28 }}>
+              <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', color: 'var(--t3)', textTransform: 'uppercase', marginBottom: 12 }}>Colore testo</p>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                {TEXT_COLOR_PRESETS.map(c => {
+                  const active = c.value === ''
+                    ? !gallery.settings?.text_color
+                    : gallery.settings?.text_color === c.value
+                  return (
+                    <button
+                      key={c.value || 'auto'}
+                      onClick={() => saveAspetto({ text_color: c.value })}
+                      title={c.label}
+                      style={{
+                        width: 36, height: 36, borderRadius: '50%', padding: 0, cursor: 'pointer',
+                        border: `2px solid ${active ? 'var(--ac)' : 'var(--b1)'}`,
+                        transition: 'border-color .15s', position: 'relative', overflow: 'hidden',
+                        background: c.value || 'var(--s1)',
+                        boxShadow: c.value === '#ffffff' ? 'inset 0 0 0 1px rgba(0,0,0,.15)' : 'none',
+                      }}
+                    >
+                      {!c.value && (
+                        <span style={{ fontSize: '9px', color: active ? 'var(--ac)' : 'var(--t3)', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', letterSpacing: '.01em' }}>AUTO</span>
+                      )}
+                    </button>
+                  )
+                })}
+                {/* Color picker custom */}
+                <label title="Colore personalizzato" style={{ width: 36, height: 36, borderRadius: '50%', border: '2px solid var(--b1)', cursor: 'pointer', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--s1)', transition: 'border-color .15s', position: 'relative' }}>
+                  <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="var(--t3)" strokeWidth={2} strokeLinecap="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+                  <input
+                    type="color"
+                    value={gallery.settings?.text_color || '#ffffff'}
+                    onChange={e => saveAspetto({ text_color: e.target.value })}
+                    style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }}
+                  />
+                </label>
+              </div>
+            </div>
+
+            {/* ── Posizione testo ── */}
+            <div style={{ marginBottom: 28 }}>
+              <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', color: 'var(--t3)', textTransform: 'uppercase', marginBottom: 12 }}>Posizione testo</p>
+              <div style={{ display: 'inline-grid', gridTemplateColumns: 'repeat(3, 40px)', gap: 6 }}>
+                {([
+                  'top-left', 'top-center', 'top-right',
+                  'center-left', 'center-center', 'center-right',
+                  'bottom-left', 'bottom-center', 'bottom-right',
+                ] as const).map(pos => {
+                  const active = (gallery.settings?.text_position ?? 'center-center') === pos
+                  const [vert, horiz] = pos.split('-')
+                  return (
+                    <button
+                      key={pos}
+                      onClick={() => saveAspetto({ text_position: pos })}
+                      style={{
+                        width: 40, height: 40, borderRadius: 8, cursor: 'pointer', padding: 8,
+                        border: `1px solid ${active ? 'var(--ac)' : 'var(--b1)'}`,
+                        background: active ? 'var(--acd)' : 'var(--s1)',
+                        display: 'flex', transition: 'all .15s',
+                        alignItems: vert === 'top' ? 'flex-start' : vert === 'bottom' ? 'flex-end' : 'center',
+                        justifyContent: horiz === 'left' ? 'flex-start' : horiz === 'right' ? 'flex-end' : 'center',
+                      }}
+                    >
+                      <div style={{ width: 10, height: 10, borderRadius: 2, background: active ? 'var(--ac)' : 'var(--s4)', flexShrink: 0 }} />
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* ── Posizione foto cover ── */}
+            <div style={{ marginBottom: 28 }}>
+              <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', color: 'var(--t3)', textTransform: 'uppercase', marginBottom: 12 }}>Posizione foto cover</p>
+              <div style={{ display: 'inline-grid', gridTemplateColumns: 'repeat(3, 40px)', gap: 6 }}>
+                {([
+                  'top-left', 'top-center', 'top-right',
+                  'center-left', 'center-center', 'center-right',
+                  'bottom-left', 'bottom-center', 'bottom-right',
+                ] as const).map(pos => {
+                  const active = (gallery.settings?.photo_position ?? 'center-center') === pos
+                  const [vert, horiz] = pos.split('-')
+                  return (
+                    <button
+                      key={pos}
+                      onClick={() => saveAspetto({ photo_position: pos })}
+                      style={{
+                        width: 40, height: 40, borderRadius: 8, cursor: 'pointer', padding: 0,
+                        border: `1px solid ${active ? 'var(--ac)' : 'var(--b1)'}`,
+                        background: active ? 'var(--acd)' : 'var(--s1)',
+                        display: 'flex', transition: 'all .15s', overflow: 'hidden', position: 'relative',
+                      }}
+                    >
+                      {/* Mini immagine con indicatore di focus */}
+                      <div style={{
+                        position: 'absolute', inset: 0,
+                        background: 'linear-gradient(135deg, var(--s3) 0%, var(--s2) 100%)',
+                        display: 'flex',
+                        alignItems: vert === 'top' ? 'flex-start' : vert === 'bottom' ? 'flex-end' : 'center',
+                        justifyContent: horiz === 'left' ? 'flex-start' : horiz === 'right' ? 'flex-end' : 'center',
+                        padding: 7,
+                      }}>
+                        <div style={{ width: 10, height: 10, borderRadius: '50%', background: active ? 'var(--ac)' : 'rgba(255,255,255,.35)', border: `1.5px solid ${active ? 'var(--ac)' : 'rgba(255,255,255,.5)'}`, flexShrink: 0, transition: 'all .15s' }} />
+                      </div>
+                    </button>
                   )
                 })}
               </div>
