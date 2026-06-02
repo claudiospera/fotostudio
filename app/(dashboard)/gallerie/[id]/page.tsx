@@ -1549,6 +1549,7 @@ export default function GalleryDetailPage() {
               const textPosId  = gallery.settings?.text_position ?? 'center-center'
               const photoPosId = gallery.settings?.photo_position ?? 'center-center'
               const heroLayout = gallery.settings?.hero_layout ?? 'full'
+              const heroFit   = (gallery.settings?.hero_fit ?? 'cover') as 'cover' | 'contain'
               const pHero      = PALETTE_HERO[paletteId] ?? PALETTE_HERO['agave']
               const txtColor   = gallery.settings?.text_color || pHero.textColor
               const fontStyle  = APPEARANCE_FONTS.find(f => f.id === fontId)?.style ?? APPEARANCE_FONTS[0].style
@@ -1563,12 +1564,12 @@ export default function GalleryDetailPage() {
               const screenContent = heroLayout === 'split' ? (
                 /* Split: foto sopra, info sotto (versione mobile) */
                 <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                  <div style={{ flex: '0 0 48%', position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ flex: '0 0 48%', position: 'relative', overflow: 'hidden', background: heroFit === 'contain' ? (gallery.cover_color ?? '#111') : undefined }}>
                     {heroBgSolidPrev ? (
                       <div style={{ width: '100%', height: '100%', background: heroBgColorPrev }} />
                     ) : coverUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={coverUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: photoPos, display: 'block' }} />
+                      <img src={coverUrl} alt="" style={{ width: '100%', height: '100%', objectFit: heroFit, objectPosition: heroFit === 'cover' ? photoPos : 'center', display: 'block' }} />
                     ) : (
                       <div style={{ width: '100%', height: '100%', background: gallery.cover_color ?? '#2a3830' }} />
                     )}
@@ -1597,7 +1598,7 @@ export default function GalleryDetailPage() {
                     <div style={{ position: 'absolute', inset: 0, background: heroBgColorPrev }} />
                   ) : coverUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={coverUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: photoPos, display: 'block' }} />
+                    <img src={coverUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: heroFit, objectPosition: heroFit === 'cover' ? photoPos : 'center', display: 'block' }} />
                   ) : (
                     <div style={{ position: 'absolute', inset: 0, background: gallery.cover_color ?? '#2a3830' }} />
                   )}
@@ -1729,6 +1730,36 @@ export default function GalleryDetailPage() {
                 </div>
               )}
             </div>
+
+            {/* ── Adattamento foto ── */}
+            {(gallery.settings?.hero_bg ?? 'photo') === 'photo' && (
+              <div style={{ marginBottom: 28 }}>
+                <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', color: 'var(--t3)', textTransform: 'uppercase', marginBottom: 12 }}>Adattamento foto</p>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  {([
+                    { id: 'cover',   label: 'Ritaglio',    desc: 'Riempie lo spazio, può tagliare',
+                      icon: <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="7" y="6" width="10" height="12" rx="1" fill="currentColor" opacity=".3"/></svg> },
+                    { id: 'contain', label: 'Foto intera', desc: 'Mostra tutta la foto senza tagli',
+                      icon: <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="6" y="5" width="12" height="14" rx="1" fill="currentColor" opacity=".3"/></svg> },
+                  ] as { id: string; label: string; desc: string; icon: React.ReactNode }[]).map(opt => {
+                    const active = (gallery.settings?.hero_fit ?? 'cover') === opt.id
+                    return (
+                      <button
+                        key={opt.id}
+                        onClick={() => saveAspetto({ hero_fit: opt.id })}
+                        style={{ flex: 1, background: active ? 'var(--acd)' : 'var(--s1)', border: `1px solid ${active ? 'var(--ac)' : 'var(--b1)'}`, borderRadius: 'var(--r)', padding: '14px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, transition: 'all .15s' }}
+                      >
+                        <span style={{ color: active ? 'var(--ac)' : 'var(--t2)', flexShrink: 0 }}>{opt.icon}</span>
+                        <div style={{ textAlign: 'left' }}>
+                          <p style={{ fontSize: '13px', fontWeight: 500, color: active ? 'var(--ac)' : 'var(--tx)', margin: '0 0 2px' }}>{opt.label}</p>
+                          <p style={{ fontSize: '11px', color: 'var(--t3)', margin: 0 }}>{opt.desc}</p>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* ── Sezione visibilità hero ── */}
             <div style={{ marginBottom: 28 }}>

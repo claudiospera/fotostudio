@@ -33,6 +33,7 @@ interface PublicGallery {
     hero_layout?: string
     hero_bg?: string       // 'photo' | 'solid'
     hero_bg_color?: string // colore esadecimale quando hero_bg === 'solid'
+    hero_fit?: string      // 'cover' | 'contain'
   }
   photos: Photo[]
   profiles?: { name?: string; studio_name?: string }
@@ -1636,6 +1637,7 @@ export default function ClientePortalPage() {
   const splitTitleColor = gallery.settings?.text_color || theme.navText
   const heroBgSolid     = gallery.settings?.hero_bg === 'solid'
   const heroBgColor     = gallery.settings?.hero_bg_color || coverBg
+  const heroFit         = (gallery.settings?.hero_fit ?? 'cover') as 'cover' | 'contain'
 
   return (
     <>
@@ -1656,13 +1658,13 @@ export default function ClientePortalPage() {
           <div style={{ display: 'flex', flexWrap: 'wrap', minHeight: '85vh' }}>
 
             {/* Lato foto */}
-            <div style={{ flex: '1 1 300px', position: 'relative', overflow: 'hidden', minHeight: '55vh' }}>
+            <div style={{ flex: '1 1 300px', position: 'relative', overflow: 'hidden', minHeight: '55vh', background: heroFit === 'contain' ? (coverBg ?? '#111') : undefined }}>
               {(() => {
                 if (heroBgSolid) return <div style={{ width: '100%', height: '100%', background: heroBgColor }} />
                 const heroUrl = gallery.cover_url || (photos.length > 0 ? photos[0].url : null)
                 return heroUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={heroUrl} alt={gallery.name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: photoObjPos, display: 'block' }} />
+                  <img src={heroUrl} alt={gallery.name} style={{ width: '100%', height: '100%', objectFit: heroFit, objectPosition: heroFit === 'cover' ? photoObjPos : 'center', display: 'block' }} />
                 ) : (
                   <div style={{ width: '100%', height: '100%', background: `linear-gradient(135deg, ${coverBg} 0%, color-mix(in srgb, ${coverBg} 60%, #0a0a0a) 100%)` }} />
                 )
@@ -1707,7 +1709,7 @@ export default function ClientePortalPage() {
               const heroUrl = gallery.cover_url || (photos.length > 0 ? photos[0].url : null)
               return heroUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={heroUrl} alt={gallery.name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: photoObjPos, display: 'block' }} />
+                <img src={heroUrl} alt={gallery.name} style={{ width: '100%', height: '100%', objectFit: heroFit, objectPosition: heroFit === 'cover' ? photoObjPos : 'center', display: 'block' }} />
               ) : (
                 <div style={{ width: '100%', height: '100%', background: `linear-gradient(135deg, ${coverBg} 0%, color-mix(in srgb, ${coverBg} 60%, #0a0a0a) 100%)` }} />
               )

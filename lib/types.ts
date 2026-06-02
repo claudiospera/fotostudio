@@ -59,6 +59,7 @@ export interface GallerySettings {
   hero_layout?: string      // 'full' (default) | 'split' (foto sx, info dx)
   hero_bg?: string          // 'photo' (default) | 'solid'
   hero_bg_color?: string    // colore esadecimale per sfondo tinta unita
+  hero_fit?: string         // 'cover' (default, ritaglia) | 'contain' (foto intera)
 }
 
 export interface Photo {
