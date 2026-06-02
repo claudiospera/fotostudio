@@ -151,7 +151,6 @@ export function ShopNavbar() {
         }
         @media (max-width: 600px) {
           .shop-nav-links { display: none !important; }
-          .shop-home-link { display: none !important; }
           .shop-cart-label { display: none !important; }
           .shop-brand-name { font-size: 13px !important; }
           .shop-auth-label { display: none !important; }

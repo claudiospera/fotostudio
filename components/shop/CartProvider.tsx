@@ -54,18 +54,15 @@ function saveLocal(cart: Cart) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cart)) } catch {}
 }
 
-// ─── merge: unisce due liste sommando le quantità per variante duplicata ──────
+// ─── merge: remote è source of truth; aggiunge solo item locali non presenti ──
+// Non somma mai quantità duplicate (evita il raddoppio al reload)
 
 function mergeItems(local: CartItem[], remote: CartItem[]): CartItem[] {
   const map = new Map<string, CartItem>()
   for (const item of remote) map.set(`${item.productId}||${item.variantId}`, item)
   for (const item of local) {
     const key = `${item.productId}||${item.variantId}`
-    if (map.has(key)) {
-      map.set(key, { ...map.get(key)!, quantity: map.get(key)!.quantity + item.quantity })
-    } else {
-      map.set(key, item)
-    }
+    if (!map.has(key)) map.set(key, item)   // aggiunge solo se non già nel DB
   }
   return Array.from(map.values())
 }
