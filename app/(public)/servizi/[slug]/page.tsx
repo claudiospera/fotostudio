@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import GalleryLightbox from './GalleryLightbox'
+import { PublicNavbar } from '@/components/public/PublicNavbar'
 
 // ─── Dati servizi ─────────────────────────────────────────────────────────────
 
@@ -272,32 +273,7 @@ export default async function ServizioPage({ params }: { params: Promise<{ slug:
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       {/* ── NAV ────────────────────────────────────────────────────────────── */}
-      <nav style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
-        padding: '22px clamp(24px,5vw,64px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        background: BG, borderBottom: `1px solid ${BORDER}`,
-      }}>
-        <Link href="/" style={{
-          fontFamily: "'Cormorant Garamond', Georgia, serif",
-          fontStyle: 'italic', fontWeight: 400,
-          fontSize: 'clamp(15px,1.6vw,18px)',
-          color: INK, textDecoration: 'none',
-        }}>
-          Claudio Spera · Fotografo
-        </Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(20px,3vw,40px)' }}>
-          {['Servizi', 'Chi sono', 'Contatti'].map(label => (
-            <Link key={label} href={`/${label.toLowerCase().replace(' ', '-')}`} style={{
-              fontFamily: "'Jost', sans-serif", fontWeight: 300,
-              fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase',
-              color: INK, textDecoration: 'none', opacity: 0.7,
-            }}>
-              {label}
-            </Link>
-          ))}
-        </div>
-      </nav>
+      <PublicNavbar />
 
       {/* ── BACK LINK ──────────────────────────────────────────────────────── */}
       <div style={{ paddingTop: 'calc(64px + clamp(24px,4vw,48px))', paddingLeft: 'clamp(24px,5vw,64px)' }}>

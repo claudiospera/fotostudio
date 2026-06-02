@@ -3,6 +3,7 @@
 
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { PublicNavbar } from '@/components/public/PublicNavbar'
 
 export const metadata: Metadata = {
   title: 'Matrimoni — Claudio Spera Fotografo',
@@ -15,43 +16,12 @@ const INK    = '#1a1612'
 const GOLD   = '#C9A96E'
 const BORDER = 'rgba(26,22,18,0.12)'
 
-const NAV_LINKS = [
-  { label: 'Servizi Fotografici', href: '/servizi' },
-  { label: 'Chi sono',            href: '/chi-sono' },
-  { label: 'Contatti',            href: '/contatti' },
-]
-
 export default function MatrimoniPage() {
   return (
     <div style={{ background: BG, minHeight: '100vh', color: INK }}>
 
       {/* ── NAV ── */}
-      <nav style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
-        padding: '22px clamp(24px,5vw,64px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        background: BG, borderBottom: `1px solid ${BORDER}`,
-      }}>
-        <Link href="/" style={{
-          fontFamily: "'Cormorant Garamond', Georgia, serif",
-          fontStyle: 'italic', fontWeight: 400,
-          fontSize: 'clamp(15px,1.6vw,18px)',
-          color: INK, textDecoration: 'none', letterSpacing: '0.01em',
-        }}>
-          Claudio Spera · Fotografo
-        </Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(20px,3vw,40px)' }}>
-          {NAV_LINKS.map(({ label, href }) => (
-            <Link key={href} href={href} style={{
-              fontFamily: "'Jost', sans-serif", fontWeight: 300,
-              fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase',
-              color: INK, textDecoration: 'none', opacity: 0.7,
-            }}>
-              {label}
-            </Link>
-          ))}
-        </div>
-      </nav>
+      <PublicNavbar />
 
       {/* ── HEADER ── */}
       <section style={{

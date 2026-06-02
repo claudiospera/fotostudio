@@ -3,6 +3,7 @@
 
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { PublicNavbar } from '@/components/public/PublicNavbar'
 
 export const metadata: Metadata = {
   title: 'Claudio Spera Fotografo — Storie da Raccontare',
@@ -31,37 +32,7 @@ export default function HomePage() {
     <div style={{ background: BG, minHeight: '100vh', color: INK }}>
 
       {/* ── NAV ──────────────────────────────────────────────────────────────── */}
-      <nav style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
-        padding: '22px clamp(24px,5vw,64px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        background: BG,
-        borderBottom: `1px solid ${BORDER}`,
-      }}>
-        <Link href="/" style={{
-          fontFamily: "'Cormorant Garamond', Georgia, serif",
-          fontStyle: 'italic', fontWeight: 400,
-          fontSize: 'clamp(15px,1.6vw,18px)',
-          color: INK, textDecoration: 'none', letterSpacing: '0.01em',
-        }}>
-          Claudio Spera · Fotografo
-        </Link>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(20px,3vw,40px)' }}>
-          {['Servizi', 'Chi sono', 'Contatti'].map(label => (
-            <Link key={label} href={`/${label.toLowerCase().replace(' ', '-')}`} style={{
-              fontFamily: "'Jost', sans-serif", fontWeight: 300,
-              fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase',
-              color: INK, textDecoration: 'none', opacity: 0.7,
-              transition: 'opacity .2s',
-            }}
-              onMouseEnter={undefined}
-            >
-              {label}
-            </Link>
-          ))}
-        </div>
-      </nav>
+      <PublicNavbar />
 
       {/* ── HERO ─────────────────────────────────────────────────────────────── */}
       <section style={{

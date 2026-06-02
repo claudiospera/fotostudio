@@ -6,6 +6,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { PublicNavbar } from '@/components/public/PublicNavbar'
 
 // metadata non si può esportare da 'use client', la omettiamo
 // (si può aggiungere in un layout separato se necessario)
@@ -170,37 +171,7 @@ export default function ContattiPage() {
     <div style={{ background: BG, minHeight: '100vh', color: INK }}>
 
       {/* ── NAV ── */}
-      <nav style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
-        padding: '22px clamp(24px,5vw,64px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        background: BG, borderBottom: `1px solid ${BORDER}`,
-      }}>
-        <Link href="/" style={{
-          fontFamily: "'Cormorant Garamond', Georgia, serif",
-          fontStyle: 'italic', fontWeight: 400,
-          fontSize: 'clamp(15px,1.6vw,18px)',
-          color: INK, textDecoration: 'none', letterSpacing: '0.01em',
-        }}>
-          Claudio Spera · Fotografo
-        </Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(20px,3vw,40px)' }}>
-          {[
-            { label: 'Servizi Fotografici', href: '/servizi' },
-            { label: 'Chi sono',            href: '/chi-sono' },
-            { label: 'Contatti',            href: '/contatti' },
-          ].map(({ label, href }) => (
-            <Link key={href} href={href} style={{
-              fontFamily: "'Jost', sans-serif", fontWeight: href === '/contatti' ? 500 : 300,
-              fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase',
-              color: INK, textDecoration: 'none',
-              opacity: href === '/contatti' ? 1 : 0.7,
-            }}>
-              {label}
-            </Link>
-          ))}
-        </div>
-      </nav>
+      <PublicNavbar />
 
       {/* ── HERO ── */}
       <section style={{
