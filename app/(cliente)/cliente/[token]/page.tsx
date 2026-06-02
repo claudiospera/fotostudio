@@ -1924,7 +1924,7 @@ export default function ClientePortalPage() {
 
         {/* ── BANNER STAMPA ──────────────────────────────────────────────── */}
         {photos.length > 0 && (
-          <div style={{ margin: `0 clamp(16px, 4vw, 40px) 40px`, background: '#8ec9b0', borderRadius: 14, padding: 'clamp(20px, 3vw, 28px) clamp(20px, 3vw, 32px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+          <div style={{ margin: `0 clamp(16px, 4vw, 40px) 40px`, background: '#55bcd8', borderRadius: 14, padding: 'clamp(20px, 3vw, 28px) clamp(20px, 3vw, 32px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
             <div>
               <p style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '18px', color: '#111', marginBottom: 4 }}>Vuoi stampare le tue foto?</p>
               <p style={{ fontSize: '13px', color: 'rgba(0,0,0,.55)', fontWeight: 400 }}>Stampe professionali su carta fotografica, tela, forex e molto altro — direttamente dalla galleria.</p>
@@ -1932,7 +1932,7 @@ export default function ClientePortalPage() {
             </div>
             <button
               onClick={() => setCartOpen(true)}
-              style={{ background: '#111', color: '#8ec9b0', border: 'none', borderRadius: 8, padding: '11px 22px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, letterSpacing: '.03em' }}
+              style={{ background: '#111', color: '#55bcd8', border: 'none', borderRadius: 8, padding: '11px 22px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, letterSpacing: '.03em' }}
             >
               Apri il carrello →
             </button>
