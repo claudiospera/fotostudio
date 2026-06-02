@@ -8,6 +8,8 @@ interface GalleryOrderItem {
   photo_id: string
   photo_url: string
   filename: string
+  product_id?: string
+  variant_id?: string
   product_name?: string
   type?: 'carta' | 'tela'
   format?: string
@@ -191,8 +193,15 @@ function GalleryOrderDetail({
                 ].filter(Boolean)
                 return (
                   <div key={i} style={{ background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 'var(--r2)', padding: '10px 12px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                    {/* Foto con link download — con crop se disponibile */}
-                    <a href={`/api/shop/download-photo?url=${encodeURIComponent(item.photo_url)}&filename=${encodeURIComponent(item.filename)}${item.crop_x != null && item.crop_y != null ? `&cropX=${item.crop_x}&cropY=${item.crop_y}&formatLabel=${encodeURIComponent(item.format_label)}${item.zoom ? `&zoom=${item.zoom}` : ''}` : ''}`} style={{ flexShrink: 0 }} title="Scarica foto ritagliata">
+                    {/* Foto con link download — card Instax o crop generico */}
+                    <a href={(() => {
+                      const base = `/api/shop/download-photo?url=${encodeURIComponent(item.photo_url)}&filename=${encodeURIComponent(item.filename)}`
+                      const crop = item.crop_x != null && item.crop_y != null ? `&cropX=${item.crop_x}&cropY=${item.crop_y}${item.zoom ? `&zoom=${item.zoom}` : ''}` : ''
+                      if (item.product_id === 'stampe-instax' && item.variant_id) {
+                        return base + crop + `&productId=${item.product_id}&variantId=${encodeURIComponent(item.variant_id)}${item.frame_label ? `&frameLabel=${encodeURIComponent(item.frame_label)}` : ''}${item.instax_text ? `&instaxText=${encodeURIComponent(item.instax_text)}` : ''}`
+                      }
+                      return base + crop + (item.crop_x != null ? `&formatLabel=${encodeURIComponent(item.format_label)}` : '')
+                    })()} style={{ flexShrink: 0 }} title="Scarica foto">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={item.photo_url} alt="" style={{ width: 52, height: 52, borderRadius: 6, objectFit: 'cover', display: 'block' }} />
                     </a>
