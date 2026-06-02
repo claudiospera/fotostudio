@@ -88,6 +88,7 @@ interface ShopProduct {
   images: string[]
   variants: ShopVariant[]
   options?: ShopProductOptions
+  maskUrl?: string  // PNG trasparente sovrapposto all'anteprima (gadget a forma speciale)
 }
 
 // ── helpers ─────────────────────────────────────────────────────────────────
@@ -519,6 +520,11 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
                       />
                       {/* Guida griglia */}
                       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', backgroundImage: 'linear-gradient(rgba(255,255,255,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.12) 1px, transparent 1px)', backgroundSize: '33.33% 33.33%' }} />
+                      {/* Maschera gadget (PNG trasparente sopra la foto) */}
+                      {selectedProduct.maskUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={selectedProduct.maskUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'fill', pointerEvents: 'none', zIndex: 3 }} />
+                      )}
                       {/* Reset button */}
                       {(cropX !== 50 || cropY !== 50 || zoom !== 1) && (
                         <button

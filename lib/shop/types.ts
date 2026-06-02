@@ -67,6 +67,7 @@ export interface Product {
   featured: boolean
   createdAt: string
   options?: ProductOptions  // configuratore avanzato (es. cornici)
+  maskUrl?: string          // PNG trasparente sovrapposto all'anteprima (gadget a forma speciale)
 }
 
 export interface CartItem {

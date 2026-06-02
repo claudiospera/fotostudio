@@ -331,11 +331,11 @@ export const PRODUCTS: Product[] = [
     status: 'available',
     images: ['/images/shop/gadget/puzzle.png'],
     variants: [
-      { id: 'puz-trad-13x18', label: 'Tradizionale 13×18 cm — 48 pezzi',  price: 1200 },
-      { id: 'puz-trad-20x30', label: 'Tradizionale 20×30 cm — 192 pezzi', price: 2000 },
-      { id: 'puz-trad-30x40', label: 'Tradizionale 30×40 cm — 384 pezzi', price: 2800 },
-      { id: 'puz-gran-20x30', label: 'Grande 20×30 cm — 48 pezzi',        price: 2000 },
-      { id: 'puz-gran-30x40', label: 'Grande 30×40 cm — 96 pezzi',        price: 2800 },
+      { id: 'puz-trad-13x18', label: 'Tradizionale 13×18 cm — 48 pezzi',  price: 1200, widthCm: 13, heightCm: 18 },
+      { id: 'puz-trad-20x30', label: 'Tradizionale 20×30 cm — 192 pezzi', price: 2000, widthCm: 20, heightCm: 30 },
+      { id: 'puz-trad-30x40', label: 'Tradizionale 30×40 cm — 384 pezzi', price: 2800, widthCm: 30, heightCm: 40 },
+      { id: 'puz-gran-20x30', label: 'Grande 20×30 cm — 48 pezzi',        price: 2000, widthCm: 20, heightCm: 30 },
+      { id: 'puz-gran-30x40', label: 'Grande 30×40 cm — 96 pezzi',        price: 2800, widthCm: 30, heightCm: 40 },
     ],
     featured: false,
     createdAt: '2026-01-01T00:00:00Z',
@@ -351,7 +351,7 @@ export const PRODUCTS: Product[] = [
     status: 'available',
     images: ['/images/shop/gadget/tazza.png'],
     variants: [
-      { id: 'taz-bianca', label: 'Tazza bianca', price: 1500 },
+      { id: 'taz-bianca', label: 'Tazza bianca', price: 1500, widthCm: 20, heightCm: 8.5 },
     ],
     featured: false,
     createdAt: '2026-01-01T00:00:00Z',
@@ -419,7 +419,7 @@ export const PRODUCTS: Product[] = [
     status: 'available',
     images: ['/images/shop/gadget/portachiavi.jpg'],
     variants: [
-      { id: 'por-plexi', label: 'Plexilite 5×5 cm', price: 1000 },
+      { id: 'por-plexi', label: 'Plexilite 5×5 cm', price: 1000, widthCm: 5, heightCm: 5 },
     ],
     featured: false,
     createdAt: '2026-01-01T00:00:00Z',
@@ -435,7 +435,7 @@ export const PRODUCTS: Product[] = [
     status: 'available',
     images: ['/images/shop/gadget/portachiavi-ecopelle.jpg'],
     variants: [
-      { id: 'por-eco', label: 'Ecopelle 5×5 cm', price: 1000 },
+      { id: 'por-eco', label: 'Ecopelle 5×5 cm', price: 1000, widthCm: 5, heightCm: 5 },
     ],
     featured: false,
     createdAt: '2026-01-01T00:00:00Z',
@@ -473,6 +473,7 @@ export const PRODUCTS: Product[] = [
     variants: [
       { id: 'pgc-9x9', label: '9×9 cm', price: 1300, widthCm: 9, heightCm: 9 },
     ],
+    maskUrl: '/images/shop/gadget/cuore.png',
     featured: false,
     createdAt: '2026-01-01T00:00:00Z',
   },
