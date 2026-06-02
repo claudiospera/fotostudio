@@ -57,6 +57,8 @@ export interface GallerySettings {
   text_position?: string    // 'top-left' | 'top-center' | 'top-right' | 'center-left' | 'center-center' | 'center-right' | 'bottom-left' | 'bottom-center' | 'bottom-right'
   photo_position?: string   // stesso set di valori — controlla objectPosition della cover
   hero_layout?: string      // 'full' (default) | 'split' (foto sx, info dx)
+  hero_bg?: string          // 'photo' (default) | 'solid'
+  hero_bg_color?: string    // colore esadecimale per sfondo tinta unita
 }
 
 export interface Photo {

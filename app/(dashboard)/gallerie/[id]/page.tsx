@@ -1554,7 +1554,9 @@ export default function GalleryDetailPage() {
               const fontStyle  = APPEARANCE_FONTS.find(f => f.id === fontId)?.style ?? APPEARANCE_FONTS[0].style
               const tps        = ASPECT_TEXT_POS[textPosId] ?? ASPECT_TEXT_POS['center-center']
               const photoPos   = ASPECT_PHOTO_POS[photoPosId] ?? 'center center'
-              const coverUrl   = gallery.cover_url || photos[0]?.url
+              const coverUrl        = gallery.cover_url || photos[0]?.url
+              const heroBgSolidPrev = gallery.settings?.hero_bg === 'solid'
+              const heroBgColorPrev = gallery.settings?.hero_bg_color ?? '#2a3830'
               const showTitlePrev    = gallery.settings?.show_title    !== false
               const showSubtitlePrev = gallery.settings?.show_subtitle !== false
 
@@ -1562,7 +1564,9 @@ export default function GalleryDetailPage() {
                 /* Split: foto sopra, info sotto (versione mobile) */
                 <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                   <div style={{ flex: '0 0 48%', position: 'relative', overflow: 'hidden' }}>
-                    {coverUrl ? (
+                    {heroBgSolidPrev ? (
+                      <div style={{ width: '100%', height: '100%', background: heroBgColorPrev }} />
+                    ) : coverUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={coverUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: photoPos, display: 'block' }} />
                     ) : (
@@ -1589,7 +1593,9 @@ export default function GalleryDetailPage() {
               ) : (
                 /* Full bleed */
                 <>
-                  {coverUrl ? (
+                  {heroBgSolidPrev ? (
+                    <div style={{ position: 'absolute', inset: 0, background: heroBgColorPrev }} />
+                  ) : coverUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={coverUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: photoPos, display: 'block' }} />
                   ) : (
@@ -1682,6 +1688,46 @@ export default function GalleryDetailPage() {
                   )
                 })}
               </div>
+            </div>
+
+            {/* ── Sfondo hero ── */}
+            <div style={{ marginBottom: 28 }}>
+              <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', color: 'var(--t3)', textTransform: 'uppercase', marginBottom: 12 }}>Sfondo</p>
+              <div style={{ display: 'flex', gap: 10 }}>
+                {([
+                  { id: 'photo', label: 'Foto', icon: <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> },
+                  { id: 'solid', label: 'Tinta unita', icon: <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/></svg> },
+                ] as { id: string; label: string; icon: React.ReactNode }[]).map(opt => {
+                  const active = (gallery.settings?.hero_bg ?? 'photo') === opt.id
+                  return (
+                    <button
+                      key={opt.id}
+                      onClick={() => saveAspetto({ hero_bg: opt.id })}
+                      style={{ flex: 1, background: active ? 'var(--acd)' : 'var(--s1)', border: `1px solid ${active ? 'var(--ac)' : 'var(--b1)'}`, borderRadius: 'var(--r)', padding: '14px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, transition: 'all .15s', color: active ? 'var(--ac)' : 'var(--t2)' }}
+                    >
+                      {opt.icon}
+                      <span style={{ fontSize: '13px', fontWeight: 500, color: active ? 'var(--ac)' : 'var(--tx)' }}>{opt.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+              {/* Color picker per tinta unita */}
+              {gallery.settings?.hero_bg === 'solid' && (
+                <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <label style={{ fontSize: '12px', color: 'var(--t3)' }}>Colore sfondo</label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 8, border: '1px solid var(--b1)', background: gallery.settings?.hero_bg_color ?? '#2a3830', overflow: 'hidden', position: 'relative' }}>
+                      <input
+                        type="color"
+                        value={gallery.settings?.hero_bg_color ?? '#2a3830'}
+                        onChange={e => saveAspetto({ hero_bg_color: e.target.value })}
+                        style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }}
+                      />
+                    </div>
+                    <span style={{ fontSize: '12px', fontFamily: 'monospace', color: 'var(--t2)' }}>{gallery.settings?.hero_bg_color ?? '#2a3830'}</span>
+                  </label>
+                </div>
+              )}
             </div>
 
             {/* ── Sezione visibilità hero ── */}

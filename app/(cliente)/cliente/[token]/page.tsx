@@ -31,6 +31,8 @@ interface PublicGallery {
     text_position?: string
     photo_position?: string
     hero_layout?: string
+    hero_bg?: string       // 'photo' | 'solid'
+    hero_bg_color?: string // colore esadecimale quando hero_bg === 'solid'
   }
   photos: Photo[]
   profiles?: { name?: string; studio_name?: string }
@@ -1630,8 +1632,10 @@ export default function ClientePortalPage() {
   const heroTextColor  = gallery.settings?.text_color || theme.heroTextColor
   const textPos        = TEXT_POSITION_STYLES[gallery.settings?.text_position ?? 'center-center'] ?? TEXT_POSITION_STYLES['center-center']
   const photoObjPos    = PHOTO_POSITION_CSS[gallery.settings?.photo_position ?? 'center-center'] ?? 'center center'
-  const heroLayout     = gallery.settings?.hero_layout ?? 'full'
+  const heroLayout      = gallery.settings?.hero_layout ?? 'full'
   const splitTitleColor = gallery.settings?.text_color || theme.navText
+  const heroBgSolid     = gallery.settings?.hero_bg === 'solid'
+  const heroBgColor     = gallery.settings?.hero_bg_color || coverBg
 
   return (
     <>
@@ -1654,6 +1658,7 @@ export default function ClientePortalPage() {
             {/* Lato foto */}
             <div style={{ flex: '1 1 300px', position: 'relative', overflow: 'hidden', minHeight: '55vh' }}>
               {(() => {
+                if (heroBgSolid) return <div style={{ width: '100%', height: '100%', background: heroBgColor }} />
                 const heroUrl = gallery.cover_url || (photos.length > 0 ? photos[0].url : null)
                 return heroUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -1696,8 +1701,9 @@ export default function ClientePortalPage() {
           /* ── FULL BLEED ──────────────────────────────────────────────── */
           <div style={{ position: 'relative', height: '75vh', minHeight: 420, overflow: 'hidden' }}>
 
-            {/* Cover image */}
+            {/* Cover image / solid bg */}
             {(() => {
+              if (heroBgSolid) return <div style={{ width: '100%', height: '100%', background: heroBgColor }} />
               const heroUrl = gallery.cover_url || (photos.length > 0 ? photos[0].url : null)
               return heroUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -1720,9 +1726,6 @@ export default function ClientePortalPage() {
 
             {/* Hero content */}
             <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: textPos.ai, justifyContent: textPos.jc, padding: '80px clamp(20px, 6vw, 80px) 32px', textAlign: textPos.ta }}>
-              {gallery.type && (
-                <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '.22em', textTransform: 'uppercase', color: `${heroTextColor}88`, marginBottom: 20 }}>{gallery.type}</div>
-              )}
               {showTitle && (
                 <h1 style={{ fontFamily: fontDef.family, fontWeight: fontDef.weight as React.CSSProperties['fontWeight'], fontSize: 'clamp(32px, 7vw, 96px)', color: heroTextColor, letterSpacing: '-0.02em', lineHeight: 1, marginBottom: 8, textTransform: 'uppercase' }}>{gallery.name}</h1>
               )}
