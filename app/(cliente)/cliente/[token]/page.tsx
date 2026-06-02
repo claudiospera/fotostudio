@@ -1701,17 +1701,17 @@ export default function ClientePortalPage() {
         ) : (
 
           /* ── FULL BLEED ──────────────────────────────────────────────── */
-          <div style={{ position: 'relative', height: '75vh', minHeight: 420, overflow: 'hidden' }}>
+          <div style={{ position: 'relative' }}>
 
             {/* Cover image / solid bg */}
             {(() => {
-              if (heroBgSolid) return <div style={{ width: '100%', height: '100%', background: heroBgColor }} />
+              if (heroBgSolid) return <div style={{ width: '100%', paddingBottom: '66.67%', background: heroBgColor }} />
               const heroUrl = gallery.cover_url || (photos.length > 0 ? photos[0].url : null)
               return heroUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={heroUrl} alt={gallery.name} style={{ width: '100%', height: '100%', objectFit: heroFit, objectPosition: heroFit === 'cover' ? photoObjPos : 'center', display: 'block' }} />
+                <img src={heroUrl} alt={gallery.name} style={{ width: '100%', height: 'auto', display: 'block' }} />
               ) : (
-                <div style={{ width: '100%', height: '100%', background: `linear-gradient(135deg, ${coverBg} 0%, color-mix(in srgb, ${coverBg} 60%, #0a0a0a) 100%)` }} />
+                <div style={{ width: '100%', paddingBottom: '66.67%', background: `linear-gradient(135deg, ${coverBg} 0%, color-mix(in srgb, ${coverBg} 60%, #0a0a0a) 100%)` }} />
               )
             })()}
 

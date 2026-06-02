@@ -1592,15 +1592,15 @@ export default function GalleryDetailPage() {
                   </div>
                 </div>
               ) : (
-                /* Full bleed */
-                <>
+                /* Full bleed — photo at natural height (no cropping) */
+                <div style={{ position: 'relative' }}>
                   {heroBgSolidPrev ? (
-                    <div style={{ position: 'absolute', inset: 0, background: heroBgColorPrev }} />
+                    <div style={{ width: '100%', paddingBottom: '133%', background: heroBgColorPrev }} />
                   ) : coverUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={coverUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: heroFit, objectPosition: heroFit === 'cover' ? photoPos : 'center', display: 'block' }} />
+                    <img src={coverUrl} alt="" style={{ width: '100%', height: 'auto', display: 'block' }} />
                   ) : (
-                    <div style={{ position: 'absolute', inset: 0, background: gallery.cover_color ?? '#2a3830' }} />
+                    <div style={{ width: '100%', paddingBottom: '133%', background: gallery.cover_color ?? '#2a3830' }} />
                   )}
                   <div style={{ position: 'absolute', inset: 0, background: pHero.overlay }} />
                   <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: tps.ai, justifyContent: tps.jc, textAlign: tps.ta as React.CSSProperties['textAlign'], padding: '28px 14px 14px', gap: 4 }}>
@@ -1613,7 +1613,7 @@ export default function GalleryDetailPage() {
                       <p style={{ fontSize: '8px', color: `${txtColor}88`, fontStyle: 'italic', margin: 0 }}>{gallery.subtitle}</p>
                     )}
                   </div>
-                </>
+                </div>
               )
 
               return (
@@ -1731,8 +1731,8 @@ export default function GalleryDetailPage() {
               )}
             </div>
 
-            {/* ── Adattamento foto ── */}
-            {(gallery.settings?.hero_bg ?? 'photo') === 'photo' && (
+            {/* ── Adattamento foto (solo layout split) ── */}
+            {(gallery.settings?.hero_layout ?? 'full') === 'split' && (gallery.settings?.hero_bg ?? 'photo') === 'photo' && (
               <div style={{ marginBottom: 28 }}>
                 <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', color: 'var(--t3)', textTransform: 'uppercase', marginBottom: 12 }}>Adattamento foto</p>
                 <div style={{ display: 'flex', gap: 10 }}>
