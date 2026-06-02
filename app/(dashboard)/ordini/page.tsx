@@ -21,6 +21,7 @@ interface GalleryOrderItem {
   crop_x?: number | null
   crop_y?: number | null
   zoom?: number | null
+  instax_text?: string | null
 }
 
 interface GalleryOrder {
@@ -186,6 +187,7 @@ function GalleryOrderDetail({
                   item.passepartout_label && `Passepartout: ${item.passepartout_label}`,
                   item.print_type_label && `Carta: ${item.print_type_label}`,
                   (item.crop_x != null && item.crop_y != null) && `Inquadratura: ${Math.round(item.crop_x ?? 50)}% H · ${Math.round(item.crop_y ?? 50)}% V`,
+                  item.instax_text && `Testo: "${item.instax_text}"`,
                 ].filter(Boolean)
                 return (
                   <div key={i} style={{ background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 'var(--r2)', padding: '10px 12px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>

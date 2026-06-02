@@ -62,6 +62,7 @@ interface CartItem {
   cropX?: number   // 0-100 (posizione orizzontale, default 50 = centro)
   cropY?: number   // 0-100 (posizione verticale, default 50 = centro)
   zoom?: number    // zoom factor (default 1.0)
+  instaxText?: string  // testo etichetta bordo inferiore Instax
 }
 
 // ── shop product types (minimal — matches /api/shop-products response) ──────
@@ -73,6 +74,9 @@ interface ShopVariant {
   priceBreaks?: { minQty: number; price: number }[]  // in centesimi
   widthCm?: number
   heightCm?: number
+  outerW?: number         // dimensioni esterne card (es. Instax con bordo)
+  outerH?: number
+  pad?: [number, number, number, number]  // [top, right, bottom, left] in cm
 }
 
 interface ShopProductOptions {
@@ -204,6 +208,8 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
   const [cropY, setCropY] = useState(50)
   // zoom (1.0 = nessuno zoom, max 4.0)
   const [zoom, setZoom] = useState(1)
+  // testo etichetta Instax (bordo inferiore)
+  const [instaxText, setInstaxText] = useState('')
   // orientamento anteprima (scambia larghezza/altezza)
   const [rotated, setRotated] = useState(false)
 
@@ -223,6 +229,7 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
       setFrameId(selectedProduct.options?.frames?.[0]?.id ?? '')
       setPassepartoutId(selectedProduct.options?.passepartout?.[0]?.id ?? 'none')
       setPrintTypeId(selectedProduct.options?.printTypes?.[0]?.id ?? '')
+      setInstaxText('')
     }
     setQty(1)
   }, [selectedProduct])
@@ -288,6 +295,7 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
         cropX,
         cropY,
         zoom: zoom !== 1 ? zoom : undefined,
+        instaxText: instaxText || undefined,
       })
     })
     onClose()
@@ -409,7 +417,6 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
                 const wRaw = variant.widthCm
                 const hRaw = variant.heightCm
                 if (!wRaw || !hRaw) {
-                  // Nessun formato fisico → mostra immagine prodotto normale
                   return selectedProduct.images[0] ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={selectedProduct.images[0]} alt={selectedProduct.name} style={{ width: '100%', height: 200, objectFit: 'cover', borderRadius: 'var(--r2)', marginBottom: 20 }} />
@@ -418,15 +425,14 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
                 const canRotate = wRaw !== hRaw
                 const w = rotated ? hRaw : wRaw
                 const h = rotated ? wRaw : hRaw
-                const aspectRatio = h / w  // paddingBottom trick
-                // Drag + pinch handler
+                const aspectRatio = h / w
+
+                // ── Drag + pinch handler (condiviso tra generic e instax) ──
                 const handlePointerStart = (e: React.MouseEvent | React.TouchEvent) => {
                   e.preventDefault()
                   const el = (e.currentTarget as HTMLElement)
                   const rect = el.getBoundingClientRect()
                   const isTouch = 'touches' in e
-
-                  // pinch-to-zoom (2 dita)
                   if (isTouch && e.touches.length === 2) {
                     const t = e.touches
                     let initDist = Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY)
@@ -437,16 +443,11 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
                       const d = Math.hypot(ev.touches[0].clientX - ev.touches[1].clientX, ev.touches[0].clientY - ev.touches[1].clientY)
                       setZoom(Math.max(1, Math.min(4, initZoom * d / initDist)))
                     }
-                    const onPinchEnd = () => {
-                      window.removeEventListener('touchmove', onPinchMove)
-                      window.removeEventListener('touchend', onPinchEnd)
-                    }
+                    const onPinchEnd = () => { window.removeEventListener('touchmove', onPinchMove); window.removeEventListener('touchend', onPinchEnd) }
                     window.addEventListener('touchmove', onPinchMove, { passive: false })
                     window.addEventListener('touchend', onPinchEnd)
                     return
                   }
-
-                  // drag singolo (mouse o 1 dito)
                   const startX = isTouch ? e.touches[0].clientX : (e as React.MouseEvent).clientX
                   const startY = isTouch ? e.touches[0].clientY : (e as React.MouseEvent).clientY
                   const startCropX = cropX
@@ -454,85 +455,120 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
                   const onMove = (ev: MouseEvent | TouchEvent) => {
                     const cx = 'touches' in ev ? ev.touches[0].clientX : (ev as MouseEvent).clientX
                     const cy = 'touches' in ev ? ev.touches[0].clientY : (ev as MouseEvent).clientY
-                    // sensibilità drag inversamente proporzionale allo zoom
                     const dx = ((startX - cx) / rect.width) * 100 / zoom
                     const dy = ((startY - cy) / rect.height) * 100 / zoom
                     setCropX(Math.max(0, Math.min(100, startCropX + dx)))
                     setCropY(Math.max(0, Math.min(100, startCropY + dy)))
                   }
                   const onUp = () => {
-                    window.removeEventListener('mousemove', onMove)
-                    window.removeEventListener('mouseup', onUp)
-                    window.removeEventListener('touchmove', onMove)
-                    window.removeEventListener('touchend', onUp)
+                    window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp)
+                    window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp)
                   }
-                  window.addEventListener('mousemove', onMove)
-                  window.addEventListener('mouseup', onUp)
-                  window.addEventListener('touchmove', onMove, { passive: false })
-                  window.addEventListener('touchend', onUp)
+                  window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp)
+                  window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp)
+                }
+                const handleWheel = (e: React.WheelEvent) => { e.preventDefault(); setZoom(z => Math.max(1, Math.min(4, z - e.deltaY * 0.005))) }
+
+                // ── INSTAX card preview ──────────────────────────────────────
+                const outerW = variant.outerW
+                const outerH = variant.outerH
+                const pad    = variant.pad
+                if (selectedProduct.id === 'stampe-instax' && outerW && outerH && pad) {
+                  const [padTop, , padBottom, padLeft] = pad
+                  const photoLeft = padLeft / outerW * 100
+                  const photoTop  = padTop  / outerH * 100
+                  const photoW    = wRaw    / outerW * 100
+                  const photoH    = hRaw    / outerH * 100
+                  const textTop   = (padTop + hRaw) / outerH * 100
+                  const textH     = padBottom / outerH * 100
+                  const isPortrait = outerH > outerW
+
+                  const currentFrame = selectedProduct.options?.frames?.find(f => f.id === frameId)
+                  const cardBg  = (!frameId || frameId === 'nessuna' || !currentFrame) ? '#f8f8f8' : currentFrame.color
+                  const isDark  = ['black', 'marble', 'gradient', 'popart', 'teal'].includes(frameId)
+                  const textClr = isDark ? 'rgba(255,255,255,.65)' : '#666'
+
+                  return (
+                    <div style={{ marginBottom: 20 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, gap: 6 }}>
+                        <p style={{ fontSize: '11px', color: 'var(--t3)', fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', flex: 1 }}>
+                          Anteprima {w}×{h} cm — trascina · pizzica
+                        </p>
+                        <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                          <button onClick={() => setZoom(z => Math.max(1, +(z - 0.25).toFixed(2)))} style={{ width: 28, height: 28, background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 6, color: 'var(--t2)', fontSize: '16px', cursor: 'pointer', display: 'grid', placeItems: 'center', lineHeight: 1 }}>−</button>
+                          <span style={{ fontSize: '11px', color: 'var(--t3)', minWidth: 32, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>{Math.round(zoom * 100)}%</span>
+                          <button onClick={() => setZoom(z => Math.min(4, +(z + 0.25).toFixed(2)))} style={{ width: 28, height: 28, background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 6, color: 'var(--t2)', fontSize: '16px', cursor: 'pointer', display: 'grid', placeItems: 'center', lineHeight: 1 }}>+</button>
+                        </div>
+                      </div>
+                      {/* Card centrata — più stretta per i formati portrait */}
+                      <div style={{ display: 'flex', justifyContent: 'center' }}>
+                        <div style={{
+                          position: 'relative',
+                          width: isPortrait ? '62%' : '100%',
+                          aspectRatio: `${outerW} / ${outerH}`,
+                          background: cardBg,
+                          borderRadius: 4,
+                          boxShadow: '0 3px 20px rgba(0,0,0,.35)',
+                          flexShrink: 0,
+                        }}>
+                          {/* Area foto — drag attivo */}
+                          <div
+                            style={{ position: 'absolute', left: `${photoLeft}%`, top: `${photoTop}%`, width: `${photoW}%`, height: `${photoH}%`, overflow: 'hidden', cursor: zoom > 1 ? 'move' : 'grab', touchAction: 'none', userSelect: 'none' }}
+                            onWheel={handleWheel}
+                            onMouseDown={handlePointerStart}
+                            onTouchStart={handlePointerStart}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={photo.url} alt="" draggable={false} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${cropX}% ${cropY}%`, transform: `scale(${zoom})`, transformOrigin: `${cropX}% ${cropY}%`, userSelect: 'none', pointerEvents: 'auto' }} />
+                            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', backgroundImage: 'linear-gradient(rgba(255,255,255,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.12) 1px, transparent 1px)', backgroundSize: '33.33% 33.33%' }} />
+                          </div>
+                          {/* Testo etichetta bordo inferiore */}
+                          {instaxText && (
+                            <div style={{ position: 'absolute', left: `${photoLeft}%`, top: `${textTop + textH * 0.1}%`, width: `${photoW}%`, height: `${textH * 0.8}%`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: textClr, fontFamily: 'DM Sans, sans-serif', textAlign: 'center', overflow: 'hidden', pointerEvents: 'none' }}>
+                              {instaxText}
+                            </div>
+                          )}
+                          {/* Reset */}
+                          {(cropX !== 50 || cropY !== 50 || zoom !== 1) && (
+                            <button onClick={e => { e.stopPropagation(); setCropX(50); setCropY(50); setZoom(1) }} style={{ position: 'absolute', bottom: 6, right: 6, background: 'rgba(0,0,0,.55)', color: '#fff', border: 'none', borderRadius: 6, padding: '3px 8px', fontSize: '10px', cursor: 'pointer', fontWeight: 600, zIndex: 5 }}>
+                              Centra
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )
                 }
 
-                // scroll wheel zoom (desktop)
-                const handleWheel = (e: React.WheelEvent) => {
-                  e.preventDefault()
-                  setZoom(z => Math.max(1, Math.min(4, z - e.deltaY * 0.005)))
-                }
-
+                // ── Generic crop preview ─────────────────────────────────────
                 return (
                   <div style={{ marginBottom: 20 }}>
-                    {/* Riga header: label + ruota + zoom controls */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, gap: 6 }}>
                       <p style={{ fontSize: '11px', color: 'var(--t3)', fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', flex: 1 }}>
                         Anteprima {w}×{h} cm — trascina · pizzica
                       </p>
                       <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
                         {canRotate && (
-                          <button
-                            onClick={() => { setRotated(r => !r); setCropX(50); setCropY(50); setZoom(1) }}
-                            title="Ruota orientamento"
-                            style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 6, padding: '4px 8px', fontSize: '11px', fontWeight: 600, color: 'var(--t2)', cursor: 'pointer' }}
-                          >
+                          <button onClick={() => { setRotated(r => !r); setCropX(50); setCropY(50); setZoom(1) }} title="Ruota orientamento" style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 6, padding: '4px 8px', fontSize: '11px', fontWeight: 600, color: 'var(--t2)', cursor: 'pointer' }}>
                             <svg viewBox="0 0 24 24" width={12} height={12} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.9"/></svg>
                             {rotated ? 'Vert.' : 'Oriz.'}
                           </button>
                         )}
-                        {/* Zoom controls */}
                         <button onClick={() => setZoom(z => Math.max(1, +(z - 0.25).toFixed(2)))} style={{ width: 28, height: 28, background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 6, color: 'var(--t2)', fontSize: '16px', cursor: 'pointer', display: 'grid', placeItems: 'center', lineHeight: 1 }}>−</button>
                         <span style={{ fontSize: '11px', color: 'var(--t3)', minWidth: 32, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>{Math.round(zoom * 100)}%</span>
                         <button onClick={() => setZoom(z => Math.min(4, +(z + 0.25).toFixed(2)))} style={{ width: 28, height: 28, background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 6, color: 'var(--t2)', fontSize: '16px', cursor: 'pointer', display: 'grid', placeItems: 'center', lineHeight: 1 }}>+</button>
                       </div>
                     </div>
-                    <div
-                      onWheel={handleWheel}
-                      style={{ position: 'relative', width: '100%', paddingBottom: `${aspectRatio * 100}%`, borderRadius: 'var(--r2)', overflow: 'hidden', background: 'var(--s3)', border: '1px solid var(--b1)', cursor: zoom > 1 ? 'move' : 'grab', userSelect: 'none', touchAction: 'none' }}
-                    >
+                    <div onWheel={handleWheel} style={{ position: 'relative', width: '100%', paddingBottom: `${aspectRatio * 100}%`, borderRadius: 'var(--r2)', overflow: 'hidden', background: 'var(--s3)', border: '1px solid var(--b1)', cursor: zoom > 1 ? 'move' : 'grab', userSelect: 'none', touchAction: 'none' }}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={photo.url}
-                        alt=""
-                        draggable={false}
-                        onMouseDown={handlePointerStart}
-                        onTouchStart={handlePointerStart}
-                        style={{
-                          position: 'absolute', inset: 0, width: '100%', height: '100%',
-                          objectFit: 'cover', objectPosition: `${cropX}% ${cropY}%`,
-                          transform: `scale(${zoom})`, transformOrigin: `${cropX}% ${cropY}%`,
-                          userSelect: 'none', pointerEvents: 'auto',
-                        }}
-                      />
-                      {/* Guida griglia */}
+                      <img src={photo.url} alt="" draggable={false} onMouseDown={handlePointerStart} onTouchStart={handlePointerStart} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${cropX}% ${cropY}%`, transform: `scale(${zoom})`, transformOrigin: `${cropX}% ${cropY}%`, userSelect: 'none', pointerEvents: 'auto' }} />
                       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', backgroundImage: 'linear-gradient(rgba(255,255,255,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.12) 1px, transparent 1px)', backgroundSize: '33.33% 33.33%' }} />
-                      {/* Maschera gadget (PNG trasparente sopra la foto) */}
                       {selectedProduct.maskUrl && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={selectedProduct.maskUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'fill', pointerEvents: 'none', zIndex: 3 }} />
                       )}
-                      {/* Reset button */}
                       {(cropX !== 50 || cropY !== 50 || zoom !== 1) && (
-                        <button
-                          onClick={e => { e.stopPropagation(); setCropX(50); setCropY(50); setZoom(1) }}
-                          style={{ position: 'absolute', bottom: 8, right: 8, background: 'rgba(0,0,0,.6)', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: '10px', cursor: 'pointer', fontWeight: 600, letterSpacing: '.04em' }}
-                        >
+                        <button onClick={e => { e.stopPropagation(); setCropX(50); setCropY(50); setZoom(1) }} style={{ position: 'absolute', bottom: 8, right: 8, background: 'rgba(0,0,0,.6)', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: '10px', cursor: 'pointer', fontWeight: 600, letterSpacing: '.04em' }}>
                           Centra
                         </button>
                       )}
@@ -604,6 +640,24 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
                     ))}
                     {frameId && <span style={{ display: 'flex', alignItems: 'center', fontSize: '12px', color: 'var(--t2)', marginLeft: 4 }}>{selectedProduct.options.frames.find(f => f.id === frameId)?.label}</span>}
                   </div>
+                </div>
+              )}
+
+              {/* ── TESTO ETICHETTA INSTAX ── */}
+              {selectedProduct.id === 'stampe-instax' && (
+                <div style={{ marginBottom: 18 }}>
+                  <p style={{ fontSize: '11px', color: 'var(--t3)', fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 10 }}>
+                    Testo etichetta <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(opzionale)</span>
+                  </p>
+                  <input
+                    type="text"
+                    value={instaxText}
+                    onChange={e => setInstaxText(e.target.value)}
+                    maxLength={40}
+                    placeholder="es. 14.02.2026 · Per sempre"
+                    style={{ width: '100%', boxSizing: 'border-box', background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 8, padding: '9px 12px', fontSize: '13px', color: 'var(--tx)', outline: 'none', fontFamily: 'DM Sans, sans-serif' }}
+                  />
+                  <p style={{ fontSize: '10px', color: 'var(--t3)', marginTop: 5 }}>Testo visibile nella striscia inferiore della polaroid.</p>
                 </div>
               )}
 
@@ -891,6 +945,7 @@ function CartDrawer({ cart, galleryId, onClose, onRemove, onUpdateQty, onClear, 
             crop_x: i.cropX ?? null,
             crop_y: i.cropY ?? null,
             zoom: i.zoom ?? null,
+            instax_text: i.instaxText ?? null,
           })),
           total: finalTotal,
           payment_method: paymentMethod,

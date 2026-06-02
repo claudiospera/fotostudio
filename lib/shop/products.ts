@@ -112,9 +112,9 @@ export const PRODUCTS: Product[] = [
     status: 'available',
     images: ['/images/shop/stampe/instax.png'],
     variants: [
-      { id: 'pol-mini',   label: 'Instax Mini (62×101 mm)',   price: 200, priceBreaks: breaksInstax, widthCm: 5.2, heightCm: 8.1 },
-      { id: 'pol-square', label: 'Instax Square (85×101 mm)', price: 200, priceBreaks: breaksInstax, widthCm: 7.5, heightCm: 7.5 },
-      { id: 'pol-wide',   label: 'Instax Wide (101×77 mm)',   price: 200, priceBreaks: breaksInstax, widthCm: 9.5, heightCm: 5.8 },
+      { id: 'pol-mini',   label: 'Instax Mini (62×101 mm)',   price: 200, priceBreaks: breaksInstax, widthCm: 5.2, heightCm: 8.1, outerW: 6.2, outerH: 10.1, pad: [0.5, 0.5, 1.5, 0.5] as [number,number,number,number] },
+      { id: 'pol-square', label: 'Instax Square (85×101 mm)', price: 200, priceBreaks: breaksInstax, widthCm: 7.5, heightCm: 7.5, outerW: 8.5, outerH: 10.1, pad: [0.5, 0.5, 2.1, 0.5] as [number,number,number,number] },
+      { id: 'pol-wide',   label: 'Instax Wide (101×77 mm)',   price: 200, priceBreaks: breaksInstax, widthCm: 9.5, heightCm: 5.8, outerW: 10.1, outerH: 7.7, pad: [0.3, 0.3, 1.6, 0.3] as [number,number,number,number] },
     ],
     options: {
       frames: [
