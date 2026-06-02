@@ -2018,11 +2018,11 @@ export default function ClientePortalPage() {
           onClick={() => setShowIstruzioni(false)}
         >
           <div
-            style={{ background: '#fff', borderRadius: 16, maxWidth: 560, width: '100%', boxShadow: '0 24px 80px rgba(0,0,0,.25)', overflow: 'hidden' }}
+            style={{ background: '#fff', borderRadius: 16, maxWidth: 560, width: '100%', maxHeight: '88vh', boxShadow: '0 24px 80px rgba(0,0,0,.25)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
             onClick={e => e.stopPropagation()}
           >
             {/* Header */}
-            <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid rgba(0,0,0,.07)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid rgba(0,0,0,.07)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
               <h2 style={{ margin: 0, fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: 20, color: '#111' }}>Istruzioni</h2>
               <button
                 onClick={() => setShowIstruzioni(false)}
@@ -2030,7 +2030,7 @@ export default function ClientePortalPage() {
               >×</button>
             </div>
             {/* Body */}
-            <div style={{ padding: '20px 24px 28px', fontSize: 14, color: '#333', lineHeight: 1.7 }}>
+            <div style={{ padding: '20px 24px 28px', fontSize: 14, color: '#333', lineHeight: 1.7, overflowY: 'auto', flex: 1 }}>
               <p style={{ margin: '0 0 12px' }}>Ciao</p>
               <p style={{ margin: '0 0 12px' }}>in questo link trovi tutte le foto, a volte divise in varie cartelle.<br />Il link resterà attivo per <strong>30 giorni</strong>.</p>
               <p style={{ margin: '0 0 12px' }}>Puoi scaricarle singolarmente cliccando sulla freccia in basso sotto la foto, oppure tutte insieme cliccando sul relativo pulsante alla fine della galleria.</p>
