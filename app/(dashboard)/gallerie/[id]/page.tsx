@@ -109,13 +109,13 @@ const APPEARANCE_FONTS = [
 ]
 
 // Used for the live cover preview inside the Aspetto tab
-const PALETTE_HERO: Record<string, { overlay: string; textColor: string }> = {
-  agave:  { overlay: 'linear-gradient(to top, rgba(10,30,20,.78) 0%, transparent 55%)',  textColor: '#fff' },
-  black:  { overlay: 'linear-gradient(to top, rgba(0,0,0,.85) 0%, transparent 55%)',     textColor: '#fff' },
-  warm:   { overlay: 'linear-gradient(to top, rgba(25,12,0,.80) 0%, transparent 55%)',   textColor: '#fff' },
-  white:  { overlay: 'linear-gradient(to top, rgba(0,0,0,.65) 0%, transparent 55%)',     textColor: '#fff' },
-  dark:   { overlay: 'linear-gradient(to top, rgba(0,0,0,.92) 0%, transparent 55%)',     textColor: '#e0e0e0' },
-  cool:   { overlay: 'linear-gradient(to top, rgba(5,15,35,.82) 0%, transparent 55%)',   textColor: '#fff' },
+const PALETTE_HERO: Record<string, { overlay: string; textColor: string; navBg: string; navText: string; navSub: string; accent: string }> = {
+  agave:  { overlay: 'linear-gradient(to top, rgba(10,30,20,.78) 0%, transparent 55%)',  textColor: '#fff',    navBg: '#fff',     navText: '#111',    navSub: '#999', accent: '#8ec9b0' },
+  black:  { overlay: 'linear-gradient(to top, rgba(0,0,0,.85) 0%, transparent 55%)',     textColor: '#fff',    navBg: '#fff',     navText: '#111',    navSub: '#999', accent: '#111'    },
+  warm:   { overlay: 'linear-gradient(to top, rgba(25,12,0,.80) 0%, transparent 55%)',   textColor: '#fff',    navBg: '#faf8f3',  navText: '#2a1a00', navSub: '#a0886a', accent: '#c9a05a' },
+  white:  { overlay: 'linear-gradient(to top, rgba(0,0,0,.65) 0%, transparent 55%)',     textColor: '#fff',    navBg: '#f8f7f5',  navText: '#1a1a1a', navSub: '#aaa', accent: '#333'    },
+  dark:   { overlay: 'linear-gradient(to top, rgba(0,0,0,.92) 0%, transparent 55%)',     textColor: '#e0e0e0', navBg: '#111',     navText: '#ccc',    navSub: '#555', accent: '#888'    },
+  cool:   { overlay: 'linear-gradient(to top, rgba(5,15,35,.82) 0%, transparent 55%)',   textColor: '#fff',    navBg: '#fff',     navText: '#111',    navSub: '#999', accent: '#7ab0dc' },
 }
 
 const ASPECT_TEXT_POS: Record<string, { jc: string; ai: string; ta: string }> = {
@@ -1542,44 +1542,147 @@ export default function GalleryDetailPage() {
         {tab === 'aspetto' && gallery && (
           <div style={{ animation: 'fadeIn .2s ease', maxWidth: '720px' }}>
 
-            {/* ── Anteprima cover live ── */}
+            {/* ── Anteprima cover live (mockup telefono) ── */}
             {(() => {
               const paletteId  = gallery.settings?.theme_palette ?? 'agave'
               const fontId     = gallery.settings?.theme_font    ?? 'syne'
               const textPosId  = gallery.settings?.text_position ?? 'center-center'
               const photoPosId = gallery.settings?.photo_position ?? 'center-center'
+              const heroLayout = gallery.settings?.hero_layout ?? 'full'
               const pHero      = PALETTE_HERO[paletteId] ?? PALETTE_HERO['agave']
-              const baseTxtClr = pHero.textColor
-              const txtColor   = gallery.settings?.text_color || baseTxtClr
+              const txtColor   = gallery.settings?.text_color || pHero.textColor
               const fontStyle  = APPEARANCE_FONTS.find(f => f.id === fontId)?.style ?? APPEARANCE_FONTS[0].style
               const tps        = ASPECT_TEXT_POS[textPosId] ?? ASPECT_TEXT_POS['center-center']
               const photoPos   = ASPECT_PHOTO_POS[photoPosId] ?? 'center center'
               const coverUrl   = gallery.cover_url || photos[0]?.url
               const showTitlePrev    = gallery.settings?.show_title    !== false
               const showSubtitlePrev = gallery.settings?.show_subtitle !== false
+
+              const screenContent = heroLayout === 'split' ? (
+                /* Split: foto sopra, info sotto (versione mobile) */
+                <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                  <div style={{ flex: '0 0 48%', position: 'relative', overflow: 'hidden' }}>
+                    {coverUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={coverUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: photoPos, display: 'block' }} />
+                    ) : (
+                      <div style={{ width: '100%', height: '100%', background: gallery.cover_color ?? '#2a3830' }} />
+                    )}
+                    {/* mini logo */}
+                    <div style={{ position: 'absolute', top: 6, left: 7, background: 'rgba(255,255,255,.85)', borderRadius: 3, padding: '2px 5px' }}>
+                      <div style={{ height: 5, width: 20, borderRadius: 1, background: 'rgba(0,0,0,.3)' }} />
+                    </div>
+                  </div>
+                  <div style={{ flex: 1, background: pHero.navBg, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '8px 12px', gap: 4 }}>
+                    <div style={{ height: 4, width: 28, borderRadius: 1, background: `${pHero.navSub}60`, marginBottom: 3 }} />
+                    {showTitlePrev && (
+                      <p style={{ ...fontStyle, fontSize: '11px', color: gallery.settings?.text_color || pHero.navText, letterSpacing: '-0.01em', lineHeight: 1.1, textTransform: 'uppercase', margin: 0 }}>
+                        {gallery.name.length > 18 ? gallery.name.slice(0, 18) + '…' : gallery.name}
+                      </p>
+                    )}
+                    <div style={{ width: 16, height: 1.5, background: pHero.accent, margin: '3px 0' }} />
+                    {showSubtitlePrev && gallery.subtitle && (
+                      <p style={{ fontSize: '8px', color: `${pHero.navText}77`, fontStyle: 'italic', margin: 0 }}>{gallery.subtitle}</p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                /* Full bleed */
+                <>
+                  {coverUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={coverUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: photoPos, display: 'block' }} />
+                  ) : (
+                    <div style={{ position: 'absolute', inset: 0, background: gallery.cover_color ?? '#2a3830' }} />
+                  )}
+                  <div style={{ position: 'absolute', inset: 0, background: pHero.overlay }} />
+                  <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: tps.ai, justifyContent: tps.jc, textAlign: tps.ta as React.CSSProperties['textAlign'], padding: '28px 14px 14px', gap: 4 }}>
+                    {showTitlePrev && (
+                      <p style={{ ...fontStyle, fontSize: '11px', color: txtColor, letterSpacing: '-0.01em', lineHeight: 1.1, textTransform: 'uppercase', margin: 0 }}>
+                        {gallery.name.length > 18 ? gallery.name.slice(0, 18) + '…' : gallery.name}
+                      </p>
+                    )}
+                    {showSubtitlePrev && gallery.subtitle && (
+                      <p style={{ fontSize: '8px', color: `${txtColor}88`, fontStyle: 'italic', margin: 0 }}>{gallery.subtitle}</p>
+                    )}
+                  </div>
+                </>
+              )
+
               return (
                 <div style={{ marginBottom: 28 }}>
                   <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', color: 'var(--t3)', textTransform: 'uppercase', marginBottom: 12 }}>Anteprima cover</p>
-                  <div style={{ position: 'relative', width: '100%', aspectRatio: '16 / 6', borderRadius: 'var(--r)', overflow: 'hidden', background: '#111', border: '1px solid var(--b1)' }}>
-                    {coverUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={coverUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: photoPos, display: 'block' }} />
-                    ) : (
-                      <div style={{ position: 'absolute', inset: 0, background: gallery.cover_color ?? '#2a3830' }} />
-                    )}
-                    <div style={{ position: 'absolute', inset: 0, background: pHero.overlay }} />
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: tps.ai, justifyContent: tps.jc, textAlign: tps.ta as React.CSSProperties['textAlign'], padding: '14px 20px', gap: 4 }}>
-                      {showTitlePrev && (
-                        <p style={{ ...fontStyle, fontSize: 'clamp(13px, 2.5vw, 20px)', color: txtColor, letterSpacing: '-0.02em', lineHeight: 1.1, textTransform: 'uppercase', margin: 0 }}>{gallery.name}</p>
-                      )}
-                      {showSubtitlePrev && gallery.subtitle && (
-                        <p style={{ fontSize: '11px', color: `${txtColor}88`, fontStyle: 'italic', margin: 0 }}>{gallery.subtitle}</p>
-                      )}
+                  {/* Phone mockup */}
+                  <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    <div style={{ width: 200, borderRadius: 26, border: '3px solid var(--s4)', overflow: 'hidden', background: '#000', boxShadow: '0 6px 24px rgba(0,0,0,.35)', flexShrink: 0 }}>
+                      {/* Notch */}
+                      <div style={{ height: 22, background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ width: 48, height: 5, borderRadius: 3, background: 'var(--s3)' }} />
+                      </div>
+                      {/* Screen */}
+                      <div style={{ position: 'relative', aspectRatio: '9 / 17', overflow: 'hidden', background: '#111' }}>
+                        {screenContent}
+                      </div>
+                      {/* Home bar */}
+                      <div style={{ height: 18, background: heroLayout === 'split' ? pHero.navBg : '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ width: 44, height: 3.5, borderRadius: 2, background: heroLayout === 'split' ? `${pHero.navSub}40` : 'rgba(255,255,255,.2)' }} />
+                      </div>
                     </div>
                   </div>
                 </div>
               )
             })()}
+
+            {/* ── Layout hero ── */}
+            <div style={{ marginBottom: 28 }}>
+              <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', color: 'var(--t3)', textTransform: 'uppercase', marginBottom: 12 }}>Layout hero</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                {([
+                  {
+                    id: 'full',
+                    label: 'Full screen',
+                    desc: 'Foto a schermo intero con testo in overlay',
+                    preview: (
+                      <div style={{ height: 54, background: 'var(--s3)', borderRadius: 6, position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,.6) 0%, transparent 60%)' }} />
+                        <div style={{ position: 'absolute', bottom: 8, left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                          <div style={{ height: 5, width: 40, borderRadius: 2, background: 'rgba(255,255,255,.8)' }} />
+                          <div style={{ height: 3, width: 24, borderRadius: 1, background: 'rgba(255,255,255,.4)' }} />
+                        </div>
+                      </div>
+                    ),
+                  },
+                  {
+                    id: 'split',
+                    label: 'Split',
+                    desc: 'Foto a sinistra, titolo e info a destra',
+                    preview: (
+                      <div style={{ height: 54, display: 'flex', borderRadius: 6, overflow: 'hidden' }}>
+                        <div style={{ flex: 1, background: 'var(--s3)' }} />
+                        <div style={{ flex: 1, background: 'var(--s1)', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 10px', gap: 4 }}>
+                          <div style={{ height: 3, width: 28, borderRadius: 1, background: 'var(--tx)', opacity: .7 }} />
+                          <div style={{ height: 2, width: 16, borderRadius: 1, background: 'var(--ac)' }} />
+                          <div style={{ height: 2, width: 20, borderRadius: 1, background: 'var(--t3)', opacity: .5 }} />
+                        </div>
+                      </div>
+                    ),
+                  },
+                ] as { id: string; label: string; desc: string; preview: React.ReactNode }[]).map(opt => {
+                  const active = (gallery.settings?.hero_layout ?? 'full') === opt.id
+                  return (
+                    <button
+                      key={opt.id}
+                      onClick={() => saveAspetto({ hero_layout: opt.id })}
+                      style={{ background: active ? 'var(--acd)' : 'var(--s1)', border: `1px solid ${active ? 'var(--ac)' : 'var(--b1)'}`, borderRadius: 'var(--r)', padding: '12px', cursor: 'pointer', textAlign: 'left', transition: 'all .15s' }}
+                    >
+                      {opt.preview}
+                      <p style={{ fontSize: '12px', fontWeight: 600, color: active ? 'var(--ac)' : 'var(--tx)', marginTop: 8, marginBottom: 2 }}>{opt.label}</p>
+                      <p style={{ fontSize: '11px', color: 'var(--t3)' }}>{opt.desc}</p>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
 
             {/* ── Sezione visibilità hero ── */}
             <div style={{ marginBottom: 28 }}>

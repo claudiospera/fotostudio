@@ -30,6 +30,7 @@ interface PublicGallery {
     text_color?: string
     text_position?: string
     photo_position?: string
+    hero_layout?: string
   }
   photos: Photo[]
   profiles?: { name?: string; studio_name?: string }
@@ -1626,9 +1627,11 @@ export default function ClientePortalPage() {
   const showSubtitle = gallery.settings?.show_subtitle !== false
   const showDate     = gallery.settings?.show_date     !== false
 
-  const heroTextColor = gallery.settings?.text_color || theme.heroTextColor
-  const textPos       = TEXT_POSITION_STYLES[gallery.settings?.text_position ?? 'center-center'] ?? TEXT_POSITION_STYLES['center-center']
-  const photoObjPos   = PHOTO_POSITION_CSS[gallery.settings?.photo_position ?? 'center-center'] ?? 'center center'
+  const heroTextColor  = gallery.settings?.text_color || theme.heroTextColor
+  const textPos        = TEXT_POSITION_STYLES[gallery.settings?.text_position ?? 'center-center'] ?? TEXT_POSITION_STYLES['center-center']
+  const photoObjPos    = PHOTO_POSITION_CSS[gallery.settings?.photo_position ?? 'center-center'] ?? 'center center'
+  const heroLayout     = gallery.settings?.hero_layout ?? 'full'
+  const splitTitleColor = gallery.settings?.text_color || theme.navText
 
   return (
     <>
@@ -1643,50 +1646,100 @@ export default function ClientePortalPage() {
       <div style={{ minHeight: '100vh', background: theme.gridBg, fontFamily: 'Inter, DM Sans, sans-serif' }}>
 
         {/* ── HERO ───────────────────────────────────────────────────────── */}
-        <div style={{ position: 'relative', height: '75vh', minHeight: 420, overflow: 'hidden' }}>
+        {heroLayout === 'split' ? (
 
-          {/* Cover image: usa cover_url se impostata, altrimenti prima foto, altrimenti colore */}
-          {(() => {
-            const heroUrl = gallery.cover_url || (photos.length > 0 ? photos[0].url : null)
-            return heroUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={heroUrl} alt={gallery.name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: photoObjPos, display: 'block' }} />
-            ) : (
-              <div style={{ width: '100%', height: '100%', background: `linear-gradient(135deg, ${coverBg} 0%, color-mix(in srgb, ${coverBg} 60%, #0a0a0a) 100%)` }} />
-            )
-          })()}
+          /* ── SPLIT: foto sx, info dx (mobile: foto sopra, info sotto) ─── */
+          <div style={{ display: 'flex', flexWrap: 'wrap', minHeight: '85vh' }}>
 
-          {/* Gradient overlay */}
-          <div style={{ position: 'absolute', inset: 0, background: theme.heroOverlay }} />
-
-          {/* Navbar — solo logo */}
-          <nav style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: 'clamp(16px, 3vw, 24px) clamp(16px, 4vw, 36px)', display: 'flex', alignItems: 'center', zIndex: 10 }}>
-            <div style={{ background: 'rgba(255,255,255,.9)', backdropFilter: 'blur(8px)', borderRadius: 8, padding: '5px 10px', flexShrink: 0 }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo.png" alt={photographer} style={{ height: 26, width: 'auto', display: 'block' }} />
+            {/* Lato foto */}
+            <div style={{ flex: '1 1 300px', position: 'relative', overflow: 'hidden', minHeight: '55vh' }}>
+              {(() => {
+                const heroUrl = gallery.cover_url || (photos.length > 0 ? photos[0].url : null)
+                return heroUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={heroUrl} alt={gallery.name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: photoObjPos, display: 'block' }} />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', background: `linear-gradient(135deg, ${coverBg} 0%, color-mix(in srgb, ${coverBg} 60%, #0a0a0a) 100%)` }} />
+                )
+              })()}
+              {/* Navbar logo sul lato foto */}
+              <nav style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: 'clamp(16px, 3vw, 24px)', display: 'flex', alignItems: 'center', zIndex: 10 }}>
+                <div style={{ background: 'rgba(255,255,255,.9)', backdropFilter: 'blur(8px)', borderRadius: 8, padding: '5px 10px', flexShrink: 0 }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/logo.png" alt={photographer} style={{ height: 26, width: 'auto', display: 'block' }} />
+                </div>
+              </nav>
             </div>
-          </nav>
 
-          {/* Hero content */}
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: textPos.ai, justifyContent: textPos.jc, padding: '80px clamp(20px, 6vw, 80px) 32px', textAlign: textPos.ta }}>
-            {gallery.type && (
-              <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '.22em', textTransform: 'uppercase', color: `${heroTextColor}88`, marginBottom: 20 }}>{gallery.type}</div>
-            )}
-            {showTitle && (
-              <h1 style={{ fontFamily: fontDef.family, fontWeight: fontDef.weight as React.CSSProperties['fontWeight'], fontSize: 'clamp(32px, 7vw, 96px)', color: heroTextColor, letterSpacing: '-0.02em', lineHeight: 1, marginBottom: 8, textTransform: 'uppercase' }}>{gallery.name}</h1>
-            )}
-            {(showSubtitle || showDate) && (gallery.subtitle || gallery.date) && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: textPos.ai, marginBottom: 36 }}>
-                {showSubtitle && gallery.subtitle && <span style={{ fontSize: '15px', color: `${heroTextColor}88`, fontStyle: 'italic' }}>{gallery.subtitle}</span>}
-                {showDate && gallery.date && <span style={{ fontSize: '13px', color: `${heroTextColor}66`, letterSpacing: '.04em' }}>{formatDate(gallery.date)}</span>}
-              </div>
-            )}
-            {!(showSubtitle && gallery.subtitle) && !(showDate && gallery.date) && <div style={{ marginBottom: 36 }} />}
-            <a href="#photos" style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.22em', textTransform: 'uppercase', color: `${heroTextColor}e0`, textDecoration: 'none', borderBottom: `1px solid ${heroTextColor}77`, paddingBottom: 4, transition: 'color .15s' }}>
-              View Gallery
-            </a>
+            {/* Lato info */}
+            <div style={{ flex: '1 1 300px', background: theme.navBg, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: 'clamp(40px, 6vw, 88px)' }}>
+              <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.18em', textTransform: 'uppercase', color: theme.navSub, margin: '0 0 32px' }}>{photographer}</p>
+              {showTitle && (
+                <h1 style={{ fontFamily: fontDef.family, fontWeight: fontDef.weight as React.CSSProperties['fontWeight'], fontSize: 'clamp(28px, 4vw, 64px)', color: splitTitleColor, letterSpacing: '-0.02em', lineHeight: 1.05, margin: '0 0 20px' }}>{gallery.name}</h1>
+              )}
+              <div style={{ width: 40, height: 2, background: theme.accent, margin: '0 0 20px' }} />
+              {(showSubtitle || showDate) && (gallery.subtitle || gallery.date) && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 40 }}>
+                  {showSubtitle && gallery.subtitle && <span style={{ fontSize: '15px', color: `${theme.navText}99`, fontStyle: 'italic' }}>{gallery.subtitle}</span>}
+                  {showDate && gallery.date && <span style={{ fontSize: '13px', color: theme.navSub, letterSpacing: '.04em' }}>{formatDate(gallery.date)}</span>}
+                </div>
+              )}
+              {!(showSubtitle && gallery.subtitle) && !(showDate && gallery.date) && <div style={{ marginBottom: 40 }} />}
+              <a href="#photos" style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.22em', textTransform: 'uppercase', color: theme.navText, textDecoration: 'none', borderBottom: `1px solid ${theme.navText}44`, paddingBottom: 4, alignSelf: 'flex-start', transition: 'opacity .15s' }}>
+                View Gallery
+              </a>
+            </div>
           </div>
-        </div>
+
+        ) : (
+
+          /* ── FULL BLEED ──────────────────────────────────────────────── */
+          <div style={{ position: 'relative', height: '75vh', minHeight: 420, overflow: 'hidden' }}>
+
+            {/* Cover image */}
+            {(() => {
+              const heroUrl = gallery.cover_url || (photos.length > 0 ? photos[0].url : null)
+              return heroUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={heroUrl} alt={gallery.name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: photoObjPos, display: 'block' }} />
+              ) : (
+                <div style={{ width: '100%', height: '100%', background: `linear-gradient(135deg, ${coverBg} 0%, color-mix(in srgb, ${coverBg} 60%, #0a0a0a) 100%)` }} />
+              )
+            })()}
+
+            {/* Gradient overlay */}
+            <div style={{ position: 'absolute', inset: 0, background: theme.heroOverlay }} />
+
+            {/* Navbar — solo logo */}
+            <nav style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: 'clamp(16px, 3vw, 24px) clamp(16px, 4vw, 36px)', display: 'flex', alignItems: 'center', zIndex: 10 }}>
+              <div style={{ background: 'rgba(255,255,255,.9)', backdropFilter: 'blur(8px)', borderRadius: 8, padding: '5px 10px', flexShrink: 0 }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logo.png" alt={photographer} style={{ height: 26, width: 'auto', display: 'block' }} />
+              </div>
+            </nav>
+
+            {/* Hero content */}
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: textPos.ai, justifyContent: textPos.jc, padding: '80px clamp(20px, 6vw, 80px) 32px', textAlign: textPos.ta }}>
+              {gallery.type && (
+                <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '.22em', textTransform: 'uppercase', color: `${heroTextColor}88`, marginBottom: 20 }}>{gallery.type}</div>
+              )}
+              {showTitle && (
+                <h1 style={{ fontFamily: fontDef.family, fontWeight: fontDef.weight as React.CSSProperties['fontWeight'], fontSize: 'clamp(32px, 7vw, 96px)', color: heroTextColor, letterSpacing: '-0.02em', lineHeight: 1, marginBottom: 8, textTransform: 'uppercase' }}>{gallery.name}</h1>
+              )}
+              {(showSubtitle || showDate) && (gallery.subtitle || gallery.date) && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: textPos.ai, marginBottom: 36 }}>
+                  {showSubtitle && gallery.subtitle && <span style={{ fontSize: '15px', color: `${heroTextColor}88`, fontStyle: 'italic' }}>{gallery.subtitle}</span>}
+                  {showDate && gallery.date && <span style={{ fontSize: '13px', color: `${heroTextColor}66`, letterSpacing: '.04em' }}>{formatDate(gallery.date)}</span>}
+                </div>
+              )}
+              {!(showSubtitle && gallery.subtitle) && !(showDate && gallery.date) && <div style={{ marginBottom: 36 }} />}
+              <a href="#photos" style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '.22em', textTransform: 'uppercase', color: `${heroTextColor}e0`, textDecoration: 'none', borderBottom: `1px solid ${heroTextColor}77`, paddingBottom: 4, transition: 'color .15s' }}>
+                View Gallery
+              </a>
+            </div>
+          </div>
+
+        )}
 
         {/* ── STICKY NAV BAR ─────────────────────────────────────────────── */}
         <div style={{ position: 'sticky', top: 0, zIndex: 100, background: theme.navBg, borderBottom: `1px solid ${theme.navBorder}`, padding: '0 clamp(16px, 4vw, 40px)', display: 'flex', alignItems: 'center', gap: 16, height: 56, boxShadow: '0 1px 8px rgba(0,0,0,.06)' }}>

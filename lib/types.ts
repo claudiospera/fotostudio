@@ -56,6 +56,7 @@ export interface GallerySettings {
   text_color?: string       // hex override del colore testo hero (es. '#ffffff'). Vuoto = usa palette
   text_position?: string    // 'top-left' | 'top-center' | 'top-right' | 'center-left' | 'center-center' | 'center-right' | 'bottom-left' | 'bottom-center' | 'bottom-right'
   photo_position?: string   // stesso set di valori — controlla objectPosition della cover
+  hero_layout?: string      // 'full' (default) | 'split' (foto sx, info dx)
 }
 
 export interface Photo {
