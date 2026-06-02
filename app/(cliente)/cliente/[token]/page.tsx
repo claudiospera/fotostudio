@@ -61,6 +61,7 @@ interface CartItem {
   printTypeLabel?: string
   cropX?: number   // 0-100 (posizione orizzontale, default 50 = centro)
   cropY?: number   // 0-100 (posizione verticale, default 50 = centro)
+  zoom?: number    // zoom factor (default 1.0)
 }
 
 // ── shop product types (minimal — matches /api/shop-products response) ──────
@@ -286,6 +287,7 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
         printTypeLabel: printTypeLabel || undefined,
         cropX,
         cropY,
+        zoom: zoom !== 1 ? zoom : undefined,
       })
     })
     onClose()
@@ -888,6 +890,7 @@ function CartDrawer({ cart, galleryId, onClose, onRemove, onUpdateQty, onClear, 
             print_type_label: i.printTypeLabel ?? null,
             crop_x: i.cropX ?? null,
             crop_y: i.cropY ?? null,
+            zoom: i.zoom ?? null,
           })),
           total: finalTotal,
           payment_method: paymentMethod,

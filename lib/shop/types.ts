@@ -20,6 +20,11 @@ export interface ProductVariant {
   // dimensioni fisiche (cm) — usate per calcolare l'aspect ratio nell'anteprima
   widthCm?: number
   heightCm?: number
+  // dimensioni esterne (es. Instax: card intera con bordo)
+  outerW?: number
+  outerH?: number
+  // padding bordo [top, right, bottom, left] in cm — per prodotti con cornice (Instax)
+  pad?: [number, number, number, number]
 }
 
 // Opzioni configuratore cornici ──────────────────────────────────────────────

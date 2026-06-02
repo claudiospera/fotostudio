@@ -20,6 +20,7 @@ interface GalleryOrderItem {
   print_type_label?: string | null
   crop_x?: number | null
   crop_y?: number | null
+  zoom?: number | null
 }
 
 interface GalleryOrder {
@@ -188,8 +189,8 @@ function GalleryOrderDetail({
                 ].filter(Boolean)
                 return (
                   <div key={i} style={{ background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 'var(--r2)', padding: '10px 12px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                    {/* Foto con link download */}
-                    <a href={`/api/shop/download-photo?url=${encodeURIComponent(item.photo_url)}&filename=${encodeURIComponent(item.filename)}`} style={{ flexShrink: 0 }} title="Scarica foto originale">
+                    {/* Foto con link download — con crop se disponibile */}
+                    <a href={`/api/shop/download-photo?url=${encodeURIComponent(item.photo_url)}&filename=${encodeURIComponent(item.filename)}${item.crop_x != null && item.crop_y != null ? `&cropX=${item.crop_x}&cropY=${item.crop_y}&formatLabel=${encodeURIComponent(item.format_label)}${item.zoom ? `&zoom=${item.zoom}` : ''}` : ''}`} style={{ flexShrink: 0 }} title="Scarica foto ritagliata">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={item.photo_url} alt="" style={{ width: 52, height: 52, borderRadius: 6, objectFit: 'cover', display: 'block' }} />
                     </a>
