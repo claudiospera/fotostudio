@@ -1927,17 +1927,15 @@ export default function ClientePortalPage() {
           <div style={{ margin: `0 clamp(16px, 4vw, 40px) 40px`, background: '#8ec9b0', borderRadius: 14, padding: 'clamp(20px, 3vw, 28px) clamp(20px, 3vw, 32px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
             <div>
               <p style={{ fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: '18px', color: '#111', marginBottom: 4 }}>Vuoi stampare le tue foto?</p>
-              <p style={{ fontSize: '13px', color: 'rgba(0,0,0,.55)', fontWeight: 400 }}>Stampe professionali su carta fotografica e tela</p>
-              <p style={{ fontSize: '12px', color: 'rgba(0,0,0,.65)', fontWeight: 600, marginTop: 6 }}>Hai già scaricato le foto? Puoi usare questo link per ordinarle in stampa.</p>
+              <p style={{ fontSize: '13px', color: 'rgba(0,0,0,.55)', fontWeight: 400 }}>Stampe professionali su carta fotografica, tela, forex e molto altro — direttamente dalla galleria.</p>
+              <p style={{ fontSize: '12px', color: 'rgba(0,0,0,.65)', fontWeight: 600, marginTop: 6 }}>Clicca sull&apos;icona 🛒 su ogni foto per scegliere il formato e aggiungere al carrello.</p>
             </div>
-            <a
-              href="https://dilandweb2.fiteng.net/fitengdilandhomeweb/stampaClaudioSpera"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ background: '#111', color: '#8ec9b0', border: 'none', borderRadius: 8, padding: '11px 22px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0, letterSpacing: '.03em' }}
+            <button
+              onClick={() => setCartOpen(true)}
+              style={{ background: '#111', color: '#8ec9b0', border: 'none', borderRadius: 8, padding: '11px 22px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, letterSpacing: '.03em' }}
             >
-              Vai alla stampa →
-            </a>
+              Apri il carrello →
+            </button>
           </div>
         )}
 
