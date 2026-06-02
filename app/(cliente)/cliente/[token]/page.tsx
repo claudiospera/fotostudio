@@ -133,15 +133,13 @@ function getSessionId(): string {
   return id
 }
 
-async function downloadPhoto(photo: Photo) {
-  const res = await fetch(`/api/download?url=${encodeURIComponent(photo.url)}`)
-  if (!res.ok) throw new Error('Download fallito')
-  const blob = await res.blob()
+function downloadPhoto(photo: Photo) {
   const a = document.createElement('a')
-  a.href = URL.createObjectURL(blob)
+  a.href = `/api/download?url=${encodeURIComponent(photo.url)}`
   a.download = photo.filename
+  document.body.appendChild(a)
   a.click()
-  URL.revokeObjectURL(a.href)
+  document.body.removeChild(a)
 }
 
 // ── OrderModal ─────────────────────────────────────────────────────────────
@@ -1227,13 +1225,9 @@ interface PhotoItemProps {
 }
 
 function PhotoItem({ photo, index, galleryId, isFavorited, commentCount, inCart, showWatermark, showDownloadSingle, onOpenLightbox, onToggleFavorite, onOpenComment, onOpenOrder, gridMode, selectMode, isSelected, onSelect }: PhotoItemProps) {
-  const [downloading, setDownloading] = useState(false)
-
-  const handleDownload = async (e: React.MouseEvent) => {
+  const handleDownload = (e: React.MouseEvent) => {
     e.stopPropagation()
-    setDownloading(true)
-    await downloadPhoto(photo)
-    setDownloading(false)
+    downloadPhoto(photo)
   }
 
   const handleClick = () => {
@@ -1288,11 +1282,8 @@ function PhotoItem({ photo, index, galleryId, isFavorited, commentCount, inCart,
 
             {/* ↓ Download singolo */}
             {showDownloadSingle && (
-              <button onClick={handleDownload} title="Scarica foto" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'grid', placeItems: 'center', opacity: downloading ? .5 : 1, transition: 'transform .15s' }}>
-                {downloading
-                  ? <div style={{ width: 12, height: 12, border: '1.5px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .7s linear infinite' }} />
-                  : <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                }
+              <button onClick={handleDownload} title="Scarica foto" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'grid', placeItems: 'center', transition: 'transform .15s' }}>
+                <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               </button>
             )}
 
