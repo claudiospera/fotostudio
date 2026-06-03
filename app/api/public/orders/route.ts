@@ -224,6 +224,30 @@ export async function POST(req: Request) {
   `
   if (!order) return NextResponse.json({ error: 'Errore creazione ordine' }, { status: 500 })
 
+  // Registra/aggiorna il cliente in gallery_clients (solo se ha fornito nome o email)
+  if (client_name || client_email) {
+    try {
+      await sql`
+        INSERT INTO gallery_clients (gallery_id, name, email, orders, last_access)
+        VALUES (
+          ${gallery_id},
+          ${client_name ?? ''},
+          ${client_email ?? ''},
+          1,
+          now()
+        )
+        ON CONFLICT (gallery_id, email)
+        DO UPDATE SET
+          name        = EXCLUDED.name,
+          orders      = gallery_clients.orders + 1,
+          last_access = now()
+      `
+    } catch (err) {
+      // Non bloccare l'ordine se la registrazione fallisce
+      console.error('[orders] gallery_clients upsert failed:', err)
+    }
+  }
+
   // Invia email al fotografo
   const emailPayload = {
     client_name,
