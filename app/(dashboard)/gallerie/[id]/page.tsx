@@ -181,6 +181,8 @@ export default function GalleryDetailPage() {
 
   // sharing state
   const [copied, setCopied]       = useState(false)
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
+  const [showQr, setShowQr]       = useState(false)
 
   // aspetto state
   const [savingAspetto, setSavingAspetto] = useState(false)
@@ -1228,6 +1230,24 @@ export default function GalleryDetailPage() {
                       : <svg viewBox="0 0 24 24" width={12} height={12} fill="none" stroke="var(--t2)" strokeWidth={2} strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                     }
                   </button>
+                  <button
+                    onClick={async () => {
+                      if (!qrDataUrl) {
+                        const QRCode = (await import('qrcode')).default
+                        const url = await QRCode.toDataURL(shareUrl, { width: 400, margin: 2, color: { dark: '#111210', light: '#ffffff' } })
+                        setQrDataUrl(url)
+                      }
+                      setShowQr(true)
+                    }}
+                    title="Genera QR Code"
+                    style={{ width: 28, height: 28, background: 'var(--s3)', border: 'none', borderRadius: 6, cursor: 'pointer', display: 'grid', placeItems: 'center', flexShrink: 0 }}
+                  >
+                    <svg viewBox="0 0 24 24" width={13} height={13} fill="none" stroke="var(--t2)" strokeWidth={1.8} strokeLinecap="round">
+                      <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
+                      <rect x="4" y="4" width="5" height="5" rx=".5" fill="var(--t2)" stroke="none"/><rect x="15" y="4" width="5" height="5" rx=".5" fill="var(--t2)" stroke="none"/><rect x="4" y="15" width="5" height="5" rx=".5" fill="var(--t2)" stroke="none"/>
+                      <rect x="14" y="14" width="3" height="3" rx=".5" fill="var(--t2)" stroke="none"/><rect x="18" y="14" width="3" height="3" rx=".5" fill="var(--t2)" stroke="none"/><rect x="14" y="18" width="3" height="3" rx=".5" fill="var(--t2)" stroke="none"/><rect x="18" y="18" width="3" height="3" rx=".5" fill="var(--t2)" stroke="none"/>
+                    </svg>
+                  </button>
                 </div>
                 {copied && <p style={{ fontSize: '11px', color: 'var(--ac)', marginTop: 5 }}>Link copiato!</p>}
               </div>
@@ -2102,6 +2122,33 @@ export default function GalleryDetailPage() {
         </div> {/* fine layout stats+contenuto */}
 
       </div>
+
+      {/* ── QR Code Modal ─────────────────────────────────────────────────── */}
+      {showQr && qrDataUrl && (
+        <>
+          <div onClick={() => setShowQr(false)} style={{ position: 'fixed', inset: 0, zIndex: 600, background: 'rgba(0,0,0,.6)', animation: 'fadeIn .2s ease' }} />
+          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', zIndex: 601, background: 'var(--s1)', border: '1px solid var(--b2)', borderRadius: 'var(--r)', padding: '28px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, width: 280, animation: 'slideUp .2s ease' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--tx)' }}>QR Code galleria</span>
+              <button onClick={() => setShowQr(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t3)', width: 28, height: 28, display: 'grid', placeItems: 'center', borderRadius: 6 }}>
+                <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+            <img src={qrDataUrl} alt="QR Code" style={{ width: 200, height: 200, borderRadius: 8 }} />
+            <p style={{ fontSize: '11px', color: 'var(--t3)', textAlign: 'center', margin: 0 }}>
+              Stampa o condividi questo QR per dare accesso rapido alla galleria
+            </p>
+            <a
+              href={qrDataUrl}
+              download={`qr-${gallery?.name ?? 'galleria'}.png`}
+              style={{ width: '100%', background: 'var(--ac)', color: '#111', border: 'none', borderRadius: 'var(--r2)', padding: '10px 0', fontSize: '12px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none' }}
+            >
+              <svg viewBox="0 0 24 24" width={13} height={13} fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Scarica PNG
+            </a>
+          </div>
+        </>
+      )}
 
       {/* spin animation */}
       <style>{`
