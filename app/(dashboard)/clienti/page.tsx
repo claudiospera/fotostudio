@@ -945,7 +945,7 @@ function ClienteForm({ initial, initialDate, onSave, onClose }: {
   return (
     <div
       style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}
-      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+      onClick={e => { e.stopPropagation() }}
     >
       <div style={{
         background: 'var(--s1)', border: '1px solid rgba(255,255,255,0.1)',
