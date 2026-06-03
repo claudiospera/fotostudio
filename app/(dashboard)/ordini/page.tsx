@@ -306,7 +306,12 @@ function ShopOrderDetail({
 
   const st = SHOP_STATUS[order.status] ?? SHOP_STATUS.pending
   const SHOP_STATUS_KEYS: ShopOrder['status'][] = ['pending', 'confirmed', 'ready', 'delivered', 'cancelled']
-  const waMsg = (msg: string) => `https://wa.me/39${order.customer_phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`
+  const waPhone = (() => {
+    const digits = order.customer_phone.replace(/\D/g, '')
+    // If already has Italian country code (39XXXXXXXXXX), use as-is; otherwise prepend 39
+    return digits.startsWith('39') && digits.length >= 11 ? digits : `39${digits}`
+  })()
+  const waMsg = (msg: string) => `https://wa.me/${waPhone}?text=${encodeURIComponent(msg)}`
 
   return (
     <div
