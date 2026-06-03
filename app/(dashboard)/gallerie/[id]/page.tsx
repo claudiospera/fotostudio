@@ -229,17 +229,30 @@ export default function GalleryDetailPage() {
   const [clearPhotosSuccess, setClearPhotosSuccess] = useState(false)
   const [clearPhotosError, setClearPhotosError]     = useState<string | null>(null)
 
-  // ── fetch gallery ──────────────────────────────────────────────────────
+  // ── fetch gallery (metadata only, no photos) ──────────────────────────
   useEffect(() => {
     fetch(`/api/galleries/${id}`)
       .then(r => r.json())
       .then(data => {
         if (data.error) { router.push('/gallerie'); return }
         setGallery(data)
-        setPhotos((data.photos ?? []).sort((a: Photo, b: Photo) => (a.filename ?? '').localeCompare(b.filename ?? '', 'it', { numeric: true, sensitivity: 'base' })))
       })
       .finally(() => setLoading(false))
   }, [id, router])
+
+  // ── fetch photos (lazy, only once) ────────────────────────────────────
+  const photosFetched = useRef(false)
+  useEffect(() => {
+    if (photosFetched.current) return
+    photosFetched.current = true
+    fetch(`/api/galleries/${id}/photos`)
+      .then(r => r.json())
+      .then((data: Photo[]) => {
+        if (Array.isArray(data)) {
+          setPhotos(data.sort((a, b) => (a.filename ?? '').localeCompare(b.filename ?? '', 'it', { numeric: true, sensitivity: 'base' })))
+        }
+      })
+  }, [id])
 
   // ── upload logic ───────────────────────────────────────────────────────
   const uploadFiles = useCallback(async (files: FileList | File[], targetFolder?: string | null) => {

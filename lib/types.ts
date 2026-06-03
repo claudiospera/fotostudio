@@ -112,6 +112,7 @@ export interface Gallery {
   updated_at: string
   // relazioni
   photos?: Photo[]
+  photo_count?: number
   clients?: GalleryClient[]
   timeline?: TimelineItem[]
 }

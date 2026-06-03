@@ -147,7 +147,7 @@ export default function GalleriePage() {
                   ? [...g.photos].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))[0]
                   : null
               const coverColor = g.cover_color ?? '#2a3830'
-              const photoCount = g.photos?.length ?? 0
+              const photoCount = g.photo_count ?? g.photos?.length ?? 0
               const status = g.status as GalleryStatus
 
               return (

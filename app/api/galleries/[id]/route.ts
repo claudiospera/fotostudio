@@ -19,11 +19,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   const rows = await sql`
     SELECT g.*,
-      COALESCE(
-        (SELECT json_agg(p.* ORDER BY p.filename)
-         FROM photos p WHERE p.gallery_id = g.id),
-        '[]'::json
-      ) AS photos,
+      (SELECT COUNT(*) FROM photos p WHERE p.gallery_id = g.id)::int AS photo_count,
       COALESCE(
         (SELECT json_agg(c.*)
          FROM gallery_clients c WHERE c.gallery_id = g.id),
