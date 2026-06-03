@@ -10,8 +10,8 @@ export async function GET() {
     SELECT g.*,
       (SELECT COUNT(*)::int FROM photos p WHERE p.gallery_id = g.id) AS photo_count,
       COALESCE(
-        (SELECT json_agg(json_build_object('id', p.id, 'url', p.url, 'order_index', p.order_index) ORDER BY p.order_index LIMIT 3)
-         FROM photos p WHERE p.gallery_id = g.id),
+        (SELECT json_agg(json_build_object('id', sub.id, 'url', sub.url, 'order_index', sub.order_index))
+         FROM (SELECT p.id, p.url, p.order_index FROM photos p WHERE p.gallery_id = g.id ORDER BY p.order_index LIMIT 3) sub),
         '[]'::json
       ) AS photos
     FROM galleries g
