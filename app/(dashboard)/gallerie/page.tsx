@@ -157,13 +157,12 @@ export default function GalleriePage() {
                   style={{
                     background: 'var(--s1)', border: '1px solid var(--b1)',
                     borderRadius: 'var(--r)', overflow: 'hidden',
-                    cursor: 'pointer', transition: 'border-color .2s, transform .2s, box-shadow .2s',
+                    cursor: 'pointer', transition: 'border-color .2s, box-shadow .2s',
                     animation: `slideUp .25s ease ${i * 0.04}s both`,
                   }}
                   onMouseEnter={e => {
                     const el = e.currentTarget as HTMLDivElement
                     el.style.borderColor = 'var(--b3)'
-                    el.style.transform = 'translateY(-2px)'
                     el.style.boxShadow = '0 8px 32px rgba(0,0,0,.25)'
                     const overlay = el.querySelector('.card-overlay') as HTMLElement
                     if (overlay) overlay.style.opacity = '1'
@@ -173,7 +172,6 @@ export default function GalleriePage() {
                   onMouseLeave={e => {
                     const el = e.currentTarget as HTMLDivElement
                     el.style.borderColor = 'var(--b1)'
-                    el.style.transform = 'translateY(0)'
                     el.style.boxShadow = 'none'
                     const overlay = el.querySelector('.card-overlay') as HTMLElement
                     if (overlay) overlay.style.opacity = '0'

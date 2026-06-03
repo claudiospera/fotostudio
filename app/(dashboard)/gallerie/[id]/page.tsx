@@ -1233,6 +1233,60 @@ export default function GalleryDetailPage() {
               </div>
             </div>
 
+            {/* ── Clienti con accesso ──────────────────────────────────── */}
+            <div style={{ background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 'var(--r)', overflow: 'hidden', marginBottom: 16 }}>
+              <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--b1)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="var(--ac)" strokeWidth={1.8} strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--tx)' }}>Clienti con accesso</div>
+                  <div style={{ fontSize: '11px', color: 'var(--t3)', marginTop: 2 }}>Persone che possono accedere alla galleria tramite il link</div>
+                </div>
+                <span style={{ fontSize: '11px', color: 'var(--t2)', background: 'var(--s2)', borderRadius: 10, padding: '2px 8px' }}>
+                  {(gallery.clients ?? []).length}
+                </span>
+              </div>
+              <div style={{ padding: '12px 16px' }}>
+                {(gallery.clients ?? []).length === 0 ? (
+                  <p style={{ fontSize: '12px', color: 'var(--t3)', margin: 0 }}>
+                    Nessun cliente registrato. Condividi il link della galleria con i tuoi clienti.
+                  </p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {(gallery.clients ?? []).map((c: { id: string; name: string; email: string; last_access?: string | null; favorites?: number; orders?: number }) => (
+                      <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: 'var(--s2)', borderRadius: 'var(--r2)', border: '1px solid var(--b1)' }}>
+                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--s3)', display: 'grid', placeItems: 'center', flexShrink: 0, fontSize: '13px', fontWeight: 700, color: 'var(--ac)' }}>
+                          {c.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--tx)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--t3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.email}</div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 10, fontSize: '10px', color: 'var(--t3)', flexShrink: 0 }}>
+                          {c.last_access && (
+                            <span title="Ultimo accesso">
+                              {new Date(c.last_access).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
+                            </span>
+                          )}
+                          {(c.favorites ?? 0) > 0 && (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                              <svg viewBox="0 0 24 24" width={10} height={10} fill="var(--red)" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                              {c.favorites}
+                            </span>
+                          )}
+                          {(c.orders ?? 0) > 0 && (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                              <svg viewBox="0 0 24 24" width={10} height={10} fill="none" stroke="var(--ac)" strokeWidth={2} strokeLinecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                              {c.orders}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
             {loadingInt ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '20px 0', color: 'var(--t3)', fontSize: '12px' }}>
                 <div style={{ width: 14, height: 14, border: '2px solid var(--ac)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .7s linear infinite' }} />
