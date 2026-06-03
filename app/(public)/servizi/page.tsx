@@ -35,7 +35,7 @@ export default function ServiziPage() {
 
       {/* ── HERO ── */}
       <section style={{
-        paddingTop: 'clamp(80px,8vw,110px)',
+        paddingTop: 'clamp(110px,10vw,140px)',
         paddingBottom: 0,
         paddingLeft: 'clamp(24px,5vw,64px)',
         paddingRight: 'clamp(24px,5vw,64px)',

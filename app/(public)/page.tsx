@@ -36,7 +36,7 @@ export default function HomePage() {
 
       {/* ── HERO ─────────────────────────────────────────────────────────────── */}
       <section style={{
-        paddingTop: 'clamp(80px,8vw,110px)',
+        paddingTop: 'clamp(110px,10vw,140px)',
         paddingBottom: 0,
         paddingLeft: 'clamp(24px,5vw,64px)',
         paddingRight: 'clamp(24px,5vw,64px)',
@@ -53,14 +53,6 @@ export default function HomePage() {
               color: INK,
             }}>
               Storie
-            </div>
-            <div style={{
-              fontFamily: "'Great Vibes', cursive",
-              fontSize: 'clamp(64px,8.5vw,112px)',
-              color: INK, opacity: 0.65,
-              lineHeight: 1,
-            }}>
-              vere
             </div>
             <div style={{
               fontFamily: "'Cormorant Garamond', Georgia, serif",
