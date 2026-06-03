@@ -54,17 +54,15 @@ function saveLocal(cart: Cart) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cart)) } catch {}
 }
 
-// ─── merge: remote è source of truth; aggiunge solo item locali non presenti ──
-// Non somma mai quantità duplicate (evita il raddoppio al reload)
+// ─── merge: usato SOLO quando l'utente si logga con un carrello locale non vuoto
+// Remote (DB) è source of truth per gli item già presenti; aggiunge solo item
+// locali assenti nel DB (aggiunti mentre era sloggato).
+// Se il DB ha già tutti gli item, ritorna semplicemente remote.
 
 function mergeItems(local: CartItem[], remote: CartItem[]): CartItem[] {
-  const map = new Map<string, CartItem>()
-  for (const item of remote) map.set(`${item.productId}||${item.variantId}`, item)
-  for (const item of local) {
-    const key = `${item.productId}||${item.variantId}`
-    if (!map.has(key)) map.set(key, item)   // aggiunge solo se non già nel DB
-  }
-  return Array.from(map.values())
+  const remoteKeys = new Set(remote.map(i => `${i.productId}||${i.variantId}`))
+  const localOnly = local.filter(i => !remoteKeys.has(`${i.productId}||${i.variantId}`))
+  return localOnly.length ? [...remote, ...localOnly] : remote
 }
 
 // ─── CartProvider ────────────────────────────────────────────────────────────
@@ -81,34 +79,30 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setCart(loadLocal())
   }, [])
 
-  // Quando Clerk è pronto e l'utente esegue il login: merge localStorage + DB
+  // Quando Clerk è pronto e l'utente è loggato: carica dal DB (source of truth)
+  // Il merge avviene solo se ci sono item locali non presenti nel DB.
+  // Usa sessionStorage per evitare fetch multipli nella stessa sessione.
   useEffect(() => {
     if (!isLoaded) return
     const userId = user?.id ?? null
+    if (!userId) return
 
-    if (userId && prevUserIdRef.current !== userId) {
-      prevUserIdRef.current = userId
-      fetch('/api/shop/cart')
-        .then(r => r.json())
-        .then(({ items: remoteItems }) => {
-          if (!Array.isArray(remoteItems) || remoteItems.length === 0) return
-          setCart(prev => {
-            const merged: Cart = {
-              items: mergeItems(prev.items, remoteItems),
-              updatedAt: new Date().toISOString(),
-            }
-            saveLocal(merged)
-            return merged
-          })
+    const sessionKey = `cart_synced_${userId}`
+    if (sessionStorage.getItem(sessionKey)) return   // già sincronizzato in questa sessione
+    sessionStorage.setItem(sessionKey, '1')
+
+    fetch('/api/shop/cart')
+      .then(r => r.json())
+      .then(({ items: remoteItems }) => {
+        if (!Array.isArray(remoteItems)) return
+        setCart(prev => {
+          const merged = mergeItems(prev.items, remoteItems)
+          const next: Cart = { items: merged, updatedAt: new Date().toISOString() }
+          saveLocal(next)
+          return next
         })
-        .catch(() => {})
-    }
-
-    if (!userId && prevUserIdRef.current !== null && prevUserIdRef.current !== undefined) {
-      prevUserIdRef.current = null
-    }
-
-    if (prevUserIdRef.current === undefined) prevUserIdRef.current = userId
+      })
+      .catch(() => {})
   }, [isLoaded, user?.id]) // eslint-disable-line
 
   // Sincronizza localStorage ad ogni modifica; se loggato, anche il DB (debounced)
