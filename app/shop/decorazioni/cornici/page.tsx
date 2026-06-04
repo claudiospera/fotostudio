@@ -65,6 +65,17 @@ const PASSEPARTOUT_OPTIONS: PassepartoutOption[] = [
   { id: 'nero',   label: 'Nero',   color: '#1a1a1a', extraPrice: 500 },
 ]
 
+const PASSEPARTOUT_SIZES = [
+  { id: '2.5cm', label: '2,5 cm', sizeCm: 2.5, px: 18 },
+  { id: '5cm',   label: '5 cm',   sizeCm: 5,   px: 32 },
+]
+
+function getRecommendedPasseSize(v: { widthCm: number; heightCm: number }) {
+  return Math.max(v.widthCm, v.heightCm) <= 30
+    ? PASSEPARTOUT_SIZES[0]
+    : PASSEPARTOUT_SIZES[1]
+}
+
 // Formati che supportano schienale (solo fino a 20×30)
 const SCHIENALE_VARIANTS = new Set(['10x15', '13x18', '15x20', '20x30'])
 const SCHIENALE_PRICE = 0 // gratuito
@@ -113,6 +124,7 @@ export default function CorniciPage() {
   const [printType,     setPrintType]     = useState(PRINT_TYPES[0])
   const [passeEnabled,      setPasseEnabled]      = useState(false)
   const [passe,             setPasse]             = useState(PASSEPARTOUT_OPTIONS[0])
+  const [passeSize,         setPasseSize]         = useState(PASSEPARTOUT_SIZES[0])
   const [schienaleEnabled,  setSchienaleEnabled]  = useState(false)
   const [qty,           setQty]           = useState(1)
   const [addedFeedback, setAddedFeedback] = useState(false)
@@ -189,11 +201,12 @@ export default function CorniciPage() {
   )
   const total = unitPrice * qty
 
-  // Reset orientamento e schienale quando cambia il formato
+  // Reset orientamento, schienale e misura passepartout quando cambia il formato
   useEffect(() => {
     setRotated(false)
     if (!SCHIENALE_VARIANTS.has(variant.id)) setSchienaleEnabled(false)
-  }, [variant.id])
+    setPasseSize(getRecommendedPasseSize(variant))
+  }, [variant.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Dimensioni effettive con orientamento
   const effW = rotated ? variant.heightCm : variant.widthCm
@@ -206,7 +219,7 @@ export default function CorniciPage() {
       variant.label + (rotated ? ' — Orizzontale' : ''),
       printType.label,
       `Cornice ${frame.label}`,
-      passeEnabled ? `Passepartout ${passe.label}` : null,
+      passeEnabled ? `Passepartout ${passe.label} ${passeSize.label}` : null,
       schienaleEnabled && schienaleAvailable ? 'Con schienale' : null,
     ].filter(Boolean).join(' — ')
 
@@ -215,7 +228,7 @@ export default function CorniciPage() {
 
     addItem({
       productId:    'cornici',
-      variantId:    `${variant.id}__${frame.id}__${printType.id}__${passeEnabled ? passe.id : 'no-passe'}__${schienaleEnabled && schienaleAvailable ? 'schienale' : 'no-schienale'}`,
+      variantId:    `${variant.id}__${frame.id}__${printType.id}__${passeEnabled ? `${passe.id}-${passeSize.id}` : 'no-passe'}__${schienaleEnabled && schienaleAvailable ? 'schienale' : 'no-schienale'}`,
       quantity:     qty,
       productName:  'Foto in Cornice',
       variantLabel: label,
@@ -333,7 +346,7 @@ export default function CorniciPage() {
                 {/* Passepartout */}
                 {passeEnabled ? (
                   <div style={{
-                    padding: PASSE_PX,
+                    padding: passeSize.px,
                     background: passe.color,
                     transition: 'background .2s',
                     boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.08)',
@@ -439,7 +452,7 @@ export default function CorniciPage() {
           <div style={{ marginTop: 16, display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
             <Tag>{variant.label}</Tag>
             <Tag>{frame.label}</Tag>
-            {passeEnabled && <Tag>Passepartout {passe.label}</Tag>}
+            {passeEnabled && <Tag>Passepartout {passe.label} {passeSize.label}</Tag>}
           </div>
         </div>
 
@@ -672,29 +685,74 @@ export default function CorniciPage() {
               </span>
             </div>
             {passeEnabled && (
-              <div style={{ display: 'flex', gap: 10 }}>
-                {PASSEPARTOUT_OPTIONS.map((p) => {
-                  const active = passe.id === p.id
-                  return (
-                    <button
-                      key={p.id}
-                      onClick={() => setPasse(p)}
-                      style={{
-                        padding: '9px 20px', borderRadius: 10,
-                        border: `2px solid ${active ? '#00c1de' : '#e0e0e0'}`,
-                        background: active ? 'rgba(0,193,222,0.07)' : '#fff',
-                        color: active ? '#00c1de' : '#333',
-                        fontWeight: active ? 700 : 500, fontSize: '13px',
-                        cursor: 'pointer', transition: 'all .15s',
-                        fontFamily: 'Montserrat, sans-serif',
-                        display: 'flex', alignItems: 'center', gap: 8,
-                      }}
-                    >
-                      <div style={{ width: 14, height: 14, borderRadius: 3, background: p.color, border: '1px solid #ccc', flexShrink: 0 }} />
-                      {p.label}
-                    </button>
-                  )
-                })}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {/* Colore */}
+                <div style={{ display: 'flex', gap: 10 }}>
+                  {PASSEPARTOUT_OPTIONS.map((p) => {
+                    const active = passe.id === p.id
+                    return (
+                      <button
+                        key={p.id}
+                        onClick={() => setPasse(p)}
+                        style={{
+                          padding: '9px 20px', borderRadius: 10,
+                          border: `2px solid ${active ? '#00c1de' : '#e0e0e0'}`,
+                          background: active ? 'rgba(0,193,222,0.07)' : '#fff',
+                          color: active ? '#00c1de' : '#333',
+                          fontWeight: active ? 700 : 500, fontSize: '13px',
+                          cursor: 'pointer', transition: 'all .15s',
+                          fontFamily: 'Montserrat, sans-serif',
+                          display: 'flex', alignItems: 'center', gap: 8,
+                        }}
+                      >
+                        <div style={{ width: 14, height: 14, borderRadius: 3, background: p.color, border: '1px solid #ccc', flexShrink: 0 }} />
+                        {p.label}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Misura */}
+                <div>
+                  <p style={{ fontSize: '11px', fontWeight: 700, color: '#bbb', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 8 }}>
+                    Misura bordo
+                  </p>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    {PASSEPARTOUT_SIZES.map((s) => {
+                      const active = passeSize.id === s.id
+                      const recommended = getRecommendedPasseSize(variant).id === s.id
+                      return (
+                        <button
+                          key={s.id}
+                          onClick={() => setPasseSize(s)}
+                          style={{
+                            padding: '9px 18px', borderRadius: 10,
+                            border: `2px solid ${active ? '#00c1de' : '#e0e0e0'}`,
+                            background: active ? 'rgba(0,193,222,0.07)' : '#fff',
+                            color: active ? '#00c1de' : '#333',
+                            fontWeight: active ? 700 : 500, fontSize: '13px',
+                            cursor: 'pointer', transition: 'all .15s',
+                            fontFamily: 'Montserrat, sans-serif',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                          }}
+                        >
+                          <span>{s.label}</span>
+                          {recommended && (
+                            <span style={{
+                              fontSize: '9px', fontWeight: 700, letterSpacing: '.08em',
+                              textTransform: 'uppercase',
+                              color: active ? '#00c1de' : '#999',
+                              background: active ? 'rgba(0,193,222,0.12)' : '#f0f0f0',
+                              borderRadius: 4, padding: '2px 6px',
+                            }}>
+                              Consigliata
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
               </div>
             )}
           </Section>
@@ -765,7 +823,7 @@ export default function CorniciPage() {
               </div>
               {passeEnabled && (
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span>Passepartout {passe.label}</span>
+                  <span>Passepartout {passe.label} {passeSize.label}</span>
                   <span style={{ fontWeight: 600, color: '#555' }}>+{formatPrice(passe.extraPrice)}</span>
                 </div>
               )}
