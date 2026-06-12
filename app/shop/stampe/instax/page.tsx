@@ -34,6 +34,8 @@ interface UploadedPhoto {
   url: string
   uploadedUrl?: string
   uploading: boolean
+  uploadFailed?: boolean
+  file?: File
   name: string
   natW: number; natH: number
   zoom: number
@@ -677,26 +679,30 @@ export default function InstaxPage() {
       })
       if (res.ok) {
         const { uploadUrl, publicUrl } = await res.json()
-        await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
-        setPhotos(prev => prev.map(p => p.id === id ? { ...p, uploadedUrl: publicUrl, uploading: false } : p))
+        const putRes = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type || 'image/jpeg' } })
+        if (putRes.ok || putRes.status === 200) {
+          setPhotos(prev => prev.map(p => p.id === id ? { ...p, uploadedUrl: publicUrl, uploading: false, uploadFailed: false } : p))
+        } else {
+          setPhotos(prev => prev.map(p => p.id === id ? { ...p, uploading: false, uploadFailed: true } : p))
+        }
       } else {
-        setPhotos(prev => prev.map(p => p.id === id ? { ...p, uploading: false } : p))
+        setPhotos(prev => prev.map(p => p.id === id ? { ...p, uploading: false, uploadFailed: true } : p))
       }
     } catch {
-      setPhotos(prev => prev.map(p => p.id === id ? { ...p, uploading: false } : p))
+      setPhotos(prev => prev.map(p => p.id === id ? { ...p, uploading: false, uploadFailed: true } : p))
     }
   }, [])
 
   const loadFiles = useCallback((files: FileList | File[]) => {
     Array.from(files)
-      .filter(f => f.type.startsWith('image/'))
+      .filter(f => f.type.startsWith('image/') || f.type === '' || f.name.match(/\.(jpg|jpeg|png|webp|heic|heif|gif|avif)$/i))
       .forEach(file => {
         const url = URL.createObjectURL(file)
         const img = new Image()
         img.onload = () => {
           const id = uid()
           const newPhoto: UploadedPhoto = {
-            id, url, name: file.name, uploading: true,
+            id, url, name: file.name, uploading: true, file,
             natW: img.naturalWidth, natH: img.naturalHeight,
             zoom: 1, offsetX: 0, offsetY: 0, copies: 1,
             fitMode: 'cover',
@@ -747,9 +753,16 @@ export default function InstaxPage() {
   }, [activeId])
 
   const isUploading = photos.some(p => p.uploading)
+  const hasUploadFailed = photos.some(p => p.uploadFailed)
+
+  const retryUpload = useCallback((p: UploadedPhoto) => {
+    if (!p.file) return
+    setPhotos(prev => prev.map(x => x.id === p.id ? { ...x, uploading: true, uploadFailed: false } : x))
+    uploadToR2(p.id, p.file)
+  }, [uploadToR2])
 
   async function handleAddToCart() {
-    if (isUploading || isRendering) return
+    if (isUploading || isRendering || hasUploadFailed) return
     setIsRendering(true)
     try {
       for (const p of photos) {
@@ -1115,6 +1128,14 @@ export default function InstaxPage() {
                       }}
                     >
                       <InstaxCard photo={p} format={format} frame={frame} cardW={150} interactive={false} />
+                      {p.uploadFailed && (
+                        <button
+                          onClick={e => { e.stopPropagation(); retryUpload(p) }}
+                          style={{ fontSize: '11px', color: '#c0392b', background: '#fdecea', border: '1px solid #f5c6c6', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontWeight: 600 }}
+                        >
+                          ⚠️ Riprova caricamento
+                        </button>
+                      )}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e0e0e0', borderRadius: 8, overflow: 'hidden' }}>
                           <button
@@ -1345,15 +1366,21 @@ export default function InstaxPage() {
                   <b style={{ color: '#555' }}>{format.label}</b> — {frame.label}
                 </div>
 
+                {hasUploadFailed && (
+                  <div style={{ background: '#fff3cd', border: '1px solid #f0c040', borderRadius: 10, padding: '10px 12px', fontSize: '12px', color: '#7a5c00', lineHeight: 1.5 }}>
+                    ⚠️ Alcune foto non sono state caricate. Riprova a caricarle prima di procedere.
+                  </div>
+                )}
+
                 <button
                   onClick={handleAddToCart}
-                  disabled={isUploading || isRendering}
+                  disabled={isUploading || isRendering || hasUploadFailed}
                   style={{
                     width: '100%', padding: '14px', borderRadius: 12, border: 'none',
-                    background: addedFeedback ? '#22c55e' : (isUploading || isRendering) ? '#b0e6f0' : '#00c1de',
+                    background: addedFeedback ? '#22c55e' : (isUploading || isRendering || hasUploadFailed) ? '#b0e6f0' : '#00c1de',
                     color: '#fff', fontFamily: 'Poppins, sans-serif', fontWeight: 700,
-                    fontSize: '14px', cursor: (isUploading || isRendering) ? 'not-allowed' : 'pointer',
-                    transition: 'background .2s', opacity: (isUploading || isRendering) ? 0.75 : 1,
+                    fontSize: '14px', cursor: (isUploading || isRendering || hasUploadFailed) ? 'not-allowed' : 'pointer',
+                    transition: 'background .2s', opacity: (isUploading || isRendering || hasUploadFailed) ? 0.75 : 1,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   }}
                 >

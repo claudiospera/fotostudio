@@ -8,7 +8,9 @@ export async function POST(request: Request) {
   if (!filename || typeof filename !== 'string') {
     return NextResponse.json({ error: 'filename mancante' }, { status: 400 })
   }
-  if (!contentType || !contentType.startsWith('image/')) {
+  // iOS può inviare contentType vuoto per HEIC/HEIF convertiti — fallback a image/jpeg
+  const effectiveContentType = contentType || 'image/jpeg'
+  if (!effectiveContentType.startsWith('image/')) {
     return NextResponse.json({ error: 'Solo immagini consentite' }, { status: 400 })
   }
 
