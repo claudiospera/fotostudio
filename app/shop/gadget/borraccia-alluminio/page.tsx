@@ -59,9 +59,11 @@ export default function BorracciaAlluminioPage() {
   const previewRef    = useRef<HTMLDivElement>(null)
 
   // ── Foto ──
+  const fileRef         = useRef<File | null>(null)
   const [photoUrl,      setPhotoUrl]      = useState<string | null>(null)
   const [uploadedUrl,   setUploadedUrl]   = useState<string | null>(null)
   const [uploading,     setUploading]     = useState(false)
+  const [uploadFailed,  setUploadFailed]  = useState(false)
   const [isRendering,   setIsRendering]   = useState(false)
   const [photoFilename, setPhotoFilename] = useState<string | undefined>(undefined)
   const [photoZoom,     setPhotoZoom]     = useState(1)
@@ -154,18 +156,7 @@ export default function BorracciaAlluminioPage() {
   }, [])
 
   // ─── Upload foto ──────────────────────────────────────────────────────────
-  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (photoUrl) URL.revokeObjectURL(photoUrl)
-    setPhotoUrl(URL.createObjectURL(file))
-    setUploadedUrl(null)
-    setPhotoFilename(file.name)
-    setUploading(true)
-    setPhotoZoom(1)
-    setPhotoOffset({ x: 0, y: 0 })
-    setPhotoNatSize(null)
-    e.target.value = ''
+  const uploadToR2 = useCallback(async (file: File) => {
     try {
       const res = await fetch('/api/shop/presign-photo', {
         method: 'POST',
@@ -174,12 +165,45 @@ export default function BorracciaAlluminioPage() {
       })
       if (res.ok) {
         const { uploadUrl, publicUrl } = await res.json()
-        await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
-        setUploadedUrl(publicUrl)
+        const putRes = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type || 'image/jpeg' } })
+        if (putRes.ok || putRes.status === 200) {
+          setUploadedUrl(publicUrl)
+          setUploadFailed(false)
+        } else {
+          setUploadFailed(true)
+        }
+      } else {
+        setUploadFailed(true)
       }
-    } catch { /* blob fallback */ }
+    } catch {
+      setUploadFailed(true)
+    }
     setUploading(false)
-  }, [photoUrl])
+  }, [])
+
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (photoUrl) URL.revokeObjectURL(photoUrl)
+    fileRef.current = file
+    setPhotoUrl(URL.createObjectURL(file))
+    setUploadedUrl(null)
+    setUploadFailed(false)
+    setPhotoFilename(file.name)
+    setUploading(true)
+    setPhotoZoom(1)
+    setPhotoOffset({ x: 0, y: 0 })
+    setPhotoNatSize(null)
+    e.target.value = ''
+    await uploadToR2(file)
+  }, [photoUrl, uploadToR2])
+
+  const retryUpload = useCallback(async () => {
+    if (!fileRef.current) return
+    setUploading(true)
+    setUploadFailed(false)
+    await uploadToR2(fileRef.current)
+  }, [uploadToR2])
 
   const removePhoto = useCallback(() => {
     if (photoUrl) URL.revokeObjectURL(photoUrl)
@@ -200,7 +224,7 @@ export default function BorracciaAlluminioPage() {
 
   // ─── Add to cart con canvas render ────────────────────────────────────────
   async function handleAddToCart() {
-    if (uploading || isRendering) return
+    if (uploading || isRendering || uploadFailed) return
     let imageUrl = uploadedUrl ?? photoUrl ?? '/images/shop/gadget/borraccia-alluminio.png'
 
     setIsRendering(true)
@@ -506,6 +530,12 @@ export default function BorracciaAlluminioPage() {
                     </button>
                   </div>
                 )}
+                {uploadFailed && (
+                  <div style={{ marginTop: 10, padding: '12px 14px', background: '#fff3cd', borderRadius: 10, border: '1px solid #ffc107', display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: '12px', color: '#856404', flex: 1 }}>Caricamento foto non riuscito. Riprova prima di aggiungere al carrello.</span>
+                    <button onClick={retryUpload} style={{ background: 'none', border: '1px solid #856404', borderRadius: 6, cursor: 'pointer', color: '#856404', fontSize: '11px', fontWeight: 700, padding: '4px 10px', whiteSpace: 'nowrap' }}>Riprova</button>
+                  </div>
+                )}
               </div>
 
               {photoUrl && (
@@ -664,13 +694,13 @@ export default function BorracciaAlluminioPage() {
 
             <button
               onClick={handleAddToCart}
-              disabled={uploading || isRendering}
+              disabled={uploading || isRendering || uploadFailed}
               style={{
                 width: '100%', padding: '15px', borderRadius: 12, border: 'none',
-                background: addedFeedback ? '#22c55e' : (uploading || isRendering) ? '#b0e6f0' : '#00c1de',
+                background: addedFeedback ? '#22c55e' : (uploading || isRendering || uploadFailed) ? '#b0e6f0' : '#00c1de',
                 color: '#fff', fontFamily: 'Poppins, sans-serif', fontWeight: 700,
-                fontSize: '15px', cursor: (uploading || isRendering) ? 'not-allowed' : 'pointer',
-                transition: 'background .2s', opacity: (uploading || isRendering) ? 0.75 : 1,
+                fontSize: '15px', cursor: (uploading || isRendering || uploadFailed) ? 'not-allowed' : 'pointer',
+                transition: 'background .2s', opacity: (uploading || isRendering || uploadFailed) ? 0.75 : 1,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
               }}
             >

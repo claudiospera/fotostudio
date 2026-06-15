@@ -36,6 +36,8 @@ interface PhotoItem {
   url: string        // blob URL locale per la preview
   uploadedUrl?: string // URL pubblico R2 (disponibile dopo l'upload)
   uploading: boolean
+  uploadFailed?: boolean
+  file?: File
   name: string
   natW: number; natH: number
   orientation: 'portrait' | 'landscape' | 'square'
@@ -282,12 +284,19 @@ export default function StampeClassichePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ filename: file.name, contentType: file.type }),
       })
-      if (!res.ok) throw new Error('Presign fallito')
+      if (!res.ok) {
+        setPhotos(prev => prev.map(p => p.id === id ? { ...p, uploading: false, uploadFailed: true } : p))
+        return
+      }
       const { uploadUrl, publicUrl } = await res.json()
-      await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
-      setPhotos(prev => prev.map(p => p.id === id ? { ...p, uploadedUrl: publicUrl, uploading: false } : p))
+      const putRes = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
+      if (putRes.ok || putRes.status === 200) {
+        setPhotos(prev => prev.map(p => p.id === id ? { ...p, uploadedUrl: publicUrl, uploading: false, uploadFailed: false } : p))
+      } else {
+        setPhotos(prev => prev.map(p => p.id === id ? { ...p, uploading: false, uploadFailed: true } : p))
+      }
     } catch {
-      setPhotos(prev => prev.map(p => p.id === id ? { ...p, uploading: false } : p))
+      setPhotos(prev => prev.map(p => p.id === id ? { ...p, uploading: false, uploadFailed: true } : p))
     }
   }, [])
 
@@ -305,7 +314,7 @@ export default function StampeClassichePage() {
           zoom: 1, offsetX: 0, offsetY: 0, copies: 1, fitMode: 'cover',
           variantId: variant.id,
           slotOrientation: nW >= nH ? 'landscape' : 'portrait',
-          uploading: true,
+          uploading: true, file,
         }
         setPhotos(prev => {
           const next = [...prev, p]
@@ -345,9 +354,16 @@ export default function StampeClassichePage() {
   }
 
   const isUploading = photos.some(p => p.uploading)
+  const hasUploadFailed = photos.some(p => p.uploadFailed)
+
+  const retryUpload = useCallback((p: PhotoItem) => {
+    if (!p.file) return
+    setPhotos(prev => prev.map(x => x.id === p.id ? { ...x, uploading: true, uploadFailed: false } : x))
+    uploadToR2(p.id, p.file)
+  }, [uploadToR2])
 
   async function handleAddToCart() {
-    if (isUploading || isRendering) return
+    if (isUploading || isRendering || hasUploadFailed) return
     setIsRendering(true)
     try {
       // Calcola il totale copie per variante per applicare lo scaglione corretto
@@ -648,6 +664,15 @@ export default function StampeClassichePage() {
                         )}
                       </div>
 
+                      {p.uploadFailed && (
+                        <button
+                          onClick={e => { e.stopPropagation(); retryUpload(p) }}
+                          style={{ fontSize: '11px', color: '#c0392b', background: '#fdecea', border: '1px solid #f5c6c6', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontWeight: 600 }}
+                        >
+                          ⚠️ Riprova caricamento
+                        </button>
+                      )}
+
                       {/* Selettore formato per questa foto */}
                       <select
                         value={p.variantId}
@@ -844,16 +869,22 @@ export default function StampeClassichePage() {
                   Carta fotografica satinata · {totalPrints} stampe
                 </div>
 
+                {hasUploadFailed && (
+                  <div style={{ background: '#fff3cd', border: '1px solid #f0c040', borderRadius: 10, padding: '10px 12px', fontSize: '12px', color: '#7a5c00', lineHeight: 1.5 }}>
+                    ⚠️ Alcune foto non sono state caricate. Riprova a caricarle prima di procedere.
+                  </div>
+                )}
+
                 <button
                   onClick={handleAddToCart}
-                  disabled={isUploading || isRendering}
+                  disabled={isUploading || isRendering || hasUploadFailed}
                   style={{
                     width: '100%', padding: '14px', borderRadius: 12, border: 'none',
-                    background: added ? '#22c55e' : (isUploading || isRendering) ? '#b0e6f0' : '#00c1de',
+                    background: added ? '#22c55e' : (isUploading || isRendering || hasUploadFailed) ? '#b0e6f0' : '#00c1de',
                     color: '#fff', fontFamily: 'Poppins, sans-serif', fontWeight: 700,
-                    fontSize: '14px', cursor: (isUploading || isRendering) ? 'not-allowed' : 'pointer', transition: 'background .2s',
+                    fontSize: '14px', cursor: (isUploading || isRendering || hasUploadFailed) ? 'not-allowed' : 'pointer', transition: 'background .2s',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                    opacity: (isUploading || isRendering) ? 0.75 : 1,
+                    opacity: (isUploading || isRendering || hasUploadFailed) ? 0.75 : 1,
                   }}
                 >
                   {added

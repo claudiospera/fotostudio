@@ -20,7 +20,9 @@ interface PhotoSlot {
   uploadedUrl: string | null
   filename: string | undefined
   uploading: boolean
+  uploadFailed: boolean
   zoom: number
+  file: File | null
 }
 
 const emptySlot = (): PhotoSlot => ({
@@ -28,7 +30,9 @@ const emptySlot = (): PhotoSlot => ({
   uploadedUrl: null,
   filename: undefined,
   uploading: false,
+  uploadFailed: false,
   zoom: 1,
+  file: null,
 })
 
 export default function PortachiavEcopellePage() {
@@ -51,8 +55,9 @@ export default function PortachiavEcopellePage() {
       })
       if (!res.ok) return null
       const { uploadUrl, publicUrl } = await res.json()
-      await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
-      return publicUrl
+      const putRes = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
+      if (putRes.ok || putRes.status === 200) return publicUrl
+      return null
     } catch {
       return null
     }
@@ -63,17 +68,17 @@ export default function PortachiavEcopellePage() {
     if (!file) return
     if (front.blobUrl) URL.revokeObjectURL(front.blobUrl)
     const blobUrl = URL.createObjectURL(file)
-    setFront(prev => ({ ...prev, blobUrl, uploadedUrl: null, filename: file.name, uploading: true, zoom: 1 }))
+    setFront(prev => ({ ...prev, blobUrl, uploadedUrl: null, filename: file.name, uploading: true, uploadFailed: false, zoom: 1, file }))
     // Se "stessa foto" attiva, aggiorna anche il retro visivamente
     if (samePhoto) {
       if (back.blobUrl) URL.revokeObjectURL(back.blobUrl)
-      setBack(prev => ({ ...prev, blobUrl, uploadedUrl: null, filename: file.name, uploading: true, zoom: 1 }))
+      setBack(prev => ({ ...prev, blobUrl, uploadedUrl: null, filename: file.name, uploading: true, uploadFailed: false, zoom: 1, file }))
     }
     e.target.value = ''
     const publicUrl = await uploadFile(file)
-    setFront(prev => ({ ...prev, uploadedUrl: publicUrl, uploading: false }))
+    setFront(prev => ({ ...prev, uploadedUrl: publicUrl, uploading: false, uploadFailed: publicUrl === null }))
     if (samePhoto) {
-      setBack(prev => ({ ...prev, uploadedUrl: publicUrl, uploading: false }))
+      setBack(prev => ({ ...prev, uploadedUrl: publicUrl, uploading: false, uploadFailed: publicUrl === null }))
     }
   }, [front.blobUrl, back.blobUrl, samePhoto])
 
@@ -82,11 +87,30 @@ export default function PortachiavEcopellePage() {
     if (!file) return
     if (back.blobUrl) URL.revokeObjectURL(back.blobUrl)
     const blobUrl = URL.createObjectURL(file)
-    setBack(prev => ({ ...prev, blobUrl, uploadedUrl: null, filename: file.name, uploading: true, zoom: 1 }))
+    setBack(prev => ({ ...prev, blobUrl, uploadedUrl: null, filename: file.name, uploading: true, uploadFailed: false, zoom: 1, file }))
     e.target.value = ''
     const publicUrl = await uploadFile(file)
-    setBack(prev => ({ ...prev, uploadedUrl: publicUrl, uploading: false }))
+    setBack(prev => ({ ...prev, uploadedUrl: publicUrl, uploading: false, uploadFailed: publicUrl === null }))
   }, [back.blobUrl])
+
+  const retryFront = useCallback(async () => {
+    const file = front.file
+    if (!file) return
+    setFront(prev => ({ ...prev, uploading: true, uploadFailed: false }))
+    const publicUrl = await uploadFile(file)
+    setFront(prev => ({ ...prev, uploadedUrl: publicUrl, uploading: false, uploadFailed: publicUrl === null }))
+    if (samePhoto) {
+      setBack(prev => ({ ...prev, uploadedUrl: publicUrl, uploading: false, uploadFailed: publicUrl === null }))
+    }
+  }, [front.file, samePhoto])
+
+  const retryBack = useCallback(async () => {
+    const file = back.file
+    if (!file) return
+    setBack(prev => ({ ...prev, uploading: true, uploadFailed: false }))
+    const publicUrl = await uploadFile(file)
+    setBack(prev => ({ ...prev, uploadedUrl: publicUrl, uploading: false, uploadFailed: publicUrl === null }))
+  }, [back.file])
 
   function toggleSamePhoto(checked: boolean) {
     setSamePhoto(checked)
@@ -109,12 +133,13 @@ export default function PortachiavEcopellePage() {
   }
 
   const isUploading = front.uploading || (!samePhoto && back.uploading)
+  const hasFailed = front.uploadFailed || (!samePhoto && back.uploadFailed)
   const frontReady  = !!front.blobUrl
   const backReady   = samePhoto ? frontReady : !!back.blobUrl
   const total       = PRICE * qty
 
   function handleAddToCart() {
-    if (isUploading) return
+    if (isUploading || hasFailed) return
     const frontUrl = front.uploadedUrl ?? front.blobUrl ?? '/images/shop/gadget/portachiavi-ecopelle.jpg'
     const backUrl  = samePhoto
       ? frontUrl
@@ -429,15 +454,32 @@ export default function PortachiavEcopellePage() {
               {frontReady && backReady && <span style={{ color: '#22c55e', fontWeight: 600 }}> · Pronto per l&apos;ordine</span>}
             </div>
 
+            {front.uploadFailed && (
+              <div style={{ background: '#fff3cd', border: '1px solid #f0c040', borderRadius: 10, padding: '10px 12px', fontSize: '12px', color: '#7a5c00', lineHeight: 1.5 }}>
+                ⚠️ Caricamento foto fronte non riuscito. Riprova.
+                <button onClick={retryFront} style={{ marginLeft: 10, fontSize: '11px', fontWeight: 700, color: '#7a5c00', background: 'none', border: '1px solid #c8a030', borderRadius: 6, padding: '2px 8px', cursor: 'pointer' }}>
+                  Ricarica foto
+                </button>
+              </div>
+            )}
+            {!samePhoto && back.uploadFailed && (
+              <div style={{ background: '#fff3cd', border: '1px solid #f0c040', borderRadius: 10, padding: '10px 12px', fontSize: '12px', color: '#7a5c00', lineHeight: 1.5 }}>
+                ⚠️ Caricamento foto retro non riuscito. Riprova.
+                <button onClick={retryBack} style={{ marginLeft: 10, fontSize: '11px', fontWeight: 700, color: '#7a5c00', background: 'none', border: '1px solid #c8a030', borderRadius: 6, padding: '2px 8px', cursor: 'pointer' }}>
+                  Ricarica foto
+                </button>
+              </div>
+            )}
+
             <button
               onClick={handleAddToCart}
-              disabled={isUploading}
+              disabled={isUploading || hasFailed}
               style={{
                 width: '100%', padding: '15px', borderRadius: 12, border: 'none',
-                background: addedFeedback ? '#22c55e' : isUploading ? '#b0e6f0' : '#00c1de',
+                background: addedFeedback ? '#22c55e' : isUploading || hasFailed ? '#b0e6f0' : '#00c1de',
                 color: '#fff', fontFamily: 'Poppins, sans-serif', fontWeight: 700,
-                fontSize: '15px', cursor: isUploading ? 'not-allowed' : 'pointer',
-                transition: 'background .2s', opacity: isUploading ? 0.75 : 1,
+                fontSize: '15px', cursor: isUploading || hasFailed ? 'not-allowed' : 'pointer',
+                transition: 'background .2s', opacity: isUploading || hasFailed ? 0.75 : 1,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
               }}
             >

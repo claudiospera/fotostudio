@@ -108,11 +108,13 @@ export default function TelaPage() {
   const [photoUrl,      setPhotoUrl]      = useState<string | null>(null)
   const [uploadedUrl,   setUploadedUrl]   = useState<string | null>(null)
   const [uploading,     setUploading]     = useState(false)
+  const [uploadFailed,  setUploadFailed]  = useState(false)
   const [photoFilename, setPhotoFilename] = useState<string | undefined>(undefined)
   const [zoom,          setZoom]          = useState(1)
   const [offsetNorm,    setOffsetNorm]    = useState({ x: 0, y: 0 })
   const [photoNatSize,  setPhotoNatSize]  = useState<{ w: number; h: number } | null>(null)
   const [isRendering,   setIsRendering]   = useState(false)
+  const fileRef = useRef<File | null>(null)
   // Dimensioni effettive con rotazione
   const canvasW   = rotated ? Math.max(variant.widthCm, variant.heightCm) : variant.widthCm
   const canvasH   = rotated ? Math.min(variant.widthCm, variant.heightCm) : variant.heightCm
@@ -135,6 +137,8 @@ export default function TelaPage() {
     setUploadedUrl(null)
     setPhotoFilename(file.name)
     setUploading(true)
+    setUploadFailed(false)
+    fileRef.current = file
     setZoom(1)
     setOffsetNorm({ x: 0, y: 0 })
     e.target.value = ''
@@ -146,10 +150,19 @@ export default function TelaPage() {
       })
       if (res.ok) {
         const { uploadUrl, publicUrl } = await res.json()
-        await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
-        setUploadedUrl(publicUrl)
+        const putRes = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
+        if (putRes.ok || putRes.status === 200) {
+          setUploadedUrl(publicUrl)
+          setUploadFailed(false)
+        } else {
+          setUploadFailed(true)
+        }
+      } else {
+        setUploadFailed(true)
       }
-    } catch { /* usa blob url come fallback */ }
+    } catch {
+      setUploadFailed(true)
+    }
     setUploading(false)
   }, [photoUrl])
 
@@ -165,8 +178,37 @@ export default function TelaPage() {
 
   const total = variant.price * qty
 
+  const retryUpload = useCallback(async () => {
+    const file = fileRef.current
+    if (!file) return
+    setUploading(true)
+    setUploadFailed(false)
+    try {
+      const res = await fetch('/api/shop/presign-photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: file.name, contentType: file.type }),
+      })
+      if (res.ok) {
+        const { uploadUrl, publicUrl } = await res.json()
+        const putRes = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
+        if (putRes.ok || putRes.status === 200) {
+          setUploadedUrl(publicUrl)
+          setUploadFailed(false)
+        } else {
+          setUploadFailed(true)
+        }
+      } else {
+        setUploadFailed(true)
+      }
+    } catch {
+      setUploadFailed(true)
+    }
+    setUploading(false)
+  }, [])
+
   async function handleAddToCart() {
-    if (uploading || isRendering) return
+    if (uploading || isRendering || uploadFailed) return
     const orientLabel = isSquare ? '' : (rotated ? ' — Orizzontale' : ' — Verticale')
     let imageUrl = uploadedUrl ?? photoUrl ?? '/images/shop/tela/catalogo.jpg'
     const filename = photoFilename
@@ -372,15 +414,27 @@ export default function TelaPage() {
               {!photoUrl && <span style={{ color: '#f59e0b', fontWeight: 600 }}> · Foto non caricata</span>}
             </div>
 
+            {uploadFailed && (
+              <div style={{ background: '#fff3cd', border: '1px solid #f0c040', borderRadius: 10, padding: '10px 12px', fontSize: '12px', color: '#7a5c00', lineHeight: 1.5 }}>
+                ⚠️ Caricamento foto non riuscito. Riprova.
+                <button
+                  onClick={retryUpload}
+                  style={{ marginLeft: 10, fontSize: '11px', fontWeight: 700, color: '#7a5c00', background: 'none', border: '1px solid #c8a030', borderRadius: 6, padding: '2px 8px', cursor: 'pointer' }}
+                >
+                  Ricarica foto
+                </button>
+              </div>
+            )}
+
             <button
               onClick={handleAddToCart}
-              disabled={uploading || isRendering}
+              disabled={uploading || isRendering || uploadFailed}
               style={{
                 width: '100%', padding: '15px', borderRadius: 12, border: 'none',
-                background: addedFeedback ? '#22c55e' : (uploading || isRendering) ? '#b0e6f0' : '#00c1de',
+                background: addedFeedback ? '#22c55e' : (uploading || isRendering || uploadFailed) ? '#b0e6f0' : '#00c1de',
                 color: '#fff', fontFamily: 'Poppins, sans-serif', fontWeight: 700,
-                fontSize: '15px', cursor: (uploading || isRendering) ? 'not-allowed' : 'pointer',
-                transition: 'background .2s', opacity: (uploading || isRendering) ? 0.75 : 1,
+                fontSize: '15px', cursor: (uploading || isRendering || uploadFailed) ? 'not-allowed' : 'pointer',
+                transition: 'background .2s', opacity: (uploading || isRendering || uploadFailed) ? 0.75 : 1,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
               }}
             >

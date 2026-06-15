@@ -55,9 +55,11 @@ export default function PhotoGlobeCuorePage() {
   const photoImgRef  = useRef<HTMLImageElement | null>(null)
 
   // ── Foto ──
+  const fileRef         = useRef<File | null>(null)
   const [photoUrl,      setPhotoUrl]      = useState<string | null>(null)
   const [uploadedUrl,   setUploadedUrl]   = useState<string | null>(null)
   const [uploading,     setUploading]     = useState(false)
+  const [uploadFailed,  setUploadFailed]  = useState(false)
   const [isRendering,   setIsRendering]   = useState(false)
   const [photoFilename, setPhotoFilename] = useState<string | undefined>(undefined)
   const [photoZoom,     setPhotoZoom]     = useState(1)
@@ -178,18 +180,7 @@ export default function PhotoGlobeCuorePage() {
   }, [])
 
   // ─── Upload foto ──────────────────────────────────────────────────────────
-  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (photoUrl) URL.revokeObjectURL(photoUrl)
-    const localUrl = URL.createObjectURL(file)
-    setPhotoUrl(localUrl); setUploadedUrl(null); setPhotoFilename(file.name)
-    setUploading(true); setPhotoZoom(1); setPhotoOffset({ x: 0, y: 0 }); setPhotoNatSize(null)
-    photoImgRef.current = null
-    e.target.value = ''
-    const img = new window.Image()
-    img.src = localUrl
-    img.onload = () => { photoImgRef.current = img; setPhotoNatSize({ w: img.naturalWidth, h: img.naturalHeight }) }
+  const uploadToR2 = useCallback(async (file: File) => {
     try {
       const res = await fetch('/api/shop/presign-photo', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -197,12 +188,44 @@ export default function PhotoGlobeCuorePage() {
       })
       if (res.ok) {
         const { uploadUrl, publicUrl } = await res.json()
-        await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
-        setUploadedUrl(publicUrl)
+        const putRes = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type || 'image/jpeg' } })
+        if (putRes.ok || putRes.status === 200) {
+          setUploadedUrl(publicUrl)
+          setUploadFailed(false)
+        } else {
+          setUploadFailed(true)
+        }
+      } else {
+        setUploadFailed(true)
       }
-    } catch { /* blob fallback */ }
+    } catch {
+      setUploadFailed(true)
+    }
     setUploading(false)
-  }, [photoUrl])
+  }, [])
+
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (photoUrl) URL.revokeObjectURL(photoUrl)
+    fileRef.current = file
+    const localUrl = URL.createObjectURL(file)
+    setPhotoUrl(localUrl); setUploadedUrl(null); setUploadFailed(false); setPhotoFilename(file.name)
+    setUploading(true); setPhotoZoom(1); setPhotoOffset({ x: 0, y: 0 }); setPhotoNatSize(null)
+    photoImgRef.current = null
+    e.target.value = ''
+    const img = new window.Image()
+    img.src = localUrl
+    img.onload = () => { photoImgRef.current = img; setPhotoNatSize({ w: img.naturalWidth, h: img.naturalHeight }) }
+    await uploadToR2(file)
+  }, [photoUrl, uploadToR2])
+
+  const retryUpload = useCallback(async () => {
+    if (!fileRef.current) return
+    setUploading(true)
+    setUploadFailed(false)
+    await uploadToR2(fileRef.current)
+  }, [uploadToR2])
 
   const removePhoto = useCallback(() => {
     if (photoUrl) URL.revokeObjectURL(photoUrl)
@@ -215,7 +238,7 @@ export default function PhotoGlobeCuorePage() {
 
   // ─── Add to cart ──────────────────────────────────────────────────────────
   async function handleAddToCart() {
-    if (uploading || isRendering) return
+    if (uploading || isRendering || uploadFailed) return
     let imageUrl = uploadedUrl ?? photoUrl ?? '/images/shop/gadget/PHOTO-GLOBE-CUORE-P9008_HIGH.jpg'
 
     if (photoImgRef.current && photoNatSize) {
@@ -456,6 +479,12 @@ export default function PhotoGlobeCuorePage() {
                     </button>
                   </div>
                 )}
+                {uploadFailed && (
+                  <div style={{ marginTop: 10, padding: '12px 14px', background: '#fff3cd', borderRadius: 10, border: '1px solid #ffc107', display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: '12px', color: '#856404', flex: 1 }}>Caricamento foto non riuscito. Riprova prima di aggiungere al carrello.</span>
+                    <button onClick={retryUpload} style={{ background: 'none', border: '1px solid #856404', borderRadius: 6, cursor: 'pointer', color: '#856404', fontSize: '11px', fontWeight: 700, padding: '4px 10px', whiteSpace: 'nowrap' }}>Riprova</button>
+                  </div>
+                )}
               </div>
               {photoUrl && (
                 <div style={{ padding: '14px 16px', background: '#fff0f3', borderRadius: 12, border: '1px solid #ffc8d5', fontSize: '12px', color: '#555', lineHeight: 1.7 }}>
@@ -593,11 +622,11 @@ export default function PhotoGlobeCuorePage() {
               {!photoUrl && <div style={{ color: '#f59e0b', fontWeight: 600 }}>Nessuna foto caricata</div>}
               {text.trim() && <div>Testo: <em>&ldquo;{text.slice(0,30)}{text.length>30?'…':''}&rdquo;</em> — {font.label}</div>}
             </div>
-            <button onClick={handleAddToCart} disabled={uploading || isRendering} style={{
+            <button onClick={handleAddToCart} disabled={uploading || isRendering || uploadFailed} style={{
               width: '100%', padding: '15px', borderRadius: 12, border: 'none',
-              background: addedFeedback ? '#22c55e' : (uploading || isRendering) ? '#b0e6f0' : '#00c1de',
+              background: addedFeedback ? '#22c55e' : (uploading || isRendering || uploadFailed) ? '#b0e6f0' : '#00c1de',
               color: '#fff', fontFamily: 'Poppins, sans-serif', fontWeight: 700,
-              fontSize: '15px', cursor: (uploading || isRendering) ? 'not-allowed' : 'pointer',
+              fontSize: '15px', cursor: (uploading || isRendering || uploadFailed) ? 'not-allowed' : 'pointer',
               transition: 'background .25s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             }}>
               {addedFeedback ? <><Check size={18} /> Aggiunto al carrello!</>

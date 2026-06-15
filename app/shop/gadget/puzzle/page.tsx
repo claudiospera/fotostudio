@@ -43,8 +43,10 @@ export default function PuzzlePage() {
   const [photoUrl,      setPhotoUrl]      = useState<string | null>(null)
   const [uploadedUrl,   setUploadedUrl]   = useState<string | null>(null)
   const [uploading,     setUploading]     = useState(false)
+  const [uploadFailed,  setUploadFailed]  = useState(false)
   const [photoFilename, setPhotoFilename] = useState<string | undefined>(undefined)
   const [zoom,          setZoom]          = useState(1)
+  const fileRef = useRef<File | null>(null)
 
   // Quando cambia tessera, seleziona primo formato disponibile
   useEffect(() => {
@@ -66,6 +68,8 @@ export default function PuzzlePage() {
     setUploadedUrl(null)
     setPhotoFilename(file.name)
     setUploading(true)
+    setUploadFailed(false)
+    fileRef.current = file
     setZoom(1)
     e.target.value = ''
     try {
@@ -76,12 +80,42 @@ export default function PuzzlePage() {
       })
       if (res.ok) {
         const { uploadUrl, publicUrl } = await res.json()
-        await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
-        setUploadedUrl(publicUrl)
+        const putRes = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
+        if (putRes.ok || putRes.status === 200) {
+          setUploadedUrl(publicUrl)
+          setUploadFailed(false)
+        } else {
+          setUploadFailed(true)
+        }
+      } else {
+        setUploadFailed(true)
       }
-    } catch { /* usa blob url come fallback */ }
+    } catch { setUploadFailed(true) }
     setUploading(false)
   }, [photoUrl])
+
+  const retryUpload = useCallback(async () => {
+    const file = fileRef.current
+    if (!file) return
+    setUploading(true)
+    setUploadFailed(false)
+    try {
+      const res = await fetch('/api/shop/presign-photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: file.name, contentType: file.type }),
+      })
+      if (res.ok) {
+        const { uploadUrl, publicUrl } = await res.json()
+        const putRes = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
+        if (putRes.ok || putRes.status === 200) {
+          setUploadedUrl(publicUrl)
+          setUploadFailed(false)
+        } else { setUploadFailed(true) }
+      } else { setUploadFailed(true) }
+    } catch { setUploadFailed(true) }
+    setUploading(false)
+  }, [])
 
   const handleRemovePhoto = useCallback(() => {
     if (photoUrl) URL.revokeObjectURL(photoUrl)
@@ -94,7 +128,7 @@ export default function PuzzlePage() {
   const total = variant.price * qty
 
   function handleAddToCart() {
-    if (uploading) return
+    if (uploading || uploadFailed) return
     const imageUrl = uploadedUrl ?? photoUrl ?? '/images/shop/gadget/puzzle.png'
     addItem({
       productId:    'puzzle',
@@ -479,15 +513,24 @@ export default function PuzzlePage() {
               {!photoUrl && <span style={{ color: '#f59e0b', fontWeight: 600 }}> · Foto non caricata</span>}
             </div>
 
+            {uploadFailed && (
+              <div style={{ background: '#fff3cd', border: '1px solid #f0c040', borderRadius: 10, padding: '10px 12px', fontSize: '12px', color: '#7a5c00', lineHeight: 1.5 }}>
+                ⚠️ Caricamento foto non riuscito. Riprova.
+                <button onClick={retryUpload} style={{ marginLeft: 10, fontSize: '11px', fontWeight: 700, color: '#7a5c00', background: 'none', border: '1px solid #c8a030', borderRadius: 6, padding: '2px 8px', cursor: 'pointer' }}>
+                  Ricarica foto
+                </button>
+              </div>
+            )}
+
             <button
               onClick={handleAddToCart}
-              disabled={uploading}
+              disabled={uploading || uploadFailed}
               style={{
                 width: '100%', padding: '15px', borderRadius: 12, border: 'none',
-                background: addedFeedback ? '#22c55e' : uploading ? '#b0e6f0' : '#00c1de',
+                background: addedFeedback ? '#22c55e' : uploading || uploadFailed ? '#b0e6f0' : '#00c1de',
                 color: '#fff', fontFamily: 'Poppins, sans-serif', fontWeight: 700,
-                fontSize: '15px', cursor: uploading ? 'not-allowed' : 'pointer',
-                transition: 'background .2s', opacity: uploading ? 0.75 : 1,
+                fontSize: '15px', cursor: uploading || uploadFailed ? 'not-allowed' : 'pointer',
+                transition: 'background .2s', opacity: uploading || uploadFailed ? 0.75 : 1,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
               }}
             >
