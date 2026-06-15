@@ -193,6 +193,23 @@ export default function ForexPage() {
     let imageUrl = uploadedUrl ?? photoUrl ?? '/images/shop/forex/ambientata.png'
     const filename = photoFilename
 
+    // Compute crop data using CM dimensions as scale-independent proxy
+    let cropX: number | undefined
+    let cropY: number | undefined
+    let cropZoom: number | undefined
+    let formatLabel: string | undefined
+    if (photoUrl && photoNatSize) {
+      const natW = photoNatSize.w
+      const natH = photoNatSize.h
+      const coverScale = Math.max(panelW / natW, panelH / natH)
+      const imgW_equiv = natW * coverScale * zoom
+      const imgH_equiv = natH * coverScale * zoom
+      cropX = Math.max(0, Math.min(100, 50 - (photoOffset.x * panelW / imgW_equiv) * 100))
+      cropY = Math.max(0, Math.min(100, 50 - (photoOffset.y * panelH / imgH_equiv) * 100))
+      cropZoom = zoom
+      formatLabel = `${panelW}×${panelH} cm`
+    }
+
     addItem({
       productId:    'forex',
       variantId:    `${variant.id}${isSquare ? '' : rotated ? '__h' : '__v'}`,
@@ -202,6 +219,7 @@ export default function ForexPage() {
       price:        variant.price,
       image:        imageUrl,
       filename,
+      ...(cropX != null && { cropX, cropY, cropZoom, formatLabel }),
     })
     setAddedFeedback(true)
     setTimeout(() => setAddedFeedback(false), 2200)

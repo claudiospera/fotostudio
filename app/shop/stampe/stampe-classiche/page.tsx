@@ -380,6 +380,25 @@ export default function StampeClassichePage() {
         const imageUrl = p.uploadedUrl || p.url
         const filename = p.name
 
+        // Compute crop data (only for cover mode)
+        let cropX: number | undefined
+        let cropY: number | undefined
+        let cropZoom: number | undefined
+        let formatLabel: string | undefined
+        if (p.fitMode !== 'contain') {
+          const { w: slotW, h: slotH } = getSlotDims(pv, PREVIEW_BIG, p.slotOrientation)
+          const coverScale = Math.max(slotW / p.natW, slotH / p.natH)
+          const imgW = p.natW * coverScale * p.zoom
+          const imgH = p.natH * coverScale * p.zoom
+          cropX = clamp(50 - (p.offsetX / imgW) * 100, 0, 100)
+          cropY = clamp(50 - (p.offsetY / imgH) * 100, 0, 100)
+          cropZoom = p.zoom
+          let effW = pv.wCm, effH = pv.hCm
+          if (p.slotOrientation === 'landscape' && effW < effH) { [effW, effH] = [effH, effW] }
+          if (p.slotOrientation === 'portrait'  && effW > effH) { [effW, effH] = [effH, effW] }
+          formatLabel = `${effW}×${effH} cm`
+        }
+
         addItem({
           productId:    'stampe-classiche',
           variantId:    `${pv.id}--${p.id}`,
@@ -389,6 +408,7 @@ export default function StampeClassichePage() {
           price,
           image:        imageUrl,
           filename,
+          ...(p.fitMode !== 'contain' && { cropX, cropY, cropZoom, formatLabel }),
         })
       }
       setAdded(true)

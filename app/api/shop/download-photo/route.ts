@@ -38,7 +38,9 @@ export async function GET(req: NextRequest) {
   // ── Instax: full card composite ─────────────────────────────────────────
   if (productId === 'stampe-instax' && variantId) {
     const product = PRODUCTS.find(p => p.id === 'stampe-instax')
+    const baseFormatId = variantId.split('__')[0]  // 'mini', 'square', 'wide'
     const variant = product?.variants.find(v => v.id === variantId)
+               ?? product?.variants.find(v => v.id === `pol-${baseFormatId}`)
 
     if (variant?.outerW && variant?.outerH && variant?.pad && variant.widthCm && variant.heightCm) {
       const frame      = product?.options?.frames?.find(f => f.label === frameLabel)

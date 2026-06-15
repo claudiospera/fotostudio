@@ -268,6 +268,24 @@ export default function CorniciPage() {
     let imageUrl = uploadedUrl ?? photoUrl ?? 'https://images.unsplash.com/photo-1416339306562-f3d12fefd36f?w=800&q=80'
     const filename = photoFilename
 
+    // Compute crop data using CM dimensions as scale-independent proxy
+    // photoOffset is normalized by slot px (x = pixelOffset / slotWidth)
+    let cropX: number | undefined
+    let cropY: number | undefined
+    let cropZoom: number | undefined
+    let formatLabel: string | undefined
+    if (photoUrl && photoNatSize) {
+      const natW = photoNatSize.w
+      const natH = photoNatSize.h
+      const coverScale = Math.max(effW / natW, effH / natH)
+      const imgW_equiv = natW * coverScale * zoom
+      const imgH_equiv = natH * coverScale * zoom
+      cropX = Math.max(0, Math.min(100, 50 - (photoOffset.x * effW / imgW_equiv) * 100))
+      cropY = Math.max(0, Math.min(100, 50 - (photoOffset.y * effH / imgH_equiv) * 100))
+      cropZoom = zoom
+      formatLabel = `${effW}×${effH} cm`
+    }
+
     addItem({
       productId:    'cornici',
       variantId:    `${variant.id}__${frame.id}__${printType.id}__${passeEnabled ? `${passe.id}-${passeSize.id}` : 'no-passe'}__${schienaleEnabled && schienaleAvailable ? 'schienale' : 'no-schienale'}`,
@@ -277,6 +295,7 @@ export default function CorniciPage() {
       price:        unitPrice,
       image:        imageUrl,
       filename,
+      ...(cropX != null && { cropX, cropY, cropZoom, formatLabel }),
     })
     setAddedFeedback(true)
     setTimeout(() => setAddedFeedback(false), 2200)

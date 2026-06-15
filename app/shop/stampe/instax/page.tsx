@@ -770,6 +770,17 @@ export default function InstaxPage() {
         const imageUrl = p.uploadedUrl || p.url
         const filename = `instax-${format.id}-${frame.id}-${p.name}`
 
+        // Compute crop data in instax photo area screen space
+        const EDITOR_W = 220
+        const EDITOR_H = Math.round(EDITOR_W * (format.outerH / format.outerW))
+        const screenPW = Math.round(format.photoW * (EDITOR_W / format.outerW))
+        const screenPH = Math.round(format.photoH * (EDITOR_H / format.outerH))
+        const coverScale = Math.max(screenPW / p.natW, screenPH / p.natH)
+        const imgW = p.natW * coverScale * p.zoom
+        const imgH = p.natH * coverScale * p.zoom
+        const cropX = Math.max(0, Math.min(100, 50 - (p.offsetX / imgW) * 100))
+        const cropY = Math.max(0, Math.min(100, 50 - (p.offsetY / imgH) * 100))
+
         addItem({
           productId:    'stampe-instax',
           variantId:    `${format.id}__${frame.id}--${p.id}`,
@@ -779,6 +790,12 @@ export default function InstaxPage() {
           price:        unitPrice,
           image:        imageUrl,
           filename,
+          cropX,
+          cropY,
+          cropZoom:    p.zoom,
+          formatLabel: `${format.photoW}×${format.photoH} cm`,
+          frameLabel:  frame.label,
+          instaxText:  p.label || undefined,
         })
       }
       setAddedFeedback(true)

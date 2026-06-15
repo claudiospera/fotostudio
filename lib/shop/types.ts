@@ -86,6 +86,13 @@ export interface CartItem {
   image: string
   filename?: string   // nome originale del file caricato dal cliente
   notes?: string      // info aggiuntive libere (es. URL retro portachiavi, colore scelto)
+  // crop data (set when the customer has repositioned/zoomed the photo)
+  cropX?: number       // 0–100, horizontal center of crop
+  cropY?: number       // 0–100, vertical center of crop
+  cropZoom?: number    // zoom factor
+  formatLabel?: string // e.g. "10×15 cm" for ratio computation
+  frameLabel?: string  // for instax: frame design label
+  instaxText?: string  // for instax: bottom text label
 }
 
 export interface Cart {

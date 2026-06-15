@@ -460,6 +460,25 @@ export default function HahnemuhlePage() {
     let imageUrl = uploadedUrl ?? photoUrl ?? '/images/shop/hahnemuhle/catalogo.jpg'
     const filename = photoFilename
 
+    // Compute crop data using CM dimensions as scale-independent proxy
+    let cropX: number | undefined
+    let cropY: number | undefined
+    let cropZoom: number | undefined
+    let formatLabel: string | undefined
+    if (photoUrl && photoNatSize && fmtW != null && fmtH != null) {
+      const natW = photoNatSize.w
+      const natH = photoNatSize.h
+      const photoAreaW_cm = fmtW - (whiteBorder ? borderCm * 2 : 0)
+      const photoAreaH_cm = fmtH - (whiteBorder ? borderCm * 2 : 0)
+      const coverScale = Math.max(photoAreaW_cm / natW, photoAreaH_cm / natH)
+      const imgW_equiv = natW * coverScale * zoom
+      const imgH_equiv = natH * coverScale * zoom
+      cropX = Math.max(0, Math.min(100, 50 - (photoOffset.x * photoAreaW_cm / imgW_equiv) * 100))
+      cropY = Math.max(0, Math.min(100, 50 - (photoOffset.y * photoAreaH_cm / imgH_equiv) * 100))
+      cropZoom = zoom
+      formatLabel = `${fmtW}×${fmtH} cm`
+    }
+
     addItem({
       productId:    'hahnemuhle',
       variantId:    `${paper.id}__${format.fmt.replace('×', 'x')}`,
@@ -469,6 +488,7 @@ export default function HahnemuhlePage() {
       price,
       image:        imageUrl,
       filename,
+      ...(cropX != null && { cropX, cropY, cropZoom, formatLabel }),
     })
     setAdded(true)
     setTimeout(() => setAdded(false), 2500)

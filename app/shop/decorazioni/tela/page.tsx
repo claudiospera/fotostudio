@@ -213,6 +213,23 @@ export default function TelaPage() {
     let imageUrl = uploadedUrl ?? photoUrl ?? '/images/shop/tela/catalogo.jpg'
     const filename = photoFilename
 
+    // Compute crop data using CM dimensions as scale-independent proxy
+    let cropX: number | undefined
+    let cropY: number | undefined
+    let cropZoom: number | undefined
+    let formatLabel: string | undefined
+    if (photoUrl && photoNatSize) {
+      const natW = photoNatSize.w
+      const natH = photoNatSize.h
+      const coverScale = Math.max(canvasW / natW, canvasH / natH)
+      const imgW_equiv = natW * coverScale * zoom
+      const imgH_equiv = natH * coverScale * zoom
+      cropX = Math.max(0, Math.min(100, 50 - (offsetNorm.x * canvasW / imgW_equiv) * 100))
+      cropY = Math.max(0, Math.min(100, 50 - (offsetNorm.y * canvasH / imgH_equiv) * 100))
+      cropZoom = zoom
+      formatLabel = `${canvasW}×${canvasH} cm`
+    }
+
     addItem({
       productId:    'tela',
       variantId:    `${variant.id}__${borderType.id}${isSquare ? '' : rotated ? '__h' : '__v'}`,
@@ -222,6 +239,7 @@ export default function TelaPage() {
       price:        variant.price,
       image:        imageUrl,
       filename,
+      ...(cropX != null && { cropX, cropY, cropZoom, formatLabel }),
     })
     setAddedFeedback(true)
     setTimeout(() => setAddedFeedback(false), 2200)

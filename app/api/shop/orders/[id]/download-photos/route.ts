@@ -2,12 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { sql } from '@/lib/db'
 import JSZip from 'jszip'
+import { cropImage, parseFormatRatio } from '@/lib/cropImage'
 
 interface OrderItem {
   image?: string
   filename?: string
   productName?: string
   variantLabel?: string
+  cropX?: number
+  cropY?: number
+  cropZoom?: number
+  formatLabel?: string
 }
 
 // GET /api/shop/orders/[id]/download-photos — ZIP di tutte le foto dell'ordine
@@ -37,10 +42,21 @@ export async function GET(
     try {
       const res = await fetch(item.image!)
       if (!res.ok) return
-      const buffer = await res.arrayBuffer()
+      const rawBuffer = await res.arrayBuffer()
       const ext = (item.filename ?? item.image!).split('.').pop()?.split('?')[0]?.toLowerCase() || 'jpg'
       const name = item.filename || `foto-${String(i + 1).padStart(3, '0')}.${ext}`
-      zip.file(name, buffer)
+
+      // Apply crop if data is present
+      const ratio = parseFormatRatio(item.formatLabel ?? '')
+      const hasCrop = item.cropX != null && item.cropY != null && ratio != null
+      let fileData: ArrayBuffer | Buffer = rawBuffer
+      if (hasCrop && ratio) {
+        try {
+          fileData = await cropImage(rawBuffer, ratio.w, ratio.h, item.cropX!, item.cropY!, item.cropZoom ?? 1)
+        } catch { /* skip crop, use original */ }
+      }
+
+      zip.file(name, fileData)
     } catch { /* skip */ }
   }))
 
