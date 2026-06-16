@@ -4,6 +4,7 @@ import { useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Suspense } from 'react'
+import { useCart } from '@/components/shop/CartProvider'
 
 function formatPrice(cents: number) {
   return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(cents / 100)
@@ -25,6 +26,13 @@ function OrdineConfermatoInner() {
   const orderId = params.get('orderId')
   const paid = params.get('paid') === '1'
   const [order, setOrder] = useState<OrderSummary | null>(null)
+  const { clearCart } = useCart()
+
+  // Svuota sempre il carrello quando si arriva qui (gestisce anche il caso Stripe
+  // dove window.location.href potrebbe aver interrotto la DELETE precedente)
+  useEffect(() => {
+    clearCart()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!orderId) return

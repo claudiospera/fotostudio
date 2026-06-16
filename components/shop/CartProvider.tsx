@@ -166,11 +166,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   )
 
   const clearCart = useCallback(() => {
-    setCart(emptyCart())
-    setCoupon(null)
+    const empty = emptyCart()
+    saveLocal(empty)   // salva subito prima di qualsiasi navigazione (es. redirect Stripe)
     if (user?.id) {
+      // rimuovi la sessione key così al prossimo caricamento ri-sincronizza dal DB (che sarà vuoto)
+      sessionStorage.removeItem(`cart_synced_${user.id}`)
       fetch('/api/shop/cart', { method: 'DELETE' }).catch(() => {})
     }
+    setCart(empty)
+    setCoupon(null)
   }, [user?.id])
 
   const applyCoupon = useCallback(async (code: string): Promise<{ ok: boolean; error?: string }> => {
