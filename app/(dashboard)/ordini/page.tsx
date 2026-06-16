@@ -47,6 +47,13 @@ interface ShopOrderItem {
   price: number
   image?: string
   filename?: string
+  productId?: string
+  variantId?: string
+  cropX?: number | null
+  cropY?: number | null
+  cropZoom?: number | null
+  frameLabel?: string | null
+  instaxText?: string | null
 }
 
 interface ShopOrder {
@@ -61,6 +68,22 @@ interface ShopOrder {
   items: ShopOrderItem[]
   total: number
   created_at: string
+}
+
+const INSTAX_FRAME_BG: Record<string, string> = {
+  'Olografico':  'linear-gradient(135deg, #ff9af5 0%, #ffe04b 20%, #4bf5ff 40%, #b44bff 60%, #4bffe0 80%, #ff9af5 100%)',
+  'Turchese':    '#5bc8c8',
+  'Nero':        '#111111',
+  'Pallini':     '#ffffff',
+  'WOW!':        'linear-gradient(135deg, #00b4c8 0%, #00d4a8 30%, #ff6b35 60%, #ffcc00 100%)',
+  'Rose Gold':   'repeating-linear-gradient(45deg, #f4a2a0 0px, #e88580 1px, #fac0b8 3px, #e89088 5px, #fad0c0 7px, #e89888 9px)',
+  'Silver':      'repeating-linear-gradient(45deg, #b0c4d8 0px, #d0e0ec 1px, #a8b8cc 3px, #c8d8e8 5px, #b8ccd8 7px, #d4e4f0 9px)',
+  'Gradiente':   'linear-gradient(135deg, #ff69b4 0%, #ff4500 33%, #4169e1 66%, #40e0d0 100%)',
+  'Marmo':       'linear-gradient(135deg, #1a3a4c 0%, #2c5468 20%, #1a2e3a 40%, #234558 60%, #1a3040 80%, #2a4a5c 100%)',
+  'Grigio':      '#9e9e9e',
+  'Rosa':        '#ff91a4',
+  'Arcobaleno':  'linear-gradient(135deg, #ff9aa2 0%, #ffdac1 25%, #e2f0cb 50%, #b5ead7 75%, #c7ceea 100%)',
+  'Bianco':      '#f8f8f8',
 }
 
 // ── helpers ────────────────────────────────────────────────────────────────
@@ -368,10 +391,43 @@ function ShopOrderDetail({
                 {order.items.map((item, i) => (
                   <div key={i} style={{ background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 'var(--r2)', padding: '10px 12px', display: 'flex', gap: 10, alignItems: 'center' }}>
                     {item.image?.startsWith('https://') ? (
-                      <a href={`/api/shop/download-photo?url=${encodeURIComponent(item.image)}&filename=${encodeURIComponent(item.filename || 'foto.jpg')}`} style={{ flexShrink: 0 }}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={item.image} alt="" style={{ width: 48, height: 48, borderRadius: 6, objectFit: 'cover', display: 'block' }} />
-                      </a>
+                      item.productId === 'stampe-instax' ? (
+                        /* Miniatura Polaroid per Instax */
+                        <a href={`/api/shop/download-photo?url=${encodeURIComponent(item.image)}&filename=${encodeURIComponent(item.filename || 'foto.jpg')}`} style={{ flexShrink: 0 }}>
+                          <div style={{
+                            width: 46,
+                            background: item.frameLabel ? (INSTAX_FRAME_BG[item.frameLabel] ?? '#f8f8f8') : '#f8f8f8',
+                            borderRadius: 4,
+                            padding: '2px 2px 0 2px',
+                            boxShadow: '0 1px 4px rgba(0,0,0,.3)',
+                          }}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={item.image}
+                              alt=""
+                              style={{
+                                width: '100%',
+                                height: 40,
+                                objectFit: 'cover',
+                                objectPosition: item.cropX != null ? `${item.cropX}% ${item.cropY}%` : 'center',
+                                display: 'block',
+                              }}
+                            />
+                            <div style={{ height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 2px' }}>
+                              {item.instaxText && (
+                                <span style={{ fontSize: 6, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
+                                  {item.instaxText}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </a>
+                      ) : (
+                        <a href={`/api/shop/download-photo?url=${encodeURIComponent(item.image)}&filename=${encodeURIComponent(item.filename || 'foto.jpg')}`} style={{ flexShrink: 0 }}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={item.image} alt="" style={{ width: 48, height: 48, borderRadius: 6, objectFit: 'cover', display: 'block' }} />
+                        </a>
+                      )
                     ) : (
                       <div style={{ width: 48, height: 48, borderRadius: 6, background: 'var(--s3)', flexShrink: 0, display: 'grid', placeItems: 'center', fontSize: 18 }}>🖼️</div>
                     )}
