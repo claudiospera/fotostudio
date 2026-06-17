@@ -64,10 +64,8 @@ export default async function HomePage() {
         background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(14px)',
         borderBottom: '1px solid #e8e8e8',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ borderRadius: 8, padding: '3px 8px', background: '#f3f3f3' }}>
-            <Image src="/logo.png" alt="Storie da Raccontare" width={90} height={42} style={{ objectFit: 'contain', display: 'block' }} />
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <Image src="/logo.png" alt="Storie da Raccontare" width={90} height={42} style={{ objectFit: 'contain', display: 'block' }} />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <Link href="/servizi" style={{ fontSize: '13px', color: '#555', textDecoration: 'none', padding: '6px 14px', borderRadius: 10, transition: 'all .15s' }} className="nav-link">Servizi Fotografici</Link>
@@ -102,7 +100,7 @@ export default async function HomePage() {
 
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
             <a href="/servizi" style={{ background: '#00c1de', color: '#fff', borderRadius: 12, padding: '14px 32px', fontSize: '13px', fontWeight: 700, textDecoration: 'none', letterSpacing: '.04em' }}>Scopri i servizi fotografici</a>
-            <a href="/shop" style={{ background: '#00c1de', color: '#fff', borderRadius: 12, padding: '14px 32px', fontSize: '13px', fontWeight: 700, textDecoration: 'none', letterSpacing: '.04em' }}>Area shop</a>
+            <a href="/shop" style={{ background: '#00c1de', color: '#fff', borderRadius: 12, padding: '14px 32px', fontSize: '13px', fontWeight: 700, textDecoration: 'none', letterSpacing: '.04em' }}>Area shop e stampa</a>
           </div>
         </div>
 
