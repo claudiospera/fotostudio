@@ -61,9 +61,11 @@ export async function GET(
       if (item.productId === 'stampe-instax' && item.variantId) {
         const product = PRODUCTS.find(p => p.id === 'stampe-instax')
         // variantId format: "pol-square__white--kmh" → base is "pol-square"
-        const baseVariantId = item.variantId.split('__')[0]
+        // variantId in DB: "square__white--xxx" or "pol-square__white--xxx"
+        const baseFormatId = item.variantId.split('__')[0]
         const variant = product?.variants.find(v => v.id === item.variantId)
-                     ?? product?.variants.find(v => v.id === baseVariantId)
+                     ?? product?.variants.find(v => v.id === baseFormatId)
+                     ?? product?.variants.find(v => v.id === `pol-${baseFormatId}`)
         console.log('[download-photos] instax item:', { variantId: item.variantId, baseVariantId, variantFound: !!variant, frameLabel: item.frameLabel })
         if (variant?.outerW && variant?.outerH && variant?.pad && variant.widthCm && variant.heightCm) {
           const frame      = product?.options?.frames?.find(f => f.label === item.frameLabel)
