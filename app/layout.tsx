@@ -60,6 +60,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <ClerkProvider>
       <html lang="it" className="h-full">
+        <head>
+          <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Pacifico&family=Dancing+Script:wght@700&family=Satisfy&display=swap"
+          />
+        </head>
         <body className="h-full">{children}</body>
       </html>
     </ClerkProvider>
