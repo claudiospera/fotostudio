@@ -60,7 +60,10 @@ export async function GET(
       // Instax: build full card with frame + text
       if (item.productId === 'stampe-instax' && item.variantId) {
         const product = PRODUCTS.find(p => p.id === 'stampe-instax')
+        // variantId format: "pol-square__white--kmh" → base is "pol-square"
+        const baseVariantId = item.variantId.split('__')[0]
         const variant = product?.variants.find(v => v.id === item.variantId)
+                     ?? product?.variants.find(v => v.id === baseVariantId)
         if (variant?.outerW && variant?.outerH && variant?.pad && variant.widthCm && variant.heightCm) {
           const frame      = product?.options?.frames?.find(f => f.label === item.frameLabel)
           const frameColor = frame?.color ?? 'transparent'
