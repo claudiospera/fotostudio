@@ -3,6 +3,10 @@ import { withSentryConfig } from '@sentry/nextjs'
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ['sharp', '@napi-rs/canvas'],
+  outputFileTracingIncludes: {
+    '/api/shop/orders/[id]/download-photos': ['./lib/fonts/**'],
+    '/api/shop/download-photo': ['./lib/fonts/**'],
+  },
   images: {
     remotePatterns: [
       {
