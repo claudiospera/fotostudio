@@ -1155,22 +1155,6 @@ export default function InstaxPage() {
                           ⚠️ Riprova caricamento
                         </button>
                       )}
-                      {p.label && (
-                        <select
-                          value={p.labelFont}
-                          onClick={e => e.stopPropagation()}
-                          onChange={e => { e.stopPropagation(); updatePhoto(p.id, { labelFont: e.target.value }) }}
-                          style={{
-                            width: '100%', padding: '5px 8px', border: '1.5px solid #e0e0e0',
-                            borderRadius: 8, fontSize: '12px', fontFamily: p.labelFont,
-                            color: '#333', background: '#fff', cursor: 'pointer', outline: 'none',
-                          }}
-                        >
-                          {LABEL_FONTS.map(f => (
-                            <option key={f.id} value={f.id}>{f.label}</option>
-                          ))}
-                        </select>
-                      )}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e0e0e0', borderRadius: 8, overflow: 'hidden' }}>
                           <button
@@ -1352,21 +1336,6 @@ export default function InstaxPage() {
                         </option>
                       ))}
                     </select>
-
-                    {/* Applica font a tutte */}
-                    {photos.length > 1 && (
-                      <button
-                        onClick={() => setPhotos(prev => prev.map(p => ({ ...p, labelFont: activePhoto.labelFont })))}
-                        style={{
-                          width: '100%', marginBottom: 8, padding: '6px 10px',
-                          border: '1.5px solid #e0e0e0', borderRadius: 8,
-                          fontSize: '11px', color: '#888', background: '#f8f8f8',
-                          cursor: 'pointer', letterSpacing: '.03em',
-                        }}
-                      >
-                        Applica a tutte le foto
-                      </button>
-                    )}
 
                     {/* Input testo */}
                     <input

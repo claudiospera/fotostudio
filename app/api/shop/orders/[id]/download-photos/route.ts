@@ -72,7 +72,7 @@ export async function GET(
         if (variant?.outerW && variant?.outerH && variant?.pad && variant.widthCm && variant.heightCm) {
           const frame      = product?.options?.frames?.find(f => f.label === item.frameLabel)
           const frameColor = frame?.color ?? 'transparent'
-          console.log('[download-photos] building card:', { outerW: variant.outerW, outerH: variant.outerH, frameColor, instaxText: item.instaxText })
+          console.log('[download-photos] building card:', { outerW: variant.outerW, outerH: variant.outerH, frameColor, instaxText: item.instaxText, instaxLabelFont: item.instaxLabelFont, instaxLabelColor: item.instaxLabelColor })
           try {
             fileData = await buildInstaxCard(rawBuffer, variant.outerW, variant.outerH, variant.pad, variant.widthCm, variant.heightCm, cropX, cropY, zoom, frameColor, item.instaxText, item.instaxLabelColor, item.instaxLabelFont)
             outName  = outName.replace(/\.[^.]+$/, '') + '_instax.jpg'
