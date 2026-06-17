@@ -45,7 +45,7 @@ export default function ServiziPage() {
           <img
             src="/logo-claudio-spera.png"
             alt="Claudio Spera Fotografo"
-            style={{ maxWidth: 'clamp(260px, 40vw, 520px)', width: '100%', height: 'auto' }}
+            style={{ maxWidth: 'clamp(260px, 40vw, 520px)', width: '100%', height: 'auto', display: 'block', margin: '0 auto' }}
           />
         </div>
 
