@@ -63,7 +63,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <head>
           <link
             rel="stylesheet"
-            href="https://fonts.googleapis.com/css2?family=Pacifico&family=Dancing+Script:wght@700&family=Satisfy&display=swap"
+            href="https://fonts.googleapis.com/css2?family=Pacifico&family=Dancing+Script:wght@700&family=Satisfy&family=Poppins:wght@400;700&display=swap"
           />
         </head>
         <body className="h-full">{children}</body>
