@@ -1155,6 +1155,22 @@ export default function InstaxPage() {
                           ⚠️ Riprova caricamento
                         </button>
                       )}
+                      {p.label && (
+                        <select
+                          value={p.labelFont}
+                          onClick={e => e.stopPropagation()}
+                          onChange={e => { e.stopPropagation(); updatePhoto(p.id, { labelFont: e.target.value }) }}
+                          style={{
+                            width: '100%', padding: '5px 8px', border: '1.5px solid #e0e0e0',
+                            borderRadius: 8, fontSize: '12px', fontFamily: p.labelFont,
+                            color: '#333', background: '#fff', cursor: 'pointer', outline: 'none',
+                          }}
+                        >
+                          {LABEL_FONTS.map(f => (
+                            <option key={f.id} value={f.id}>{f.label}</option>
+                          ))}
+                        </select>
+                      )}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e0e0e0', borderRadius: 8, overflow: 'hidden' }}>
                           <button
