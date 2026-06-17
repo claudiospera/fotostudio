@@ -264,19 +264,22 @@ export async function buildInstaxCard(
       }
     }
 
-    // Ensure fontconfig config exists so Pango respects the fontfile parameter
-    ensureFontconfig()
+    // Render text via SVG with embedded font (bypasses fontconfig/Pango entirely)
+    const fontFile   = resolveFontFile(instaxLabelFont)
+    const fontBase64 = fs.readFileSync(fontFile).toString('base64')
+    const svgW       = maxWidthPx
+    const svgH       = Math.round(textZoneH)
 
-    // Font bundled in the project
-    const fontfile  = resolveFontFile(instaxLabelFont)
-    // Pango size in thousandths of a point (at 300 DPI: 1pt ≈ 4.167px)
-    const pangoSize = Math.round(fontSize * 72000 / DPI)
-    const pango     = `<span color="${textColor}" size="${pangoSize}">${safe}</span>`
+    const svg = Buffer.from(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}">` +
+      `<defs><style>@font-face{font-family:'F';src:url('data:font/truetype;base64,${fontBase64}')}</style></defs>` +
+      `<text x="50%" y="50%" font-family="F" font-size="${fontSize}" ` +
+      `fill="${textColor}" text-anchor="middle" dominant-baseline="middle">${safe}</text>` +
+      `</svg>`
+    )
 
     try {
-      const textImg = await sharp({
-        text: { text: pango, fontfile, width: maxWidthPx, align: 'centre', dpi: DPI, rgba: true },
-      }).png().toBuffer()
+      const textImg = await sharp(svg).png().toBuffer()
 
       const meta  = await sharp(textImg).metadata()
       const imgW  = meta.width  ?? maxWidthPx
@@ -286,7 +289,7 @@ export async function buildInstaxCard(
 
       composites.push({ input: textImg, left, top })
     } catch (err) {
-      console.error('[buildInstaxCard] pango text render failed:', err)
+      console.error('[buildInstaxCard] SVG text render failed:', err)
       // Continue without text rather than failing the whole card
     }
   }
