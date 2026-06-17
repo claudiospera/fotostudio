@@ -1,5 +1,27 @@
 import sharp from 'sharp'
 import path from 'path'
+import fs from 'fs'
+
+/**
+ * Creates a minimal fontconfig config in /tmp pointing to our bundled fonts dir.
+ * Without this, Pango ignores the `fontfile` parameter on Vercel (no system fontconfig).
+ */
+function ensureFontconfig(): void {
+  const configPath = '/tmp/fonts.conf'
+  if (fs.existsSync(configPath)) return
+  const fontsDir = path.join(process.cwd(), 'lib/fonts')
+  const cacheDir = '/tmp/fontconfig-cache'
+  try {
+    if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true })
+    fs.writeFileSync(configPath, `<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+<fontconfig>
+  <dir>${fontsDir}</dir>
+  <cachedir>${cacheDir}</cachedir>
+</fontconfig>`)
+    process.env.FONTCONFIG_FILE = configPath
+  } catch { /* non-fatal */ }
+}
 
 /**
  * Normalizes any image format (including HEIC) to a JPEG buffer.
@@ -242,7 +264,10 @@ export async function buildInstaxCard(
       }
     }
 
-    // Font bundled in the project — bypasses fontconfig entirely (works on Vercel)
+    // Ensure fontconfig config exists so Pango respects the fontfile parameter
+    ensureFontconfig()
+
+    // Font bundled in the project
     const fontfile  = resolveFontFile(instaxLabelFont)
     // Pango size in thousandths of a point (at 300 DPI: 1pt ≈ 4.167px)
     const pangoSize = Math.round(fontSize * 72000 / DPI)
