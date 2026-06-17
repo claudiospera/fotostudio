@@ -1,26 +1,31 @@
 import sharp from 'sharp'
 import path from 'path'
-import fs from 'fs'
+import { createCanvas, GlobalFonts } from '@napi-rs/canvas'
 
-/**
- * Creates a minimal fontconfig config in /tmp pointing to our bundled fonts dir.
- * Without this, Pango ignores the `fontfile` parameter on Vercel (no system fontconfig).
- */
-function ensureFontconfig(): void {
-  const configPath = '/tmp/fonts.conf'
-  if (fs.existsSync(configPath)) return
-  const fontsDir = path.join(process.cwd(), 'lib/fonts')
-  const cacheDir = '/tmp/fontconfig-cache'
-  try {
-    if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true })
-    fs.writeFileSync(configPath, `<?xml version="1.0"?>
-<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
-<fontconfig>
-  <dir>${fontsDir}</dir>
-  <cachedir>${cacheDir}</cachedir>
-</fontconfig>`)
-    process.env.FONTCONFIG_FILE = configPath
-  } catch { /* non-fatal */ }
+const fontsDir = path.join(process.cwd(), 'lib/fonts')
+
+// Register all bundled fonts once at module load — works without fontconfig/Pango
+let fontsRegistered = false
+function ensureFontsRegistered() {
+  if (fontsRegistered) return
+  GlobalFonts.registerFromPath(path.join(fontsDir, 'Pacifico-Regular.ttf'),    'Pacifico')
+  GlobalFonts.registerFromPath(path.join(fontsDir, 'DancingScript-Bold.ttf'),  'Dancing Script')
+  GlobalFonts.registerFromPath(path.join(fontsDir, 'Satisfy-Regular.ttf'),     'Satisfy')
+  GlobalFonts.registerFromPath(path.join(fontsDir, 'Poppins-Regular.ttf'),     'Poppins')
+  GlobalFonts.registerFromPath(path.join(fontsDir, 'Lora-Regular.ttf'),        'Lora')
+  GlobalFonts.registerFromPath(path.join(fontsDir, 'Geist-Regular.ttf'),       'Geist')
+  fontsRegistered = true
+}
+
+function resolveFontFamily(cssFontFamily?: string | null): string {
+  if (!cssFontFamily) return 'Geist'
+  const f = cssFontFamily.toLowerCase()
+  if (f.includes('pacifico'))  return 'Pacifico'
+  if (f.includes('dancing'))   return 'Dancing Script'
+  if (f.includes('satisfy'))   return 'Satisfy'
+  if (f.includes('poppins'))   return 'Poppins'
+  if (f.includes('georgia') || f.includes('lora')) return 'Lora'
+  return 'Geist'
 }
 
 /**
@@ -168,18 +173,6 @@ function cssColorToSvgFill(w: number, h: number, frameColor: string): string {
  * @param frameColor   - CSS color/gradient for the card border
  * @param instaxText   - optional text for the bottom label strip
  */
-/** Maps a CSS font-family string (from LABEL_FONTS) to a bundled TTF file */
-function resolveFontFile(cssFontFamily?: string | null): string {
-  const fontsDir = path.join(process.cwd(), 'lib/fonts')
-  if (!cssFontFamily) return path.join(fontsDir, 'Geist-Regular.ttf')
-  const f = cssFontFamily.toLowerCase()
-  if (f.includes('pacifico'))       return path.join(fontsDir, 'Pacifico-Regular.ttf')
-  if (f.includes('dancing'))        return path.join(fontsDir, 'DancingScript-Bold.ttf')
-  if (f.includes('satisfy'))        return path.join(fontsDir, 'Satisfy-Regular.ttf')
-  if (f.includes('poppins'))        return path.join(fontsDir, 'Poppins-Regular.ttf')
-  if (f.includes('georgia'))        return path.join(fontsDir, 'Lora-Regular.ttf')
-  return path.join(fontsDir, 'Geist-Regular.ttf')
-}
 
 export async function buildInstaxCard(
   imageBuffer: ArrayBuffer | Buffer,
@@ -264,32 +257,26 @@ export async function buildInstaxCard(
       }
     }
 
-    // Render text via SVG with embedded font (bypasses fontconfig/Pango entirely)
-    const fontFile   = resolveFontFile(instaxLabelFont)
-    const fontBase64 = fs.readFileSync(fontFile).toString('base64')
-    const svgW       = maxWidthPx
-    const svgH       = Math.round(textZoneH)
-
-    const svg = Buffer.from(
-      `<svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}">` +
-      `<defs><style>@font-face{font-family:'F';src:url('data:font/truetype;base64,${fontBase64}')}</style></defs>` +
-      `<text x="50%" y="50%" font-family="F" font-size="${fontSize}" ` +
-      `fill="${textColor}" text-anchor="middle" dominant-baseline="middle">${safe}</text>` +
-      `</svg>`
-    )
-
+    // Render text via @napi-rs/canvas — bypasses fontconfig/Pango entirely
     try {
-      const textImg = await sharp(svg).png().toBuffer()
+      ensureFontsRegistered()
+      const fontFamily = resolveFontFamily(instaxLabelFont)
+      const canvasW = maxWidthPx
+      const canvasH = Math.round(textZoneH)
+      const canvas  = createCanvas(canvasW, canvasH)
+      const ctx     = canvas.getContext('2d')
+      ctx.font          = `${fontSize}px '${fontFamily}'`
+      ctx.fillStyle     = textColor
+      ctx.textAlign     = 'center'
+      ctx.textBaseline  = 'middle'
+      ctx.fillText(safe, canvasW / 2, canvasH / 2)
 
-      const meta  = await sharp(textImg).metadata()
-      const imgW  = meta.width  ?? maxWidthPx
-      const imgH  = meta.height ?? Math.round(textZoneH * 0.4)
-      const left  = Math.max(photoX, photoX + Math.round((photoW - imgW) / 2))
-      const top   = Math.max(textZoneTop, textZoneTop + Math.round((textZoneH - imgH) / 2))
-
+      const textImg = canvas.toBuffer('image/png')
+      const left = Math.max(photoX, photoX + Math.round((photoW - canvasW) / 2))
+      const top  = Math.max(textZoneTop, textZoneTop + Math.round((textZoneH - canvasH) / 2))
       composites.push({ input: textImg, left, top })
     } catch (err) {
-      console.error('[buildInstaxCard] SVG text render failed:', err)
+      console.error('[buildInstaxCard] canvas text render failed:', err)
       // Continue without text rather than failing the whole card
     }
   }
