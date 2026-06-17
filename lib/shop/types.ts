@@ -92,7 +92,8 @@ export interface CartItem {
   cropZoom?: number    // zoom factor
   formatLabel?: string // e.g. "10×15 cm" for ratio computation
   frameLabel?: string  // for instax: frame design label
-  instaxText?: string  // for instax: bottom text label
+  instaxText?: string        // for instax: bottom text label
+  instaxLabelColor?: string  // for instax: text color (hex)
 }
 
 export interface Cart {

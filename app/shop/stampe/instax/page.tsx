@@ -795,7 +795,8 @@ export default function InstaxPage() {
           cropZoom:    p.zoom,
           formatLabel: `${format.photoW}×${format.photoH} cm`,
           frameLabel:  frame.label,
-          instaxText:  p.label || undefined,
+          instaxText:       p.label || undefined,
+          instaxLabelColor: p.label ? p.labelColor : undefined,
         })
       }
       setAddedFeedback(true)

@@ -18,6 +18,7 @@ interface OrderItem {
   formatLabel?: string
   frameLabel?: string
   instaxText?: string
+  instaxLabelColor?: string
 }
 
 // GET /api/shop/orders/[id]/download-photos — ZIP di tutte le foto dell'ordine
@@ -72,7 +73,7 @@ export async function GET(
           const frameColor = frame?.color ?? 'transparent'
           console.log('[download-photos] building card:', { outerW: variant.outerW, outerH: variant.outerH, frameColor, instaxText: item.instaxText })
           try {
-            fileData = await buildInstaxCard(rawBuffer, variant.outerW, variant.outerH, variant.pad, variant.widthCm, variant.heightCm, cropX, cropY, zoom, frameColor, item.instaxText)
+            fileData = await buildInstaxCard(rawBuffer, variant.outerW, variant.outerH, variant.pad, variant.widthCm, variant.heightCm, cropX, cropY, zoom, frameColor, item.instaxText, item.instaxLabelColor)
             outName  = outName.replace(/\.[^.]+$/, '') + '_instax.jpg'
           } catch (err) {
             console.error('[download-photos] buildInstaxCard failed:', err)

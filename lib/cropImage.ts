@@ -142,7 +142,8 @@ export async function buildInstaxCard(
   cropY: number,
   zoom: number,
   frameColor: string,
-  instaxText?: string | null
+  instaxText?: string | null,
+  instaxLabelColor?: string | null,
 ): Promise<Buffer> {
   const DPI = 300
   const cmToPx = (cm: number) => Math.round(cm * DPI / 2.54)
@@ -162,30 +163,77 @@ export async function buildInstaxCard(
     .jpeg({ quality: 95 })
     .toBuffer()
 
-  // 2. Card background SVG
+  // 2. Card background SVG (no text here — pango handles it below)
   const fillSvg = cssColorToSvgFill(cardW, cardH, frameColor)
+  const svgBuf  = Buffer.from(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${cardW}" height="${cardH}">${fillSvg}</svg>`
+  )
 
-  // 3. Optional text label in bottom strip
-  let textSvg = ''
+  // 3. Composites: photo first
+  const composites: sharp.OverlayOptions[] = [
+    { input: photoResized, left: photoX, top: photoY },
+  ]
+
+  // 4. Optional text label via pango (avoids librsvg font-not-found boxes)
   if (instaxText?.trim()) {
     const textZoneTop = photoY + photoH
     const textZoneH   = cardH - textZoneTop
-    const fontSize    = Math.max(12, Math.round(textZoneH * 0.32))
-    const textX       = photoX + Math.round(photoW / 2)
-    const textY       = textZoneTop + Math.round(textZoneH * 0.62)
-    const safe        = instaxText.trim()
+
+    const safe = instaxText.trim()
       .replace(/&/g, '&amp;').replace(/</g, '&lt;')
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-    textSvg = `<text x="${textX}" y="${textY}" text-anchor="middle" font-family="sans-serif" font-size="${fontSize}" fill="#555555">${safe}</text>`
+
+    // Font size: min of height-based and width-based estimates
+    const maxWidthPx   = Math.round(photoW * 0.88)
+    const sizeByHeight = Math.round(textZoneH * 0.32)
+    const sizeByWidth  = safe.length > 0 ? Math.round(maxWidthPx / (safe.length * 0.55)) : sizeByHeight
+    const fontSize     = Math.max(14, Math.min(sizeByHeight, sizeByWidth))
+
+    // Color: user-specified wins; otherwise auto-detect from frame brightness
+    let textColor: string
+    if (instaxLabelColor) {
+      textColor = instaxLabelColor
+    } else {
+      const fc = (frameColor ?? '').trim()
+      if (fc && fc !== 'transparent' && fc !== 'none' && fc !== '#f8f8f8') {
+        if (/^#[0-9a-fA-F]{6}$/.test(fc)) {
+          const r = parseInt(fc.slice(1, 3), 16)
+          const g = parseInt(fc.slice(3, 5), 16)
+          const b = parseInt(fc.slice(5, 7), 16)
+          const lum = (r * 299 + g * 587 + b * 114) / 1000
+          textColor = lum > 140 ? '#444444' : '#f0f0f0'
+        } else {
+          textColor = '#f0f0f0'   // gradient → white
+        }
+      } else {
+        textColor = '#555555'     // light/white frame
+      }
+    }
+
+    // Pango size in thousandths of a point (at 300 DPI: 1pt ≈ 4.167px)
+    const pangoSize = Math.round(fontSize * 72000 / DPI)
+    const pango     = `<span color="${textColor}" size="${pangoSize}" font_family="sans-serif">${safe}</span>`
+
+    try {
+      const textImg = await sharp({
+        text: { text: pango, width: maxWidthPx, align: 'centre', dpi: DPI, rgba: true },
+      }).png().toBuffer()
+
+      const meta  = await sharp(textImg).metadata()
+      const imgW  = meta.width  ?? maxWidthPx
+      const imgH  = meta.height ?? Math.round(textZoneH * 0.4)
+      const left  = Math.max(photoX, photoX + Math.round((photoW - imgW) / 2))
+      const top   = Math.max(textZoneTop, textZoneTop + Math.round((textZoneH - imgH) / 2))
+
+      composites.push({ input: textImg, left, top })
+    } catch (err) {
+      console.error('[buildInstaxCard] pango text render failed:', err)
+      // Continue without text rather than failing the whole card
+    }
   }
 
-  const svgBuf = Buffer.from(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${cardW}" height="${cardH}">${fillSvg}${textSvg}</svg>`
-  )
-
-  // 4. Composite: SVG card + photo
   return sharp(svgBuf)
-    .composite([{ input: photoResized, left: photoX, top: photoY }])
+    .composite(composites)
     .jpeg({ quality: 95 })
     .toBuffer()
 }
