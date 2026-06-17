@@ -94,6 +94,7 @@ export interface CartItem {
   frameLabel?: string  // for instax: frame design label
   instaxText?: string        // for instax: bottom text label
   instaxLabelColor?: string  // for instax: text color (hex)
+  instaxLabelFont?: string   // for instax: CSS font-family string
 }
 
 export interface Cart {

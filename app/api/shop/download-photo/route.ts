@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
   const frameLabel       = p.get('frameLabel')
   const instaxText       = p.get('instaxText')
   const instaxLabelColor = p.get('instaxLabelColor')
+  const instaxLabelFont  = p.get('instaxLabelFont')
 
   if (!url || !url.startsWith('https://')) {
     return NextResponse.json({ error: 'URL non valido' }, { status: 400 })
@@ -48,7 +49,7 @@ export async function GET(req: NextRequest) {
       const frameColor = frame?.color ?? 'transparent'
 
       try {
-        const card    = await buildInstaxCard(buffer, variant.outerW, variant.outerH, variant.pad, variant.widthCm, variant.heightCm, cropX, cropY, zoom, frameColor, instaxText, instaxLabelColor)
+        const card    = await buildInstaxCard(buffer, variant.outerW, variant.outerH, variant.pad, variant.widthCm, variant.heightCm, cropX, cropY, zoom, frameColor, instaxText, instaxLabelColor, instaxLabelFont)
         const outName = filename.replace(/\.[^.]+$/, '') + '_instax.jpg'
         return new Response(card.buffer as ArrayBuffer, {
           headers: {

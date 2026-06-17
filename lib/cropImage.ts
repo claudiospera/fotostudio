@@ -132,6 +132,19 @@ function cssColorToSvgFill(w: number, h: number, frameColor: string): string {
  * @param frameColor   - CSS color/gradient for the card border
  * @param instaxText   - optional text for the bottom label strip
  */
+/** Maps a CSS font-family string (from LABEL_FONTS) to a bundled TTF file */
+function resolveFontFile(cssFontFamily?: string | null): string {
+  const fontsDir = path.join(process.cwd(), 'lib/fonts')
+  if (!cssFontFamily) return path.join(fontsDir, 'Geist-Regular.ttf')
+  const f = cssFontFamily.toLowerCase()
+  if (f.includes('pacifico'))       return path.join(fontsDir, 'Pacifico-Regular.ttf')
+  if (f.includes('dancing'))        return path.join(fontsDir, 'DancingScript-Bold.ttf')
+  if (f.includes('satisfy'))        return path.join(fontsDir, 'Satisfy-Regular.ttf')
+  if (f.includes('poppins'))        return path.join(fontsDir, 'Poppins-Regular.ttf')
+  if (f.includes('georgia'))        return path.join(fontsDir, 'Lora-Regular.ttf')
+  return path.join(fontsDir, 'Geist-Regular.ttf')
+}
+
 export async function buildInstaxCard(
   imageBuffer: ArrayBuffer,
   outerW: number,
@@ -145,6 +158,7 @@ export async function buildInstaxCard(
   frameColor: string,
   instaxText?: string | null,
   instaxLabelColor?: string | null,
+  instaxLabelFont?: string | null,
 ): Promise<Buffer> {
   const DPI = 300
   const cmToPx = (cm: number) => Math.round(cm * DPI / 2.54)
@@ -212,7 +226,7 @@ export async function buildInstaxCard(
     }
 
     // Font bundled in the project — bypasses fontconfig entirely (works on Vercel)
-    const fontfile  = path.join(process.cwd(), 'lib/fonts/Geist-Regular.ttf')
+    const fontfile  = resolveFontFile(instaxLabelFont)
     // Pango size in thousandths of a point (at 300 DPI: 1pt ≈ 4.167px)
     const pangoSize = Math.round(fontSize * 72000 / DPI)
     const pango     = `<span color="${textColor}" size="${pangoSize}">${safe}</span>`

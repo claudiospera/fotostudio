@@ -797,6 +797,7 @@ export default function InstaxPage() {
           frameLabel:  frame.label,
           instaxText:       p.label || undefined,
           instaxLabelColor: p.label ? p.labelColor : undefined,
+          instaxLabelFont:  p.label ? p.labelFont  : undefined,
         })
       }
       setAddedFeedback(true)

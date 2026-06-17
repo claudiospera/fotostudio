@@ -18,6 +18,7 @@ interface OrderItem {
   frameLabel?: string
   instaxText?: string
   instaxLabelColor?: string
+  instaxLabelFont?: string
   productId?: string
   variantId?: string
 }
@@ -290,7 +291,7 @@ export default function AdminOrdiniPage() {
                               </p>
                               {item.image?.startsWith('https://') && (
                                 <a
-                                  href={`/api/shop/download-photo?url=${encodeURIComponent(item.image)}&filename=${encodeURIComponent(item.filename || 'foto.jpg')}${item.cropX != null ? `&cropX=${item.cropX}&cropY=${item.cropY}&zoom=${item.cropZoom ?? 1}&formatLabel=${encodeURIComponent(item.formatLabel ?? '')}` : ''}${item.productId === 'stampe-instax' ? `&productId=${item.productId}&variantId=${encodeURIComponent(item.variantId ?? '')}&frameLabel=${encodeURIComponent(item.frameLabel ?? '')}&instaxText=${encodeURIComponent(item.instaxText ?? '')}${item.instaxLabelColor ? `&instaxLabelColor=${encodeURIComponent(item.instaxLabelColor)}` : ''}` : ''}`}
+                                  href={`/api/shop/download-photo?url=${encodeURIComponent(item.image)}&filename=${encodeURIComponent(item.filename || 'foto.jpg')}${item.cropX != null ? `&cropX=${item.cropX}&cropY=${item.cropY}&zoom=${item.cropZoom ?? 1}&formatLabel=${encodeURIComponent(item.formatLabel ?? '')}` : ''}${item.productId === 'stampe-instax' ? `&productId=${item.productId}&variantId=${encodeURIComponent(item.variantId ?? '')}&frameLabel=${encodeURIComponent(item.frameLabel ?? '')}&instaxText=${encodeURIComponent(item.instaxText ?? '')}${item.instaxLabelColor ? `&instaxLabelColor=${encodeURIComponent(item.instaxLabelColor)}` : ''}${item.instaxLabelFont ? `&instaxLabelFont=${encodeURIComponent(item.instaxLabelFont)}` : ''}` : ''}`}
                                   style={{ fontSize: 11, color: '#6366f1', textDecoration: 'none', fontWeight: 600 }}
                                 >
                                   {item.cropX != null ? '↓ Scarica foto ritagliata' : '↓ Scarica foto originale'}
