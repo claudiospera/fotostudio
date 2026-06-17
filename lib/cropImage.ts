@@ -28,10 +28,10 @@ function ensureFontconfig(): void {
  * Sharp on Vercel supports HEIC via libvips when heif is available,
  * but decoding is not guaranteed — this ensures a safe JPEG baseline.
  */
-async function normalizeToJpeg(imageBuffer: ArrayBuffer): Promise<Buffer> {
-  const buf = Buffer.from(imageBuffer)
+async function normalizeToJpeg(imageBuffer: ArrayBuffer | Buffer): Promise<Buffer> {
+  const buf = Buffer.isBuffer(imageBuffer) ? imageBuffer : Buffer.from(imageBuffer)
   const meta = await sharp(buf).metadata()
-  if (meta.format === 'heif' || meta.format === 'heic' || meta.format === 'avif') {
+  if (['heif', 'heic', 'avif'].includes(meta.format as string)) {
     return sharp(buf).rotate().jpeg({ quality: 95 }).toBuffer()
   }
   return buf
@@ -42,7 +42,7 @@ async function normalizeToJpeg(imageBuffer: ArrayBuffer): Promise<Buffer> {
  * Matches exactly what the client sees in the OrderModal preview.
  */
 export async function cropImage(
-  imageBuffer: ArrayBuffer,
+  imageBuffer: ArrayBuffer | Buffer,
   ratioW: number,
   ratioH: number,
   cropX = 50,
@@ -182,7 +182,7 @@ function resolveFontFile(cssFontFamily?: string | null): string {
 }
 
 export async function buildInstaxCard(
-  imageBuffer: ArrayBuffer,
+  imageBuffer: ArrayBuffer | Buffer,
   outerW: number,
   outerH: number,
   pad: [number, number, number, number],
@@ -197,7 +197,7 @@ export async function buildInstaxCard(
   instaxLabelFont?: string | null,
 ): Promise<Buffer> {
   // Normalize HEIC/AVIF to JPEG before any Sharp processing
-  imageBuffer = await normalizeToJpeg(imageBuffer)
+  const normalizedBuffer = await normalizeToJpeg(imageBuffer)
 
   const DPI = 300
   const cmToPx = (cm: number) => Math.round(cm * DPI / 2.54)
@@ -211,7 +211,7 @@ export async function buildInstaxCard(
   const photoH = cmToPx(heightCm)
 
   // 1. Crop photo to the exact print area
-  const cropped = await cropImage(imageBuffer, widthCm, heightCm, cropX, cropY, zoom)
+  const cropped = await cropImage(normalizedBuffer, widthCm, heightCm, cropX, cropY, zoom)
   const photoResized = await sharp(cropped)
     .resize(photoW, photoH, { fit: 'fill' })
     .jpeg({ quality: 95 })
