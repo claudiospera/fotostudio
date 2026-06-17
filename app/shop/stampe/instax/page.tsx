@@ -1337,6 +1337,21 @@ export default function InstaxPage() {
                       ))}
                     </select>
 
+                    {/* Applica font a tutte */}
+                    {photos.length > 1 && (
+                      <button
+                        onClick={() => setPhotos(prev => prev.map(p => ({ ...p, labelFont: activePhoto.labelFont })))}
+                        style={{
+                          width: '100%', marginBottom: 8, padding: '6px 10px',
+                          border: '1.5px solid #e0e0e0', borderRadius: 8,
+                          fontSize: '11px', color: '#888', background: '#f8f8f8',
+                          cursor: 'pointer', letterSpacing: '.03em',
+                        }}
+                      >
+                        Applica a tutte le foto
+                      </button>
+                    )}
+
                     {/* Input testo */}
                     <input
                       type="text"
