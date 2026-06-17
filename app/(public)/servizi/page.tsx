@@ -42,23 +42,11 @@ export default function ServiziPage() {
         display: 'flex', flexDirection: 'column', justifyContent: 'center',
       }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ lineHeight: 1.05 }}>
-            <div style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
-              fontStyle: 'italic', fontWeight: 400,
-              fontSize: 'clamp(60px,8vw,110px)', color: INK,
-            }}>Storie</div>
-            <div style={{
-              fontFamily: "'Great Vibes', cursive",
-              fontSize: 'clamp(64px,8.5vw,112px)',
-              color: INK, opacity: 0.65, lineHeight: 1,
-            }}>vere</div>
-            <div style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
-              fontStyle: 'italic', fontWeight: 400,
-              fontSize: 'clamp(60px,8vw,110px)', color: INK,
-            }}>da raccontare</div>
-          </div>
+          <img
+            src="/logo-claudio-spera.png"
+            alt="Claudio Spera Fotografo"
+            style={{ maxWidth: 'clamp(260px, 40vw, 520px)', width: '100%', height: 'auto' }}
+          />
         </div>
 
         <div style={{
