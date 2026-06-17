@@ -1,4 +1,5 @@
 import sharp from 'sharp'
+import path from 'path'
 
 /**
  * Applies objectFit:'cover' + objectPosition crop to an image buffer.
@@ -210,13 +211,15 @@ export async function buildInstaxCard(
       }
     }
 
+    // Font bundled in the project — bypasses fontconfig entirely (works on Vercel)
+    const fontfile  = path.join(process.cwd(), 'lib/fonts/Geist-Regular.ttf')
     // Pango size in thousandths of a point (at 300 DPI: 1pt ≈ 4.167px)
     const pangoSize = Math.round(fontSize * 72000 / DPI)
-    const pango     = `<span color="${textColor}" size="${pangoSize}" font_family="sans-serif">${safe}</span>`
+    const pango     = `<span color="${textColor}" size="${pangoSize}">${safe}</span>`
 
     try {
       const textImg = await sharp({
-        text: { text: pango, width: maxWidthPx, align: 'centre', dpi: DPI, rgba: true },
+        text: { text: pango, fontfile, width: maxWidthPx, align: 'centre', dpi: DPI, rgba: true },
       }).png().toBuffer()
 
       const meta  = await sharp(textImg).metadata()
