@@ -2,17 +2,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { sql } from '@/lib/db'
 import JSZip from 'jszip'
-import { cropImage, parseFormatRatio } from '@/lib/cropImage'
+import { cropImage, buildInstaxCard, parseFormatRatio } from '@/lib/cropImage'
+import { PRODUCTS } from '@/lib/shop/products'
 
 interface OrderItem {
   image?: string
   filename?: string
   productName?: string
   variantLabel?: string
+  productId?: string
+  variantId?: string
   cropX?: number
   cropY?: number
   cropZoom?: number
   formatLabel?: string
+  frameLabel?: string
+  instaxText?: string
 }
 
 // GET /api/shop/orders/[id]/download-photos — ZIP di tutte le foto dell'ordine
@@ -46,17 +51,37 @@ export async function GET(
       const ext = (item.filename ?? item.image!).split('.').pop()?.split('?')[0]?.toLowerCase() || 'jpg'
       const name = item.filename || `foto-${String(i + 1).padStart(3, '0')}.${ext}`
 
-      // Apply crop if data is present
-      const ratio = parseFormatRatio(item.formatLabel ?? '')
-      const hasCrop = item.cropX != null && item.cropY != null && ratio != null
+      const cropX = item.cropX ?? 50
+      const cropY = item.cropY ?? 50
+      const zoom  = item.cropZoom ?? 1.0
       let fileData: ArrayBuffer | Buffer = rawBuffer
-      if (hasCrop && ratio) {
-        try {
-          fileData = await cropImage(rawBuffer, ratio.w, ratio.h, item.cropX!, item.cropY!, item.cropZoom ?? 1)
-        } catch { /* skip crop, use original */ }
+      let outName = name
+
+      // Instax: build full card with frame + text
+      if (item.productId === 'stampe-instax' && item.variantId) {
+        const product = PRODUCTS.find(p => p.id === 'stampe-instax')
+        const variant = product?.variants.find(v => v.id === item.variantId)
+        if (variant?.outerW && variant?.outerH && variant?.pad && variant.widthCm && variant.heightCm) {
+          const frame      = product?.options?.frames?.find(f => f.label === item.frameLabel)
+          const frameColor = frame?.color ?? 'transparent'
+          try {
+            fileData = await buildInstaxCard(rawBuffer, variant.outerW, variant.outerH, variant.pad, variant.widthCm, variant.heightCm, cropX, cropY, zoom, frameColor, item.instaxText)
+            outName  = outName.replace(/\.[^.]+$/, '') + '_instax.jpg'
+          } catch { /* fallback to plain crop */ }
+        }
       }
 
-      zip.file(name, fileData)
+      // Generic crop (non-Instax or Instax fallback)
+      if (fileData === rawBuffer) {
+        const ratio = parseFormatRatio(item.formatLabel ?? '')
+        if (item.cropX != null && item.cropY != null && ratio) {
+          try {
+            fileData = await cropImage(rawBuffer, ratio.w, ratio.h, cropX, cropY, zoom)
+          } catch { /* skip crop, use original */ }
+        }
+      }
+
+      zip.file(outName, fileData)
     } catch { /* skip */ }
   }))
 
