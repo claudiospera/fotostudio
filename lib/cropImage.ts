@@ -2,6 +2,20 @@ import sharp from 'sharp'
 import path from 'path'
 
 /**
+ * Normalizes any image format (including HEIC) to a JPEG buffer.
+ * Sharp on Vercel supports HEIC via libvips when heif is available,
+ * but decoding is not guaranteed — this ensures a safe JPEG baseline.
+ */
+async function normalizeToJpeg(imageBuffer: ArrayBuffer): Promise<Buffer> {
+  const buf = Buffer.from(imageBuffer)
+  const meta = await sharp(buf).metadata()
+  if (meta.format === 'heif' || meta.format === 'heic' || meta.format === 'avif') {
+    return sharp(buf).rotate().jpeg({ quality: 95 }).toBuffer()
+  }
+  return buf
+}
+
+/**
  * Applies objectFit:'cover' + objectPosition crop to an image buffer.
  * Matches exactly what the client sees in the OrderModal preview.
  */
@@ -13,7 +27,7 @@ export async function cropImage(
   cropY = 50,
   zoom = 1.0
 ): Promise<Buffer> {
-  const buf = Buffer.from(imageBuffer)
+  const buf = await normalizeToJpeg(imageBuffer)
   const { width: imgW, height: imgH } = await sharp(buf).metadata()
 
   if (!imgW || !imgH) throw new Error('Cannot read image dimensions')
@@ -160,6 +174,9 @@ export async function buildInstaxCard(
   instaxLabelColor?: string | null,
   instaxLabelFont?: string | null,
 ): Promise<Buffer> {
+  // Normalize HEIC/AVIF to JPEG before any Sharp processing
+  imageBuffer = await normalizeToJpeg(imageBuffer)
+
   const DPI = 300
   const cmToPx = (cm: number) => Math.round(cm * DPI / 2.54)
 
