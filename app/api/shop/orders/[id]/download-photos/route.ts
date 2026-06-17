@@ -64,13 +64,19 @@ export async function GET(
         const baseVariantId = item.variantId.split('__')[0]
         const variant = product?.variants.find(v => v.id === item.variantId)
                      ?? product?.variants.find(v => v.id === baseVariantId)
+        console.log('[download-photos] instax item:', { variantId: item.variantId, baseVariantId, variantFound: !!variant, frameLabel: item.frameLabel })
         if (variant?.outerW && variant?.outerH && variant?.pad && variant.widthCm && variant.heightCm) {
           const frame      = product?.options?.frames?.find(f => f.label === item.frameLabel)
           const frameColor = frame?.color ?? 'transparent'
+          console.log('[download-photos] building card:', { outerW: variant.outerW, outerH: variant.outerH, frameColor, instaxText: item.instaxText })
           try {
             fileData = await buildInstaxCard(rawBuffer, variant.outerW, variant.outerH, variant.pad, variant.widthCm, variant.heightCm, cropX, cropY, zoom, frameColor, item.instaxText)
             outName  = outName.replace(/\.[^.]+$/, '') + '_instax.jpg'
-          } catch { /* fallback to plain crop */ }
+          } catch (err) {
+            console.error('[download-photos] buildInstaxCard failed:', err)
+          }
+        } else {
+          console.warn('[download-photos] variant missing fields:', { outerW: variant?.outerW, outerH: variant?.outerH, pad: variant?.pad, widthCm: variant?.widthCm, heightCm: variant?.heightCm })
         }
       }
 
