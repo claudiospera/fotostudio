@@ -102,7 +102,7 @@ export default async function HomePage() {
 
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
             <a href="/servizi" style={{ background: '#00c1de', color: '#fff', borderRadius: 12, padding: '14px 32px', fontSize: '13px', fontWeight: 700, textDecoration: 'none', letterSpacing: '.04em' }}>Scopri i servizi fotografici</a>
-            <a href="/shop" style={{ background: '#f3f3f3', color: '#0a0a0a', border: '1px solid #e8e8e8', borderRadius: 12, padding: '14px 32px', fontSize: '13px', fontWeight: 500, textDecoration: 'none' }}>Area shop</a>
+            <a href="/shop" style={{ background: '#00c1de', color: '#fff', borderRadius: 12, padding: '14px 32px', fontSize: '13px', fontWeight: 700, textDecoration: 'none', letterSpacing: '.04em' }}>Area shop</a>
           </div>
         </div>
 
