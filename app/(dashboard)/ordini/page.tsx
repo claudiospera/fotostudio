@@ -54,6 +54,8 @@ interface ShopOrderItem {
   cropZoom?: number | null
   frameLabel?: string | null
   instaxText?: string | null
+  instaxLabelColor?: string | null
+  instaxLabelFont?: string | null
 }
 
 interface ShopOrder {
@@ -393,7 +395,7 @@ function ShopOrderDetail({
                     {item.image?.startsWith('https://') ? (
                       item.productId === 'stampe-instax' ? (
                         /* Miniatura Polaroid per Instax */
-                        <a href={`/api/shop/download-photo?url=${encodeURIComponent(item.image)}&filename=${encodeURIComponent(item.filename || 'foto.jpg')}&productId=stampe-instax&variantId=${encodeURIComponent(item.variantId ?? '')}&frameLabel=${encodeURIComponent(item.frameLabel ?? '')}&instaxText=${encodeURIComponent(item.instaxText ?? '')}${item.cropX != null ? `&cropX=${item.cropX}&cropY=${item.cropY}&zoom=${item.cropZoom ?? 1}` : ''}`} style={{ flexShrink: 0 }}>
+                        <a href={`/api/shop/download-photo?url=${encodeURIComponent(item.image)}&filename=${encodeURIComponent(item.filename || 'foto.jpg')}&productId=stampe-instax&variantId=${encodeURIComponent(item.variantId ?? '')}&frameLabel=${encodeURIComponent(item.frameLabel ?? '')}&instaxText=${encodeURIComponent(item.instaxText ?? '')}${item.instaxLabelColor ? `&instaxLabelColor=${encodeURIComponent(item.instaxLabelColor)}` : ''}${item.instaxLabelFont ? `&instaxLabelFont=${encodeURIComponent(item.instaxLabelFont)}` : ''}${item.cropX != null ? `&cropX=${item.cropX}&cropY=${item.cropY}&zoom=${item.cropZoom ?? 1}` : ''}`} style={{ flexShrink: 0 }}>
                           <div style={{
                             width: 46,
                             background: item.frameLabel ? (INSTAX_FRAME_BG[item.frameLabel] ?? '#f8f8f8') : '#f8f8f8',
