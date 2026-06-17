@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   alternates: { canonical: 'https://storiedaraccontare.it/servizi' },
 }
 
-const BG     = '#F5F0E8'
+const BG     = '#ffffff'
 const INK    = '#1a1612'
 const BORDER = 'rgba(26,22,18,0.12)'
 const R2     = 'https://pub-53356d483eb74822990977c0e5c21f6c.r2.dev'
