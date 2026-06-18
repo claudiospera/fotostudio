@@ -54,6 +54,7 @@ function resolveFontFamily(cssFontFamily?: string | null): string {
   if (f.includes('satisfy'))   return 'Satisfy'
   if (f.includes('poppins'))   return 'Poppins'
   if (f.includes('georgia') || f.includes('lora')) return 'Lora'
+  if (f.includes('arial') || f.includes('geist')) return 'Geist'
   return 'Geist'
 }
 

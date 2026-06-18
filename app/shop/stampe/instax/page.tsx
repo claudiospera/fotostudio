@@ -127,8 +127,8 @@ const LABEL_FONTS = [
   { id: "'Dancing Script', cursive",    label: 'Dancing Script' },
   { id: "'Satisfy', cursive",           label: 'Satisfy' },
   { id: "'Poppins', sans-serif",        label: 'Poppins' },
-  { id: "Georgia, serif",               label: 'Georgia' },
-  { id: "Arial, sans-serif",            label: 'Arial' },
+  { id: "Lora, serif",                  label: 'Lora' },
+  { id: "Geist, sans-serif",            label: 'Geist' },
 ]
 
 // ─── Prezzi per quantità ─────────────────────────────────────────────────────
@@ -661,7 +661,7 @@ export default function InstaxPage() {
   useEffect(() => {
     const link = document.createElement('link')
     link.rel = 'stylesheet'
-    link.href = 'https://fonts.googleapis.com/css2?family=Pacifico&family=Dancing+Script:wght@700&family=Satisfy&display=swap'
+    link.href = 'https://fonts.googleapis.com/css2?family=Pacifico&family=Dancing+Script:wght@700&family=Satisfy&family=Poppins&family=Lora&display=swap'
     document.head.appendChild(link)
     return () => { document.head.removeChild(link) }
   }, [])
