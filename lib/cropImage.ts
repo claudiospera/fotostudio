@@ -1,19 +1,48 @@
 import sharp from 'sharp'
 import path from 'path'
+import fs from 'fs'
 import { createCanvas, GlobalFonts } from '@napi-rs/canvas'
 
-const fontsDir = path.join(process.cwd(), 'lib/fonts')
+const FONT_MAP: { file: string; family: string }[] = [
+  { file: 'Pacifico-Regular.ttf',   family: 'Pacifico' },
+  { file: 'DancingScript-Bold.ttf', family: 'Dancing Script' },
+  { file: 'Satisfy-Regular.ttf',    family: 'Satisfy' },
+  { file: 'Poppins-Regular.ttf',    family: 'Poppins' },
+  { file: 'Lora-Regular.ttf',       family: 'Lora' },
+  { file: 'Geist-Regular.ttf',      family: 'Geist' },
+]
 
-// Register all bundled fonts once at module load — works without fontconfig/Pango
+// Try multiple root paths — process.cwd() differs between local and Vercel
+function findFontsDir(): string {
+  const candidates = [
+    path.join(process.cwd(), 'lib/fonts'),
+    path.join(process.cwd(), '.next/server/lib/fonts'),
+    path.join(__dirname, '../fonts'),
+    path.join(__dirname, '../../lib/fonts'),
+  ]
+  for (const dir of candidates) {
+    try {
+      if (fs.existsSync(path.join(dir, 'Geist-Regular.ttf'))) return dir
+    } catch {}
+  }
+  return path.join(process.cwd(), 'lib/fonts') // fallback
+}
+
 let fontsRegistered = false
 function ensureFontsRegistered() {
   if (fontsRegistered) return
-  GlobalFonts.registerFromPath(path.join(fontsDir, 'Pacifico-Regular.ttf'),    'Pacifico')
-  GlobalFonts.registerFromPath(path.join(fontsDir, 'DancingScript-Bold.ttf'),  'Dancing Script')
-  GlobalFonts.registerFromPath(path.join(fontsDir, 'Satisfy-Regular.ttf'),     'Satisfy')
-  GlobalFonts.registerFromPath(path.join(fontsDir, 'Poppins-Regular.ttf'),     'Poppins')
-  GlobalFonts.registerFromPath(path.join(fontsDir, 'Lora-Regular.ttf'),        'Lora')
-  GlobalFonts.registerFromPath(path.join(fontsDir, 'Geist-Regular.ttf'),       'Geist')
+  const fontsDir = findFontsDir()
+  console.log('[fonts] loading from:', fontsDir)
+  for (const { file, family } of FONT_MAP) {
+    const filePath = path.join(fontsDir, file)
+    try {
+      const buf = fs.readFileSync(filePath)
+      GlobalFonts.register(buf, family)
+      console.log(`[fonts] registered ${family} (${buf.length} bytes)`)
+    } catch (e) {
+      console.error(`[fonts] FAILED to load ${file}:`, e)
+    }
+  }
   fontsRegistered = true
 }
 
