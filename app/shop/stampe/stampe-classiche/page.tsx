@@ -874,7 +874,8 @@ export default function StampeClassichePage() {
                   <div style={{ fontSize: '11px', color: '#888', display: 'flex', flexDirection: 'column', gap: 4 }}>
                     {photos.map(p => {
                       const pv = VARIANTS.find(v => v.id === p.variantId) ?? VARIANTS[0]
-                      const price = getPriceForQuantity(pv.price, pv.priceBreaks, p.copies)
+                      const totalCopies = copiesPerVariantPreview[p.variantId] ?? p.copies
+                      const price = getPriceForQuantity(pv.price, pv.priceBreaks, totalCopies)
                       return (
                         <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between' }}>
                           <span style={{ color: '#777' }}>{pv.label} × {p.copies}</span>
