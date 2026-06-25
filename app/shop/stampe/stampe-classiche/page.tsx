@@ -325,7 +325,7 @@ export default function StampeClassichePage() {
       }
       img.src = url
     })
-  }, [uploadToR2])
+  }, [uploadToR2, variant])
 
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) loadFiles(e.target.files)
