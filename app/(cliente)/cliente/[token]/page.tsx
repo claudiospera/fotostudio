@@ -380,7 +380,9 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
               ) : filtered.length === 0 ? (
                 <p style={{ gridColumn: '1 / -1', fontSize: '13px', color: 'var(--t3)', textAlign: 'center', padding: 40 }}>Nessun prodotto disponibile</p>
               ) : filtered.map(p => {
-                const minPrice = Math.min(...p.variants.map(v => v.price)) / 100
+                const minPrice = Math.min(...p.variants.map(v =>
+                  Math.min(v.price, ...(v.priceBreaks?.map(b => b.price) ?? []))
+                )) / 100
                 return (
                   <button
                     key={p.id}
