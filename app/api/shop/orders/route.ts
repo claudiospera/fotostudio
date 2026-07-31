@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@clerk/nextjs/server'
 import { sql } from '@/lib/db'
 import Stripe from 'stripe'
 import { notifyNewOrder } from '@/lib/notify-order'
+import { PRODUCTS, getPriceForQuantity } from '@/lib/shop/products'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
 // POST — crea un ordine, ritorna { orderId } oppure { stripeUrl }
 export async function POST(req: NextRequest) {
-  const { customer, items, total, paymentMethod, couponCode, discount } = await req.json()
+  const { customer, items, paymentMethod, couponCode } = await req.json()
 
   if (!customer?.name || !customer?.email || !customer?.phone) {
     return NextResponse.json({ error: 'Dati cliente mancanti' }, { status: 400 })
@@ -16,10 +18,31 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Carrello vuoto' }, { status: 400 })
   }
 
+  // Verifica server-side che i prezzi inviati dal client non siano inferiori al minimo
+  // legittimo per prodotto/variante/quantità — impedisce di manomettere il totale.
+  // Le opzioni (cornici, passepartout, tipo carta) possono solo aggiungere costo,
+  // quindi il prezzo dello scaglione base è un limite inferiore sicuro.
+  for (const item of items) {
+    const product = PRODUCTS.find((p) => p.id === item.productId)
+    const variant = product?.variants.find((v) => v.id === item.variantId)
+    if (!product || !variant) {
+      return NextResponse.json({ error: 'Prodotto non valido' }, { status: 400 })
+    }
+    if (!Number.isInteger(item.quantity) || item.quantity < 1) {
+      return NextResponse.json({ error: 'Quantità non valida' }, { status: 400 })
+    }
+    const minUnitPrice = getPriceForQuantity(variant.price, variant.priceBreaks, item.quantity)
+    if (typeof item.price !== 'number' || item.price < minUnitPrice) {
+      return NextResponse.json({ error: 'Prezzo non valido' }, { status: 400 })
+    }
+  }
+
+  // Subtotale ricalcolato dai prezzi appena validati (mai dal `total` inviato dal client)
+  const subtotal = items.reduce((sum: number, i: { price: number; quantity: number }) => sum + i.price * i.quantity, 0)
+
   // Verifica server-side del coupon (se presente)
   let verifiedDiscount = 0
   if (couponCode) {
-    const subtotal = items.reduce((sum: number, i: { price: number; quantity: number }) => sum + i.price * i.quantity, 0)
     const couponRows = await sql`
       SELECT * FROM shop_coupons
       WHERE code = ${couponCode}
@@ -36,8 +59,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Il total arrivato dal client è già il finalTotal (subtotale - sconto applicato lato client)
-  const safeTotal = Math.max(0, total)
+  const safeTotal = Math.max(0, subtotal - verifiedDiscount)
 
   // Salva l'ordine nel DB
   const rows = await sql`
@@ -112,6 +134,9 @@ export async function POST(req: NextRequest) {
 
 // GET — lista ordini (per la dashboard admin)
 export async function GET() {
+  const { userId } = await auth()
+  if (!userId) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
+
   const orders = await sql`
     SELECT * FROM shop_orders ORDER BY created_at DESC LIMIT 100
   `
