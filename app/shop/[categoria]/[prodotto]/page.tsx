@@ -6,7 +6,7 @@
 import { use, useState } from 'react'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
-import { getProductBySlug } from '@/lib/shop/products'
+import { getProductBySlug, getPriceForQuantity } from '@/lib/shop/products'
 import { CATEGORY_META, type ProductCategory, type ProductVariant } from '@/lib/shop/types'
 import { useCart } from '@/components/shop/CartProvider'
 
@@ -35,6 +35,9 @@ export default function ProductPage({ params }: Props) {
   // Dopo notFound(), product è garantito non-undefined per TS
   const safeProduct = product
   const categoryMeta = CATEGORY_META[safeProduct.category]
+  const unitPrice = selectedVariant
+    ? getPriceForQuantity(selectedVariant.price, selectedVariant.priceBreaks, 1)
+    : 0
 
   function handleAddToCart() {
     if (!selectedVariant) return
@@ -44,7 +47,7 @@ export default function ProductPage({ params }: Props) {
       quantity: 1,
       productName: safeProduct.name,
       variantLabel: selectedVariant.label,
-      price: selectedVariant.price,
+      price: unitPrice,
       image: safeProduct.images[0] ?? '',
     })
     setAdded(true)
@@ -113,7 +116,7 @@ export default function ProductPage({ params }: Props) {
           {/* Prezzo selezionato */}
           {selectedVariant && (
             <p className="mb-6 text-2xl font-semibold text-gray-900">
-              {formatPrice(selectedVariant.price)}
+              {formatPrice(unitPrice)}
             </p>
           )}
 

@@ -244,6 +244,24 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose, selectedProduct])
 
+  // Torchon 285 è disponibile solo fino a 40cm di lato (vedi app/shop/stampe/hahnemuhle)
+  const TORCHON_MAX_SIDE = 40
+  const availableVariants = selectedProduct
+    ? printTypeId === 'to285'
+      ? selectedProduct.variants.filter(v => (v.widthCm ?? 0) <= TORCHON_MAX_SIDE && (v.heightCm ?? 0) <= TORCHON_MAX_SIDE)
+      : selectedProduct.variants
+    : []
+
+  // Se si passa a Torchon con un formato fuori range, torna al primo formato disponibile
+  useEffect(() => {
+    if (!selectedProduct || printTypeId !== 'to285') return
+    const current = selectedProduct.variants.find(v => v.id === selectedVariantId)
+    if (current && ((current.widthCm ?? 0) > TORCHON_MAX_SIDE || (current.heightCm ?? 0) > TORCHON_MAX_SIDE)) {
+      setSelectedVariantId(availableVariants[0]?.id ?? '')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [printTypeId])
+
   // Fallback al primo variant per evitare il frame vuoto tra setSelectedProduct e l'useEffect che aggiorna selectedVariantId
   const variant           = selectedProduct?.variants.find(v => v.id === selectedVariantId) ?? selectedProduct?.variants[0]
   const printTypeExtra    = selectedProduct?.options?.printTypes?.find(pt => pt.id === printTypeId)?.extraPrice ?? 0
@@ -585,12 +603,15 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
                   {selectedProduct.variants.length > 1 ? 'Formato / Variante' : 'Variante'}
                 </p>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-                  {selectedProduct.variants.map(v => (
+                  {availableVariants.map(v => (
                     <button key={v.id} onClick={() => setSelectedVariantId(v.id)} style={variantBtnStyle(v.id === selectedVariantId)}>
                       {v.label}
                     </button>
                   ))}
                 </div>
+                {printTypeId === 'to285' && (
+                  <p style={{ fontSize: '10px', color: 'var(--t3)', marginTop: 6 }}>Torchon 285 disponibile solo fino a 30×40 cm.</p>
+                )}
               </div>
 
               {/* Quantità */}
@@ -924,9 +945,60 @@ function CartDrawer({ cart, galleryId, onClose, onRemove, onUpdateQty, onClear, 
 
   const submit = async () => {
     if (!items.length) return
+    if (paymentMethod === 'online' && (!name.trim() || !email.trim() || !phone.trim())) {
+      setSubmitError('Per pagare online inserisci nome, email e telefono.')
+      return
+    }
     setSending(true)
     setSubmitError('')
     try {
+      if (paymentMethod === 'online') {
+        const res = await fetch('/api/shop/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customer: {
+              name: name.trim(),
+              email: email.trim(),
+              phone: phone.trim(),
+              notes: [`Galleria: ${galleryId}`, notesValue.trim()].filter(Boolean).join('\n'),
+            },
+            items: items.map(i => ({
+              productId: i.productId,
+              variantId: i.variantId,
+              productName: i.productName,
+              variantLabel: i.formatLabel,
+              price: Math.round(effectiveUnitPrice(i) * 100),
+              quantity: i.qty,
+              image: i.photoUrl?.startsWith('https://') ? i.photoUrl : '',
+              filename: i.filename,
+              notes: [i.printTypeLabel, i.passepartoutLabel].filter(Boolean).join(' · ') || undefined,
+              cropX: i.cropX,
+              cropY: i.cropY,
+              cropZoom: i.zoom,
+              formatLabel: i.formatLabel,
+              frameLabel: i.frameLabel,
+              instaxText: i.instaxText,
+            })),
+            paymentMethod: 'online',
+            couponCode: coupon ? couponCode.trim().toUpperCase() : null,
+            cancelUrl: window.location.href,
+          }),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) {
+          setSubmitError(data.error || 'Errore durante l\'invio. Riprova.')
+          return
+        }
+        if (!data.stripeUrl) {
+          setSubmitError('Errore durante la creazione del pagamento.')
+          return
+        }
+        onClear()
+        window.location.href = data.stripeUrl
+        return
+      }
+
       setWaLink(buildWaLink(items, finalTotal, name.trim(), galleryId))
       const res = await fetch('/api/public/orders', {
         method: 'POST',

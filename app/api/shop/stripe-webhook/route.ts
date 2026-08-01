@@ -25,13 +25,15 @@ export async function POST(req: NextRequest) {
     const session = event.data.object as Stripe.Checkout.Session
     const orderId = session.metadata?.orderId
     if (orderId) {
-      await sql`
+      // Aggiorna solo se non era già 'paid': Stripe può ri-consegnare lo stesso evento
+      // più volte (retry/timeout) — la condizione rende l'update idempotente e ci dice
+      // se è la prima volta che processiamo questo pagamento (per evitare doppie notifiche).
+      const rows = await sql`
         UPDATE shop_orders
         SET payment_status = 'paid', status = 'confirmed', updated_at = now()
-        WHERE id = ${orderId}
+        WHERE id = ${orderId} AND payment_status <> 'paid'
+        RETURNING *
       `
-      // Recupera i dati ordine per la notifica
-      const rows = await sql`SELECT * FROM shop_orders WHERE id = ${orderId}`
       const order = rows[0]
       if (order) {
         await notifyNewOrder({

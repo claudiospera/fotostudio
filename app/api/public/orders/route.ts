@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { sql } from '@/lib/db'
+import { PRODUCTS, getPriceForQuantity } from '@/lib/shop/products'
 
 const PHOTOGRAPHER_EMAIL = 'info@claudiospera.com'
 
@@ -208,18 +209,75 @@ export async function GET(req: Request) {
 
 // ── POST: crea ordine ────────────────────────────────────────────────────────
 export async function POST(req: Request) {
-  const { gallery_id, session_id, client_name, client_email, items, total, notes } = await req.json()
+  const { gallery_id, session_id, client_name, client_email, items, notes, coupon_code } = await req.json()
 
-  if (!gallery_id || !session_id || !items?.length || total == null) {
+  if (!gallery_id || !session_id || !items?.length) {
     return NextResponse.json({ error: 'Dati ordine incompleti' }, { status: 400 })
   }
+
+  // Verifica server-side che i prezzi inviati dal client non siano inferiori al minimo
+  // legittimo per prodotto/variante/quantità — impedisce di manomettere il totale
+  // (la quantità è aggregata per variante su tutto l'ordine, per gli scaglioni a volume
+  // applicati su più foto stampate nello stesso formato).
+  const qtyByVariant = new Map<string, number>()
+  for (const item of items) {
+    const key = `${item.product_id}::${item.variant_id}`
+    qtyByVariant.set(key, (qtyByVariant.get(key) ?? 0) + (Number(item.qty) || 0))
+  }
+  for (const item of items) {
+    const product = PRODUCTS.find((p) => p.id === item.product_id)
+    const variant = product?.variants.find((v) => v.id === item.variant_id)
+    if (!product || !variant) {
+      return NextResponse.json({ error: 'Prodotto non valido' }, { status: 400 })
+    }
+    if (!Number.isInteger(item.qty) || item.qty < 1) {
+      return NextResponse.json({ error: 'Quantità non valida' }, { status: 400 })
+    }
+    const totalQty = qtyByVariant.get(`${item.product_id}::${item.variant_id}`) ?? item.qty
+    const minUnitPrice = getPriceForQuantity(variant.price, variant.priceBreaks, totalQty) / 100
+    if (typeof item.unit_price !== 'number' || item.unit_price < minUnitPrice - 0.005) {
+      return NextResponse.json({ error: 'Prezzo non valido' }, { status: 400 })
+    }
+  }
+
+  // Subtotale ricalcolato dai prezzi appena validati (mai dal `total` inviato dal client)
+  const subtotal = items.reduce((sum: number, i: { unit_price: number; qty: number }) => sum + i.unit_price * i.qty, 0)
+
+  // Verifica server-side del coupon (se presente) e riserva l'utilizzo in un'unica
+  // UPDATE atomica: SELECT+UPDATE separati permetterebbero a due richieste concorrenti
+  // di superare entrambe il controllo max_uses prima che l'incremento avvenga.
+  let verifiedDiscount = 0
+  if (coupon_code) {
+    const couponRows = await sql`
+      UPDATE shop_coupons SET used_count = used_count + 1
+      WHERE code = ${coupon_code}
+        AND active = true
+        AND (valid_from IS NULL OR valid_from <= CURRENT_DATE)
+        AND (valid_until IS NULL OR valid_until >= CURRENT_DATE)
+        AND (max_uses IS NULL OR used_count < max_uses)
+      RETURNING *
+    `
+    if (couponRows.length > 0) {
+      const c = couponRows[0]
+      const subtotalCents = Math.round(subtotal * 100)
+      const discountCents = c.type === 'percent'
+        ? Math.round(subtotalCents * c.value / 100)
+        : Math.min(c.value, subtotalCents)
+      verifiedDiscount = discountCents / 100
+    }
+  }
+
+  const safeTotal = Math.max(0, subtotal - verifiedDiscount)
+  const notesWithCoupon = coupon_code && verifiedDiscount > 0
+    ? [notes, `Sconto applicato: -${verifiedDiscount.toFixed(2)}€ (${coupon_code})`].filter(Boolean).join('\n')
+    : (notes ?? null)
 
   const [gallery] = await sql`SELECT name FROM galleries WHERE id = ${gallery_id}`
 
   const [order] = await sql`
     INSERT INTO print_orders (gallery_id, session_id, client_name, client_email, items, total, notes, status)
     VALUES (${gallery_id}, ${session_id}, ${client_name ?? null}, ${client_email ?? null},
-            ${JSON.stringify(items)}, ${total}, ${notes ?? null}, 'nuovo')
+            ${JSON.stringify(items)}, ${safeTotal}, ${notesWithCoupon}, 'nuovo')
     RETURNING *
   `
   if (!order) return NextResponse.json({ error: 'Errore creazione ordine' }, { status: 500 })
@@ -254,8 +312,8 @@ export async function POST(req: Request) {
     client_email,
     gallery_name: gallery?.name ?? 'Galleria',
     items,
-    total,
-    notes,
+    total: safeTotal,
+    notes: notesWithCoupon,
   }
 
   if (process.env.RESEND_API_KEY) {
