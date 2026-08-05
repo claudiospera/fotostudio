@@ -674,7 +674,10 @@ export default function StampeClassichePage() {
                       {/* Thumbnail proporzionata al formato scelto per questa foto */}
                       <div style={{ position: 'relative' }}>
                         <div style={{ borderRadius: 4, overflow: 'hidden', boxShadow: '2px 3px 10px rgba(0,0,0,0.12)' }}>
-                          <PhotoSlot photo={p} slotW={tW} slotH={tH} />
+                          <PhotoSlot
+                            photo={{ ...p, offsetX: p.offsetX * (THUMB_MAX / PREVIEW_BIG), offsetY: p.offsetY * (THUMB_MAX / PREVIEW_BIG) }}
+                            slotW={tW} slotH={tH}
+                          />
                         </div>
                         {p.copies > 1 && !p.uploading && (
                           <div style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: '#00c1de', color: '#fff', fontSize: '10px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
