@@ -189,6 +189,26 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   })
 }
 
+// Il browser applica la rotazione EXIF solo quando disegna l'immagine (img/canvas),
+// non nei byte del file. Se carichiamo il file originale così com'è, altri programmi
+// che aprono il file possono interpretare l'EXIF diversamente e mostrarlo ruotato.
+// Ridisegnando su canvas "cuociamo" l'orientamento corretto nei pixel una volta per tutte.
+async function normalizeImageOrientation(file: File): Promise<File> {
+  try {
+    const img = await loadImage(URL.createObjectURL(file))
+    const canvas = document.createElement('canvas')
+    canvas.width = img.naturalWidth
+    canvas.height = img.naturalHeight
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return file
+    ctx.drawImage(img, 0, 0)
+    const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(b => resolve(b), 'image/jpeg', 0.95))
+    return blob ? new File([blob], file.name, { type: 'image/jpeg' }) : file
+  } catch {
+    return file
+  }
+}
+
 function drawCSSBackground(
   ctx: CanvasRenderingContext2D,
   frame: FrameDesign,
@@ -683,14 +703,15 @@ export default function InstaxPage() {
 
   const uploadToR2 = useCallback(async (id: string, file: File) => {
     try {
+      const uploadFile = await normalizeImageOrientation(file)
       const res = await fetch('/api/shop/presign-photo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: file.name, contentType: file.type }),
+        body: JSON.stringify({ filename: uploadFile.name, contentType: uploadFile.type }),
       })
       if (res.ok) {
         const { uploadUrl, publicUrl } = await res.json()
-        const putRes = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type || 'image/jpeg' } })
+        const putRes = await fetch(uploadUrl, { method: 'PUT', body: uploadFile, headers: { 'Content-Type': uploadFile.type || 'image/jpeg' } })
         if (putRes.ok || putRes.status === 200) {
           setPhotos(prev => prev.map(p => p.id === id ? { ...p, uploadedUrl: publicUrl, uploading: false, uploadFailed: false } : p))
         } else {
