@@ -8,6 +8,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Camera, Check, ChevronDown, RotateCcw, ShoppingCart, Upload, ZoomIn } from 'lucide-react'
 import { useCart } from '@/components/shop/CartProvider'
+import { normalizeImageOrientation } from '@/lib/shop/normalize-image'
 
 // ─── Tipi ────────────────────────────────────────────────────────────────────
 
@@ -405,14 +406,15 @@ export default function HahnemuhlePage() {
     setPhotoNatSize(null)
     e.target.value = ''
     try {
+      const uploadFile = await normalizeImageOrientation(file)
       const res = await fetch('/api/shop/presign-photo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: file.name, contentType: file.type }),
+        body: JSON.stringify({ filename: uploadFile.name, contentType: uploadFile.type }),
       })
       if (res.ok) {
         const { uploadUrl, publicUrl } = await res.json()
-        const putRes = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
+        const putRes = await fetch(uploadUrl, { method: 'PUT', body: uploadFile, headers: { 'Content-Type': uploadFile.type } })
         if (putRes.ok || putRes.status === 200) {
           setUploadedUrl(publicUrl)
           setUploadFailed(false)
@@ -434,14 +436,15 @@ export default function HahnemuhlePage() {
     setUploading(true)
     setUploadFailed(false)
     try {
+      const uploadFile = await normalizeImageOrientation(file)
       const res = await fetch('/api/shop/presign-photo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: file.name, contentType: file.type }),
+        body: JSON.stringify({ filename: uploadFile.name, contentType: uploadFile.type }),
       })
       if (res.ok) {
         const { uploadUrl, publicUrl } = await res.json()
-        const putRes = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
+        const putRes = await fetch(uploadUrl, { method: 'PUT', body: uploadFile, headers: { 'Content-Type': uploadFile.type } })
         if (putRes.ok || putRes.status === 200) {
           setUploadedUrl(publicUrl)
           setUploadFailed(false)

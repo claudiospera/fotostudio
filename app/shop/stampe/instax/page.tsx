@@ -8,6 +8,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { Check, ChevronLeft, ChevronRight, Minus, Plus, ShoppingCart, Upload, X, ZoomIn, Maximize2, Bold, Italic } from 'lucide-react'
 import { useCart } from '@/components/shop/CartProvider'
+import { normalizeImageOrientation } from '@/lib/shop/normalize-image'
 
 // ─── Tipi ────────────────────────────────────────────────────────────────────
 
@@ -187,26 +188,6 @@ function loadImage(src: string): Promise<HTMLImageElement> {
     img.onerror = reject
     img.src = src
   })
-}
-
-// Il browser applica la rotazione EXIF solo quando disegna l'immagine (img/canvas),
-// non nei byte del file. Se carichiamo il file originale così com'è, altri programmi
-// che aprono il file possono interpretare l'EXIF diversamente e mostrarlo ruotato.
-// Ridisegnando su canvas "cuociamo" l'orientamento corretto nei pixel una volta per tutte.
-async function normalizeImageOrientation(file: File): Promise<File> {
-  try {
-    const img = await loadImage(URL.createObjectURL(file))
-    const canvas = document.createElement('canvas')
-    canvas.width = img.naturalWidth
-    canvas.height = img.naturalHeight
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return file
-    ctx.drawImage(img, 0, 0)
-    const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(b => resolve(b), 'image/jpeg', 0.95))
-    return blob ? new File([blob], file.name, { type: 'image/jpeg' }) : file
-  } catch {
-    return file
-  }
 }
 
 function drawCSSBackground(

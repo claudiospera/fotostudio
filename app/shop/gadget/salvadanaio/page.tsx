@@ -8,6 +8,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Check, Minus, Plus, ShoppingCart, Upload, RotateCcw, ZoomIn, Type } from 'lucide-react'
 import { useCart } from '@/components/shop/CartProvider'
+import { normalizeImageOrientation } from '@/lib/shop/normalize-image'
 
 function fmt(cents: number) {
   return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(cents / 100)
@@ -160,14 +161,15 @@ export default function SalvadanaiPage() {
   // ─── Upload foto ──────────────────────────────────────────────────────────
   const uploadToR2 = useCallback(async (file: File) => {
     try {
+      const uploadFile = await normalizeImageOrientation(file)
       const res = await fetch('/api/shop/presign-photo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: file.name, contentType: file.type }),
+        body: JSON.stringify({ filename: uploadFile.name, contentType: uploadFile.type }),
       })
       if (res.ok) {
         const { uploadUrl, publicUrl } = await res.json()
-        const putRes = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type || 'image/jpeg' } })
+        const putRes = await fetch(uploadUrl, { method: 'PUT', body: uploadFile, headers: { 'Content-Type': uploadFile.type || 'image/jpeg' } })
         if (putRes.ok || putRes.status === 200) {
           setUploadedUrl(publicUrl)
           setUploadFailed(false)

@@ -8,6 +8,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Check, Minus, Plus, ShoppingCart, Upload, RotateCcw, ZoomIn } from 'lucide-react'
 import { useCart } from '@/components/shop/CartProvider'
+import { normalizeImageOrientation } from '@/lib/shop/normalize-image'
 
 function formatPrice(cents: number): string {
   return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(cents / 100)
@@ -50,14 +51,15 @@ export default function PortachiavEcopellePage() {
 
   async function uploadFile(file: File): Promise<string | null> {
     try {
+      const normalized = await normalizeImageOrientation(file)
       const res = await fetch('/api/shop/presign-photo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: file.name, contentType: file.type }),
+        body: JSON.stringify({ filename: normalized.name, contentType: normalized.type }),
       })
       if (!res.ok) return null
       const { uploadUrl, publicUrl } = await res.json()
-      const putRes = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
+      const putRes = await fetch(uploadUrl, { method: 'PUT', body: normalized, headers: { 'Content-Type': normalized.type } })
       if (putRes.ok || putRes.status === 200) return publicUrl
       return null
     } catch {

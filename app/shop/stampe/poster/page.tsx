@@ -7,6 +7,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { Check, ChevronLeft, ChevronRight, Minus, Plus, ShoppingCart, Upload, X, ZoomIn } from 'lucide-react'
 import { useCart } from '@/components/shop/CartProvider'
+import { normalizeImageOrientation } from '@/lib/shop/normalize-image'
 
 // ─── Dati ────────────────────────────────────────────────────────────────────
 
@@ -243,17 +244,18 @@ export default function PosterPage() {
 
   const uploadToR2 = useCallback(async (id: string, file: File) => {
     try {
+      const uploadFile = await normalizeImageOrientation(file)
       const res = await fetch('/api/shop/presign-photo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: file.name, contentType: file.type }),
+        body: JSON.stringify({ filename: uploadFile.name, contentType: uploadFile.type }),
       })
       if (!res.ok) {
         setPhotos(prev => prev.map(p => p.id === id ? { ...p, uploading: false, uploadFailed: true } : p))
         return
       }
       const { uploadUrl, publicUrl } = await res.json()
-      const putRes = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
+      const putRes = await fetch(uploadUrl, { method: 'PUT', body: uploadFile, headers: { 'Content-Type': uploadFile.type } })
       if (putRes.ok || putRes.status === 200) {
         setPhotos(prev => prev.map(p => p.id === id ? { ...p, uploadedUrl: publicUrl, uploading: false, uploadFailed: false } : p))
       } else {

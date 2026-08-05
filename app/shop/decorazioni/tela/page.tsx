@@ -7,6 +7,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { Camera, Check, Minus, Plus, ShoppingCart, Upload, ZoomIn, RotateCcw } from 'lucide-react'
 import { useCart } from '@/components/shop/CartProvider'
+import { normalizeImageOrientation } from '@/lib/shop/normalize-image'
 
 // ─── Dati prodotto ────────────────────────────────────────────────────────────
 
@@ -145,14 +146,15 @@ export default function TelaPage() {
     setOffsetNorm({ x: 0, y: 0 })
     e.target.value = ''
     try {
+      const uploadFile = await normalizeImageOrientation(file)
       const res = await fetch('/api/shop/presign-photo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: file.name, contentType: file.type }),
+        body: JSON.stringify({ filename: uploadFile.name, contentType: uploadFile.type }),
       })
       if (res.ok) {
         const { uploadUrl, publicUrl } = await res.json()
-        const putRes = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
+        const putRes = await fetch(uploadUrl, { method: 'PUT', body: uploadFile, headers: { 'Content-Type': uploadFile.type } })
         if (putRes.ok || putRes.status === 200) {
           setUploadedUrl(publicUrl)
           setUploadFailed(false)
@@ -186,14 +188,15 @@ export default function TelaPage() {
     setUploading(true)
     setUploadFailed(false)
     try {
+      const uploadFile = await normalizeImageOrientation(file)
       const res = await fetch('/api/shop/presign-photo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: file.name, contentType: file.type }),
+        body: JSON.stringify({ filename: uploadFile.name, contentType: uploadFile.type }),
       })
       if (res.ok) {
         const { uploadUrl, publicUrl } = await res.json()
-        const putRes = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
+        const putRes = await fetch(uploadUrl, { method: 'PUT', body: uploadFile, headers: { 'Content-Type': uploadFile.type } })
         if (putRes.ok || putRes.status === 200) {
           setUploadedUrl(publicUrl)
           setUploadFailed(false)
