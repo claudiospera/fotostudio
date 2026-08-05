@@ -151,6 +151,11 @@ function getPriceForQty(qty: number): number {
   return sorted.find(b => qty >= b.minQty)?.price ?? 200
 }
 
+function getMinPrice(basePrice: number, priceBreaks: { minQty: number; price: number }[]): number {
+  if (!priceBreaks || priceBreaks.length === 0) return basePrice
+  return Math.min(basePrice, ...priceBreaks.map((b) => b.price))
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function formatPrice(cents: number): string {
@@ -922,7 +927,7 @@ export default function InstaxPage() {
                       <div style={{ textAlign: 'center' }}>
                         <p style={{ fontSize: '14px', fontWeight: 700, color: active ? '#00c1de' : '#0a0a0a', marginBottom: 3 }}>{f.label}</p>
                         <p style={{ fontSize: '11px', color: '#aaa', marginBottom: 4 }}>{f.desc}</p>
-                        <p style={{ fontSize: '13px', fontWeight: 700, color: '#00c1de' }}>{formatPrice(f.price)} / cad.</p>
+                        <p style={{ fontSize: '13px', fontWeight: 700, color: '#00c1de' }}>da {formatPrice(getMinPrice(f.price, PRICE_BREAKS))}</p>
                       </div>
                       {active && (
                         <div style={{ position: 'absolute', top: 10, right: 10, width: 20, height: 20, borderRadius: '50%', background: '#00c1de', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

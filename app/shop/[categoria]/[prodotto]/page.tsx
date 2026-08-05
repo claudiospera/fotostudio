@@ -107,7 +107,13 @@ export default function ProductPage({ params }: Props) {
                   }`}
                 >
                   {v.label}
-                  <span className="ml-2 text-xs opacity-70">{formatPrice(v.price)}</span>
+                  <span className="ml-2 text-xs opacity-70">
+                    da {formatPrice(
+                      v.priceBreaks && v.priceBreaks.length > 0
+                        ? Math.min(v.price, ...v.priceBreaks.map((b) => b.price))
+                        : v.price
+                    )}
+                  </span>
                 </button>
               ))}
             </div>

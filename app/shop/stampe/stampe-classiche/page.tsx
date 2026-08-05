@@ -55,6 +55,10 @@ function uid() { return Math.random().toString(36).slice(2, 10) }
 function formatPrice(cents: number) {
   return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(cents / 100)
 }
+function getMinPrice(basePrice: number, priceBreaks: { minQty: number; price: number }[]) {
+  if (!priceBreaks || priceBreaks.length === 0) return basePrice
+  return Math.min(basePrice, ...priceBreaks.map((b) => b.price))
+}
 function getCoverBounds(natW: number, natH: number, cW: number, cH: number, zoom: number) {
   const s = Math.max(cW / natW, cH / natH)
   return { maxX: Math.max(0, (natW * s * zoom - cW) / 2), maxY: Math.max(0, (natH * s * zoom - cH) / 2) }
@@ -513,7 +517,7 @@ export default function StampeClassichePage() {
                       }} />
                       <div style={{ textAlign: 'center' }}>
                         <p style={{ fontSize: '13px', fontWeight: 700, color: active ? '#00c1de' : '#0a0a0a', marginBottom: 2 }}>{v.label}</p>
-                        <p style={{ fontSize: '11px', fontWeight: 600, color: '#00c1de' }}>da {formatPrice(v.price)}</p>
+                        <p style={{ fontSize: '11px', fontWeight: 600, color: '#00c1de' }}>da {formatPrice(getMinPrice(v.price, v.priceBreaks))}</p>
                       </div>
                       {active && (
                         <div style={{ position: 'absolute', top: 8, right: 8, width: 18, height: 18, borderRadius: '50%', background: '#00c1de', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
