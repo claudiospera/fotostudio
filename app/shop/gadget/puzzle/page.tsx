@@ -40,6 +40,8 @@ export default function PuzzlePage() {
   const [rotated,       setRotated]       = useState(false)
   const [qty,           setQty]           = useState(1)
   const [addedFeedback, setAddedFeedback] = useState(false)
+  const [addedOnce,     setAddedOnce]     = useState(false)
+  const [showLeaveWarning, setShowLeaveWarning] = useState(false)
   const [photoUrl,      setPhotoUrl]      = useState<string | null>(null)
   const [uploadedUrl,   setUploadedUrl]   = useState<string | null>(null)
   const [uploading,     setUploading]     = useState(false)
@@ -141,8 +143,13 @@ export default function PuzzlePage() {
       filename:     photoFilename,
     })
     setAddedFeedback(true)
+    setAddedOnce(true)
     setTimeout(() => setAddedFeedback(false), 2200)
   }
+
+  // Ogni modifica invalida l'ultimo "aggiungi al carrello"
+  useEffect(() => { setAddedOnce(false) }, [photoUrl, zoom, variant, rotated, qty])
+  useEffect(() => { if (addedOnce) setShowLeaveWarning(false) }, [addedOnce])
 
   return (
     <div style={{ fontFamily: 'Montserrat, sans-serif', background: '#f9f9f9', minHeight: '100vh' }}>
@@ -543,15 +550,29 @@ export default function PuzzlePage() {
               )}
             </button>
 
-            <Link href="/shop/carrello" style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              width: '100%', padding: '12px', borderRadius: 12,
-              border: '2px solid #00c1de', color: '#00c1de',
-              background: '#fff', fontFamily: 'Poppins, sans-serif',
-              fontWeight: 700, fontSize: '13px', textDecoration: 'none',
-            }}>
+            <Link
+              href="/shop/carrello"
+              onClick={e => {
+                if (photoUrl && !addedOnce) {
+                  e.preventDefault()
+                  setShowLeaveWarning(true)
+                }
+              }}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                width: '100%', padding: '12px', borderRadius: 12,
+                border: '2px solid #00c1de', color: '#00c1de',
+                background: '#fff', fontFamily: 'Poppins, sans-serif',
+                fontWeight: 700, fontSize: '13px', textDecoration: 'none',
+              }}>
               🛒 Vai al carrello
             </Link>
+
+            {showLeaveWarning && (
+              <div style={{ background: '#fff3cd', border: '1px solid #f0c040', borderRadius: 10, padding: '10px 12px', fontSize: '12px', color: '#7a5c00', lineHeight: 1.5 }}>
+                ⚠️ La foto non è ancora nel carrello. Premi <strong>&quot;Aggiungi al carrello&quot;</strong> prima di continuare, altrimenti le modifiche fatte qui andranno perse.
+              </div>
+            )}
 
             <p style={{ fontSize: '11px', color: '#bbb', textAlign: 'center' }}>
               Cartone rigido · Stampa ad alta risoluzione · Ritiro in studio

@@ -81,6 +81,8 @@ export default function TazzaPage() {
   // ── UI ──
   const [qty,           setQty]           = useState(1)
   const [addedFeedback, setAddedFeedback] = useState(false)
+  const [addedOnce,     setAddedOnce]     = useState(false)
+  const [showLeaveWarning, setShowLeaveWarning] = useState(false)
   const [galleryIdx,    setGalleryIdx]    = useState(0)
   const [tab,           setTab]           = useState<'foto' | 'testo'>('foto')
 
@@ -298,8 +300,13 @@ export default function TazzaPage() {
       filename:     photoFilename,
     })
     setAddedFeedback(true)
+    setAddedOnce(true)
     setTimeout(() => setAddedFeedback(false), 2200)
   }
+
+  // Ogni modifica invalida l'ultimo "aggiungi al carrello"
+  useEffect(() => { setAddedOnce(false) }, [photoUrl, photoZoom, photoOffset, text, font, textColor, textSize, textBold, textPos, qty])
+  useEffect(() => { if (addedOnce) setShowLeaveWarning(false) }, [addedOnce])
 
   const total = PRICE * qty
 
@@ -721,15 +728,29 @@ export default function TazzaPage() {
                : <><ShoppingCart size={18} /> Aggiungi al carrello</>}
             </button>
 
-            <Link href="/shop/carrello" style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              width: '100%', padding: '12px', borderRadius: 12,
-              border: '2px solid #00c1de', color: '#00c1de',
-              background: '#fff', fontFamily: 'Poppins, sans-serif',
-              fontWeight: 700, fontSize: '13px', textDecoration: 'none',
-            }}>
+            <Link
+              href="/shop/carrello"
+              onClick={e => {
+                if ((photoUrl || text.trim()) && !addedOnce) {
+                  e.preventDefault()
+                  setShowLeaveWarning(true)
+                }
+              }}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                width: '100%', padding: '12px', borderRadius: 12,
+                border: '2px solid #00c1de', color: '#00c1de',
+                background: '#fff', fontFamily: 'Poppins, sans-serif',
+                fontWeight: 700, fontSize: '13px', textDecoration: 'none',
+              }}>
               Vai al carrello
             </Link>
+
+            {showLeaveWarning && (
+              <div style={{ background: '#fff3cd', border: '1px solid #f0c040', borderRadius: 10, padding: '10px 12px', fontSize: '12px', color: '#7a5c00', lineHeight: 1.5 }}>
+                ⚠️ La personalizzazione non è ancora nel carrello. Premi <strong>&quot;Aggiungi al carrello&quot;</strong> prima di continuare, altrimenti le modifiche fatte qui andranno perse.
+              </div>
+            )}
 
             <p style={{ fontSize: '11px', color: '#bbb', textAlign: 'center' }}>
               Ceramica 325ml · Lavastoviglie · Ritiro in studio

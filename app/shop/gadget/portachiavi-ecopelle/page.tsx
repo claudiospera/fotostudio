@@ -3,7 +3,7 @@
 // app/shop/gadget/portachiavi-ecopelle/page.tsx
 // Portachiavi in Ecopelle 5×5 cm — 2 foto (fronte + retro)
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Check, Minus, Plus, ShoppingCart, Upload, RotateCcw, ZoomIn } from 'lucide-react'
@@ -45,6 +45,8 @@ export default function PortachiavEcopellePage() {
   const [samePhoto,    setSamePhoto]    = useState(false)
   const [qty,          setQty]          = useState(1)
   const [addedFeedback, setAddedFeedback] = useState(false)
+  const [addedOnce,     setAddedOnce]     = useState(false)
+  const [showLeaveWarning, setShowLeaveWarning] = useState(false)
 
   async function uploadFile(file: File): Promise<string | null> {
     try {
@@ -157,8 +159,13 @@ export default function PortachiavEcopellePage() {
       notes:        `retro_url:${backUrl}`,
     })
     setAddedFeedback(true)
+    setAddedOnce(true)
     setTimeout(() => setAddedFeedback(false), 2200)
   }
+
+  // Ogni modifica invalida l'ultimo "aggiungi al carrello"
+  useEffect(() => { setAddedOnce(false) }, [front, back, samePhoto, qty])
+  useEffect(() => { if (addedOnce) setShowLeaveWarning(false) }, [addedOnce])
 
   return (
     <div style={{ fontFamily: 'Montserrat, sans-serif', background: '#f9f9f9', minHeight: '100vh' }}>
@@ -492,15 +499,29 @@ export default function PortachiavEcopellePage() {
               )}
             </button>
 
-            <Link href="/shop/carrello" style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              width: '100%', padding: '12px', borderRadius: 12,
-              border: '2px solid #00c1de', color: '#00c1de',
-              background: '#fff', fontFamily: 'Poppins, sans-serif',
-              fontWeight: 700, fontSize: '13px', textDecoration: 'none',
-            }}>
+            <Link
+              href="/shop/carrello"
+              onClick={e => {
+                if ((front.blobUrl || back.blobUrl) && !addedOnce) {
+                  e.preventDefault()
+                  setShowLeaveWarning(true)
+                }
+              }}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                width: '100%', padding: '12px', borderRadius: 12,
+                border: '2px solid #00c1de', color: '#00c1de',
+                background: '#fff', fontFamily: 'Poppins, sans-serif',
+                fontWeight: 700, fontSize: '13px', textDecoration: 'none',
+              }}>
               Vai al carrello
             </Link>
+
+            {showLeaveWarning && (
+              <div style={{ background: '#fff3cd', border: '1px solid #f0c040', borderRadius: 10, padding: '10px 12px', fontSize: '12px', color: '#7a5c00', lineHeight: 1.5 }}>
+                ⚠️ Le foto non sono ancora nel carrello. Premi <strong>&quot;Aggiungi al carrello&quot;</strong> prima di continuare, altrimenti le modifiche fatte qui andranno perse.
+              </div>
+            )}
 
             <p style={{ fontSize: '11px', color: '#bbb', textAlign: 'center' }}>
               Ecopelle di alta qualità · Anello in acciaio inox · Ritiro in studio

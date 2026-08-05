@@ -655,6 +655,8 @@ export default function InstaxPage() {
   const [activeId,      setActiveId]      = useState<string | null>(null)
   const [isDragOver,    setIsDragOver]    = useState(false)
   const [addedFeedback, setAddedFeedback] = useState(false)
+  const [addedOnce,     setAddedOnce]     = useState(false)
+  const [showLeaveWarning, setShowLeaveWarning] = useState(false)
   const [isRendering,   setIsRendering]   = useState(false)
 
   const activePhoto = photos.find(p => p.id === activeId) ?? null
@@ -674,6 +676,10 @@ export default function InstaxPage() {
   useEffect(() => {
     return () => { photos.forEach(p => URL.revokeObjectURL(p.url)) }
   }, []) // eslint-disable-line
+
+  // Ogni modifica alle foto invalida l'ultimo "aggiungi al carrello"
+  useEffect(() => { setAddedOnce(false) }, [photos])
+  useEffect(() => { if (addedOnce) setShowLeaveWarning(false) }, [addedOnce])
 
   const uploadToR2 = useCallback(async (id: string, file: File) => {
     try {
@@ -806,6 +812,7 @@ export default function InstaxPage() {
         })
       }
       setAddedFeedback(true)
+      setAddedOnce(true)
       setTimeout(() => setAddedFeedback(false), 2500)
     } finally {
       setIsRendering(false)
@@ -1419,16 +1426,30 @@ export default function InstaxPage() {
                   )}
                 </button>
 
-                <Link href="/shop/carrello" style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                  width: '100%', padding: '12px', borderRadius: 12,
-                  border: '2px solid #00c1de', color: '#00c1de',
-                  background: '#fff', fontFamily: 'Poppins, sans-serif',
-                  fontWeight: 700, fontSize: '13px', textDecoration: 'none',
-                  transition: 'all .15s',
-                }}>
+                <Link
+                  href="/shop/carrello"
+                  onClick={e => {
+                    if (photos.length > 0 && !addedOnce) {
+                      e.preventDefault()
+                      setShowLeaveWarning(true)
+                    }
+                  }}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    width: '100%', padding: '12px', borderRadius: 12,
+                    border: '2px solid #00c1de', color: '#00c1de',
+                    background: '#fff', fontFamily: 'Poppins, sans-serif',
+                    fontWeight: 700, fontSize: '13px', textDecoration: 'none',
+                    transition: 'all .15s',
+                  }}>
                   🛒 Vai al carrello
                 </Link>
+
+                {showLeaveWarning && (
+                  <div style={{ background: '#fff3cd', border: '1px solid #f0c040', borderRadius: 10, padding: '10px 12px', fontSize: '12px', color: '#7a5c00', lineHeight: 1.5 }}>
+                    ⚠️ Le foto non sono ancora nel carrello. Premi <strong>&quot;Aggiungi al carrello&quot;</strong> prima di continuare, altrimenti le modifiche fatte qui andranno perse.
+                  </div>
+                )}
 
                 <p style={{ fontSize: '11px', color: '#bbb', textAlign: 'center' }}>
                   Spedizione calcolata al checkout · Carta fotografica originale

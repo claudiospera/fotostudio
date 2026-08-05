@@ -183,6 +183,8 @@ export default function TappetinoMousePage() {
   const [photoNatSize,  setPhotoNatSize]  = useState<{ w: number; h: number } | null>(null)
   const [qty,           setQty]           = useState(1)
   const [addedFeedback, setAddedFeedback] = useState(false)
+  const [addedOnce,     setAddedOnce]     = useState(false)
+  const [showLeaveWarning, setShowLeaveWarning] = useState(false)
   const fileRef = useRef<File | null>(null)
 
   // Reset orientamento quando cambia la foto
@@ -282,8 +284,13 @@ export default function TappetinoMousePage() {
       filename:     photoFilename,
     })
     setAddedFeedback(true)
+    setAddedOnce(true)
     setTimeout(() => setAddedFeedback(false), 2200)
   }
+
+  // Ogni modifica invalida l'ultimo "aggiungi al carrello"
+  useEffect(() => { setAddedOnce(false) }, [photoUrl, zoom, photoOffset, rotated, qty])
+  useEffect(() => { if (addedOnce) setShowLeaveWarning(false) }, [addedOnce])
 
   const total = PRICE * qty
 
@@ -557,15 +564,29 @@ export default function TappetinoMousePage() {
               )}
             </button>
 
-            <Link href="/shop/carrello" style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              width: '100%', padding: '12px', borderRadius: 12,
-              border: '2px solid #00c1de', color: '#00c1de',
-              background: '#fff', fontFamily: 'Poppins, sans-serif',
-              fontWeight: 700, fontSize: '13px', textDecoration: 'none',
-            }}>
+            <Link
+              href="/shop/carrello"
+              onClick={e => {
+                if (photoUrl && !addedOnce) {
+                  e.preventDefault()
+                  setShowLeaveWarning(true)
+                }
+              }}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                width: '100%', padding: '12px', borderRadius: 12,
+                border: '2px solid #00c1de', color: '#00c1de',
+                background: '#fff', fontFamily: 'Poppins, sans-serif',
+                fontWeight: 700, fontSize: '13px', textDecoration: 'none',
+              }}>
               Vai al carrello
             </Link>
+
+            {showLeaveWarning && (
+              <div style={{ background: '#fff3cd', border: '1px solid #f0c040', borderRadius: 10, padding: '10px 12px', fontSize: '12px', color: '#7a5c00', lineHeight: 1.5 }}>
+                ⚠️ La foto non è ancora nel carrello. Premi <strong>&quot;Aggiungi al carrello&quot;</strong> prima di continuare, altrimenti le modifiche fatte qui andranno perse.
+              </div>
+            )}
 
             <p style={{ fontSize: '11px', color: '#bbb', textAlign: 'center' }}>
               Poliestere + gomma antiscivolo · Stampa ad alta risoluzione · Ritiro in studio

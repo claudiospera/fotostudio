@@ -221,6 +221,8 @@ export default function PosterPage() {
   const [activeId, setActiveId] = useState<string | null>(null)
   const [isDragOver, setIsDragOver] = useState(false)
   const [added,       setAdded]       = useState(false)
+  const [addedOnce,   setAddedOnce]   = useState(false)
+  const [showLeaveWarning, setShowLeaveWarning] = useState(false)
   const [isRendering, setIsRendering] = useState(false)
 
   const activePhoto = photos.find(p => p.id === activeId) ?? null
@@ -234,6 +236,10 @@ export default function PosterPage() {
   const THUMB_MAX   = 120
 
   useEffect(() => { return () => photos.forEach(p => URL.revokeObjectURL(p.url)) }, []) // eslint-disable-line
+
+  // Ogni modifica alle foto invalida l'ultimo "aggiungi al carrello"
+  useEffect(() => { setAddedOnce(false) }, [photos])
+  useEffect(() => { if (addedOnce) setShowLeaveWarning(false) }, [addedOnce])
 
   const uploadToR2 = useCallback(async (id: string, file: File) => {
     try {
@@ -360,6 +366,7 @@ export default function PosterPage() {
         })
       }
       setAdded(true)
+      setAddedOnce(true)
       setTimeout(() => setAdded(false), 2500)
     } finally {
       setIsRendering(false)
@@ -816,16 +823,30 @@ export default function PosterPage() {
                   {added ? <><Check size={17} strokeWidth={3} /> Aggiunto!</> : isUploading ? <>Caricamento foto…</> : isRendering ? <>Composizione immagini…</> : <><ShoppingCart size={17} /> Aggiungi al carrello</>}
                 </button>
 
-                <Link href="/shop/carrello" style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                  width: '100%', padding: '12px', borderRadius: 12,
-                  border: '2px solid #00c1de', color: '#00c1de',
-                  background: '#fff', fontFamily: 'Poppins, sans-serif',
-                  fontWeight: 700, fontSize: '13px', textDecoration: 'none',
-                  transition: 'all .15s',
-                }}>
+                <Link
+                  href="/shop/carrello"
+                  onClick={e => {
+                    if (photos.length > 0 && !addedOnce) {
+                      e.preventDefault()
+                      setShowLeaveWarning(true)
+                    }
+                  }}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    width: '100%', padding: '12px', borderRadius: 12,
+                    border: '2px solid #00c1de', color: '#00c1de',
+                    background: '#fff', fontFamily: 'Poppins, sans-serif',
+                    fontWeight: 700, fontSize: '13px', textDecoration: 'none',
+                    transition: 'all .15s',
+                  }}>
                   🛒 Vai al carrello
                 </Link>
+
+                {showLeaveWarning && (
+                  <div style={{ background: '#fff3cd', border: '1px solid #f0c040', borderRadius: 10, padding: '10px 12px', fontSize: '12px', color: '#7a5c00', lineHeight: 1.5 }}>
+                    ⚠️ Le foto non sono ancora nel carrello. Premi <strong>&quot;Aggiungi al carrello&quot;</strong> prima di continuare, altrimenti le modifiche fatte qui andranno perse.
+                  </div>
+                )}
 
                 <p style={{ fontSize: '11px', color: '#bbb', textAlign: 'center' }}>
                   Spedizione calcolata al checkout · Stampa professionale
