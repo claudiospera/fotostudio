@@ -58,19 +58,19 @@ interface UploadedPhoto {
 const FORMATS: InstaxFormat[] = [
   {
     // side = (6.2-5.2)/2 = 0.5 → top=0.5, bottom=10.1-8.1-0.5=1.5
-    id: 'mini', label: 'Instax Mini', desc: '62×101 mm · foto 52×81 mm', price: 200,
+    id: 'pol-mini', label: 'Instax Mini', desc: '62×101 mm · foto 52×81 mm', price: 200,
     outerW: 6.2, outerH: 10.1, photoW: 5.2, photoH: 8.1,
     pad: [0.5, 0.5, 1.5, 0.5],
   },
   {
     // side = (8.5-7.5)/2 = 0.5 → top=0.5, bottom=10.1-7.5-0.5=2.1
-    id: 'square', label: 'Instax Square', desc: '85×101 mm · foto 75×75 mm', price: 200,
+    id: 'pol-square', label: 'Instax Square', desc: '85×101 mm · foto 75×75 mm', price: 200,
     outerW: 8.5, outerH: 10.1, photoW: 7.5, photoH: 7.5,
     pad: [0.5, 0.5, 2.1, 0.5],
   },
   {
     // side = (10.1-9.5)/2 = 0.3 → top=0.3, bottom=7.7-5.8-0.3=1.6
-    id: 'wide', label: 'Instax Wide', desc: '101×77 mm · foto 95×58 mm', price: 200,
+    id: 'pol-wide', label: 'Instax Wide', desc: '101×77 mm · foto 95×58 mm', price: 200,
     outerW: 10.1, outerH: 7.7, photoW: 9.5, photoH: 5.8,
     pad: [0.3, 0.3, 1.6, 0.3],
   },
