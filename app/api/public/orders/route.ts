@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { sql } from '@/lib/db'
-import { PRODUCTS, getPriceForQuantity } from '@/lib/shop/products'
+import { PRODUCTS, getPriceForQuantity, resolveVariant } from '@/lib/shop/products'
 
 const PHOTOGRAPHER_EMAIL = 'info@claudiospera.com'
 
@@ -219,21 +219,25 @@ export async function POST(req: Request) {
   // legittimo per prodotto/variante/quantità — impedisce di manomettere il totale
   // (la quantità è aggregata per variante su tutto l'ordine, per gli scaglioni a volume
   // applicati su più foto stampate nello stesso formato).
+  const resolved = items.map((item: { product_id: string; variant_id: string; qty: number; unit_price: number }) => {
+    const product = PRODUCTS.find((p) => p.id === item.product_id)
+    const variant = product ? resolveVariant(product, item.variant_id) : undefined
+    return { item, product, variant }
+  })
   const qtyByVariant = new Map<string, number>()
-  for (const item of items) {
-    const key = `${item.product_id}::${item.variant_id}`
+  for (const { item, variant } of resolved) {
+    if (!variant) continue
+    const key = `${item.product_id}::${variant.id}`
     qtyByVariant.set(key, (qtyByVariant.get(key) ?? 0) + (Number(item.qty) || 0))
   }
-  for (const item of items) {
-    const product = PRODUCTS.find((p) => p.id === item.product_id)
-    const variant = product?.variants.find((v) => v.id === item.variant_id)
+  for (const { item, product, variant } of resolved) {
     if (!product || !variant) {
       return NextResponse.json({ error: 'Prodotto non valido' }, { status: 400 })
     }
     if (!Number.isInteger(item.qty) || item.qty < 1) {
       return NextResponse.json({ error: 'Quantità non valida' }, { status: 400 })
     }
-    const totalQty = qtyByVariant.get(`${item.product_id}::${item.variant_id}`) ?? item.qty
+    const totalQty = qtyByVariant.get(`${item.product_id}::${variant.id}`) ?? item.qty
     const minUnitPrice = getPriceForQuantity(variant.price, variant.priceBreaks, totalQty) / 100
     if (typeof item.unit_price !== 'number' || item.unit_price < minUnitPrice - 0.005) {
       return NextResponse.json({ error: 'Prezzo non valido' }, { status: 400 })

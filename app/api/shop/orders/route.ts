@@ -3,7 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { sql } from '@/lib/db'
 import Stripe from 'stripe'
 import { notifyNewOrder } from '@/lib/notify-order'
-import { PRODUCTS, getPriceForQuantity } from '@/lib/shop/products'
+import { PRODUCTS, getPriceForQuantity, resolveVariant } from '@/lib/shop/products'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
@@ -21,25 +21,32 @@ export async function POST(req: NextRequest) {
   // Verifica server-side che i prezzi inviati dal client non siano inferiori al minimo
   // legittimo per prodotto/variante/quantità — impedisce di manomettere il totale.
   // Le opzioni (cornici, passepartout, tipo carta) possono solo aggiungere costo,
-  // quindi il prezzo dello scaglione base è un limite inferiore sicuro. La quantità
-  // usata per lo scaglione è aggregata per variante su tutto l'ordine, perché un
-  // ordine può avere più righe della stessa variante (es. foto diverse stampate
-  // nello stesso formato) che insieme raggiungono uno scaglione più conveniente.
+  // quindi il prezzo dello scaglione base è un limite inferiore sicuro.
+  // Il variantId inviato dal client è spesso composito (id base + opzioni o + id
+  // della singola foto, es. "sc-10x15--a1b2c3"): resolveVariant lo riconduce alla
+  // variante base del catalogo. La quantità usata per lo scaglione è aggregata per
+  // variante BASE su tutto l'ordine, perché un ordine può avere più righe della
+  // stessa variante (es. foto diverse stampate nello stesso formato) che insieme
+  // raggiungono uno scaglione più conveniente.
+  const resolved = items.map((item: { productId: string; variantId: string; quantity: number; price: number }) => {
+    const product = PRODUCTS.find((p) => p.id === item.productId)
+    const variant = product ? resolveVariant(product, item.variantId) : undefined
+    return { item, product, variant }
+  })
   const qtyByVariant = new Map<string, number>()
-  for (const item of items) {
-    const key = `${item.productId}::${item.variantId}`
+  for (const { item, variant } of resolved) {
+    if (!variant) continue
+    const key = `${item.productId}::${variant.id}`
     qtyByVariant.set(key, (qtyByVariant.get(key) ?? 0) + (Number(item.quantity) || 0))
   }
-  for (const item of items) {
-    const product = PRODUCTS.find((p) => p.id === item.productId)
-    const variant = product?.variants.find((v) => v.id === item.variantId)
+  for (const { item, product, variant } of resolved) {
     if (!product || !variant) {
       return NextResponse.json({ error: 'Prodotto non valido' }, { status: 400 })
     }
     if (!Number.isInteger(item.quantity) || item.quantity < 1) {
       return NextResponse.json({ error: 'Quantità non valida' }, { status: 400 })
     }
-    const totalQty = qtyByVariant.get(`${item.productId}::${item.variantId}`) ?? item.quantity
+    const totalQty = qtyByVariant.get(`${item.productId}::${variant.id}`) ?? item.quantity
     const minUnitPrice = getPriceForQuantity(variant.price, variant.priceBreaks, totalQty)
     if (typeof item.price !== 'number' || item.price < minUnitPrice) {
       return NextResponse.json({ error: 'Prezzo non valido' }, { status: 400 })

@@ -1,7 +1,7 @@
 // lib/shop/products.ts
 // Prezzi da listino DiLand. Tutti i valori in centesimi di euro.
 
-import type { Product, PriceBreak } from './types'
+import type { Product, PriceBreak, ProductVariant } from './types'
 
 // Scaglioni riutilizzabili ─────────────────────────────────────────────────
 
@@ -526,6 +526,27 @@ export function getProductsByCategory(category: string): Product[] {
 
 export function getFeaturedProducts(): Product[] {
   return PRODUCTS.filter((p) => p.featured && p.status === 'available')
+}
+
+/**
+ * Risolve la variante base data un variantId inviato dal client.
+ * Molte pagine prodotto compongono il variantId concatenando l'id base della
+ * variante con opzioni o l'id della singola foto (es. "sc-10x15--a1b2c3d4",
+ * "puz-trad-13x18__v"): le opzioni possono solo aggiungere costo, quindi
+ * abbinare l'id base è sufficiente per validare il prezzo minimo in sicurezza.
+ * In caso di ambiguità (un id base prefisso di un altro) si sceglie il match
+ * più lungo, cioè il più specifico.
+ */
+export function resolveVariant(product: Product, itemVariantId: string): ProductVariant | undefined {
+  const exact = product.variants.find((v) => v.id === itemVariantId)
+  if (exact) return exact
+  const candidates = product.variants.filter((v) => {
+    if (!itemVariantId.startsWith(v.id)) return false
+    const rest = itemVariantId.slice(v.id.length)
+    return rest.startsWith('__') || rest.startsWith('--')
+  })
+  if (candidates.length === 0) return undefined
+  return candidates.reduce((longest, v) => (v.id.length > longest.id.length ? v : longest))
 }
 
 /**
