@@ -36,6 +36,26 @@ const emptySlot = (): PhotoSlot => ({
   file: null,
 })
 
+// ─── Bozza persistita (sessionStorage) ─────────────────────────────────────────
+// Salviamo solo i metadati leggeri delle foto già caricate su R2 (mai il blob/File),
+// così se il cliente lascia la pagina senza cliccare "Aggiungi al carrello" (es. dal
+// link "Carrello" in header) la selezione fronte/retro non va persa.
+
+const DRAFT_KEY = 'portachiavi-ecopelle-draft-v1'
+
+interface DraftSlot {
+  uploadedUrl: string
+  filename?: string
+  zoom: number
+}
+
+interface Draft {
+  front: DraftSlot
+  back: DraftSlot | null
+  samePhoto: boolean
+  qty: number
+}
+
 export default function PortachiavEcopellePage() {
   const { addItem } = useCart()
   const frontInputRef = useRef<HTMLInputElement>(null)
@@ -160,6 +180,7 @@ export default function PortachiavEcopellePage() {
       filename:     front.filename,
       notes:        `retro_url:${backUrl}`,
     })
+    sessionStorage.removeItem(DRAFT_KEY)
     setAddedFeedback(true)
     setAddedOnce(true)
     setTimeout(() => setAddedFeedback(false), 2200)
@@ -168,6 +189,68 @@ export default function PortachiavEcopellePage() {
   // Ogni modifica invalida l'ultimo "aggiungi al carrello"
   useEffect(() => { setAddedOnce(false) }, [front, back, samePhoto, qty])
   useEffect(() => { if (addedOnce) setShowLeaveWarning(false) }, [addedOnce])
+
+  // Ripristina la bozza salvata (se presente) al primo caricamento della pagina
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY)
+      if (!raw) return
+      const draft: Draft = JSON.parse(raw)
+      if (!draft.front?.uploadedUrl) return
+      // Ripristino di stato da uno store esterno (sessionStorage) al mount: le chiamate
+      // setState multiple sono intenzionali, non un side-effect da evitare.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setFront({
+        ...emptySlot(),
+        blobUrl: draft.front.uploadedUrl,
+        uploadedUrl: draft.front.uploadedUrl,
+        filename: draft.front.filename,
+        zoom: draft.front.zoom,
+      })
+      if (draft.samePhoto) {
+        setBack({
+          ...emptySlot(),
+          blobUrl: draft.front.uploadedUrl,
+          uploadedUrl: draft.front.uploadedUrl,
+          filename: draft.front.filename,
+          zoom: draft.front.zoom,
+        })
+      } else if (draft.back?.uploadedUrl) {
+        setBack({
+          ...emptySlot(),
+          blobUrl: draft.back.uploadedUrl,
+          uploadedUrl: draft.back.uploadedUrl,
+          filename: draft.back.filename,
+          zoom: draft.back.zoom,
+        })
+      }
+      setSamePhoto(draft.samePhoto)
+      setQty(draft.qty)
+    } catch {
+      sessionStorage.removeItem(DRAFT_KEY)
+    }
+  }, []) // eslint-disable-line
+
+  // Salva la bozza (debounced) ad ogni modifica — solo se almeno la foto fronte è già caricata su R2
+  useEffect(() => {
+    const frontUrl = front.uploadedUrl
+    if (!frontUrl || front.uploading) {
+      sessionStorage.removeItem(DRAFT_KEY)
+      return
+    }
+    const backUrl = back.uploadedUrl
+    const backReady = !samePhoto && !!backUrl && !back.uploading
+    const t = setTimeout(() => {
+      const draft: Draft = {
+        front: { uploadedUrl: frontUrl, filename: front.filename, zoom: front.zoom },
+        back: backReady && backUrl ? { uploadedUrl: backUrl, filename: back.filename, zoom: back.zoom } : null,
+        samePhoto,
+        qty,
+      }
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+    }, 400)
+    return () => clearTimeout(t)
+  }, [front, back, samePhoto, qty])
 
   return (
     <div style={{ fontFamily: 'Montserrat, sans-serif', background: '#f9f9f9', minHeight: '100vh' }}>

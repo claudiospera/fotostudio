@@ -14,6 +14,25 @@ function formatPrice(cents: number): string {
   return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(cents / 100)
 }
 
+// ─── Bozza persistita (sessionStorage) ─────────────────────────────────────────
+// Salviamo solo i metadati leggeri della foto già caricata su R2 (mai il blob/File),
+// così se il cliente lascia la pagina senza cliccare "Aggiungi al carrello" (es. dal
+// link "Carrello" in header) la configurazione non va persa.
+
+const DRAFT_KEY = 'cuscino-draft-v1'
+
+interface Draft {
+  backColorId: string
+  qty: number
+  uploadedUrl: string
+  photoFilename?: string
+  zoom: number
+  offsetX: number
+  offsetY: number
+  natW: number
+  natH: number
+}
+
 const PRICE = 2500
 
 const BACK_COLORS = [
@@ -43,12 +62,15 @@ function clampVal(v: number, lo: number, hi: number) { return Math.max(lo, Math.
 // ─── PhotoSlot ────────────────────────────────────────────────────────────────
 
 function PhotoSlot({
-  size, photoUrl, zoom,
+  size, photoUrl, zoom, initialOffsetNorm,
   onUploadClick, onOffsetChange, onNatSize,
 }: {
   size: number
   photoUrl: string | null
   zoom: number
+  // Offset normalizzato (x/size, y/size) da cui ripartire quando photoUrl viene
+  // impostato per la prima volta — usato per ripristinare una bozza salvata
+  initialOffsetNorm?: { x: number; y: number }
   onUploadClick: () => void
   onOffsetChange?: (x: number, y: number) => void
   onNatSize?: (nw: number, nh: number) => void
@@ -64,8 +86,9 @@ function PhotoSlot({
   }, [offset, size, zoom, naturalSize])
 
   useEffect(() => {
-    setOffset({ x: 0, y: 0 }); setNaturalSize(null); setIsDragging(false); dragRef.current = null
-  }, [photoUrl])
+    setOffset({ x: (initialOffsetNorm?.x ?? 0) * size, y: (initialOffsetNorm?.y ?? 0) * size })
+    setNaturalSize(null); setIsDragging(false); dragRef.current = null
+  }, [photoUrl]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!naturalSize) return
@@ -259,7 +282,7 @@ export default function CuscinoPage() {
 
   async function handleAddToCart() {
     if (uploading || isRendering || uploadFailed) return
-    let imageUrl = uploadedUrl ?? photoUrl ?? '/images/shop/gadget/cuscino.png'
+    const imageUrl = uploadedUrl ?? photoUrl ?? '/images/shop/gadget/cuscino.png'
 
     addItem({
       productId:    'cuscino',
@@ -272,6 +295,7 @@ export default function CuscinoPage() {
       filename:     photoFilename,
       notes:        `retro_colore:${backColor.label}`,
     })
+    sessionStorage.removeItem(DRAFT_KEY)
     setAddedFeedback(true)
     setAddedOnce(true)
     setTimeout(() => setAddedFeedback(false), 2200)
@@ -280,6 +304,44 @@ export default function CuscinoPage() {
   // Ogni modifica invalida l'ultimo "aggiungi al carrello"
   useEffect(() => { setAddedOnce(false) }, [photoUrl, zoom, photoOffset, backColor, qty])
   useEffect(() => { if (addedOnce) setShowLeaveWarning(false) }, [addedOnce])
+
+  // Ripristina la bozza salvata (se presente) al primo caricamento della pagina
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY)
+      if (!raw) return
+      const draft: Draft = JSON.parse(raw)
+      if (!draft.uploadedUrl) return
+      const bc = BACK_COLORS.find(c => c.id === draft.backColorId)
+      if (bc) setBackColor(bc)
+      setQty(draft.qty)
+      setPhotoUrl(draft.uploadedUrl)
+      setUploadedUrl(draft.uploadedUrl)
+      setPhotoFilename(draft.photoFilename)
+      setZoom(draft.zoom)
+      setPhotoOffset({ x: draft.offsetX, y: draft.offsetY })
+      setPhotoNatSize({ w: draft.natW, h: draft.natH })
+    } catch {
+      sessionStorage.removeItem(DRAFT_KEY)
+    }
+  }, []) // eslint-disable-line
+
+  // Salva la bozza (debounced) ad ogni modifica — solo se la foto è già caricata su R2
+  useEffect(() => {
+    if (!uploadedUrl || uploading) {
+      sessionStorage.removeItem(DRAFT_KEY)
+      return
+    }
+    const t = setTimeout(() => {
+      const draft: Draft = {
+        backColorId: backColor.id, qty, uploadedUrl, photoFilename, zoom,
+        offsetX: photoOffset.x, offsetY: photoOffset.y,
+        natW: photoNatSize?.w ?? 0, natH: photoNatSize?.h ?? 0,
+      }
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+    }, 400)
+    return () => clearTimeout(t)
+  }, [uploadedUrl, uploading, backColor, qty, zoom, photoOffset, photoNatSize, photoFilename])
 
   const total = PRICE * qty
 
@@ -362,6 +424,7 @@ export default function CuscinoPage() {
                 size={PREVIEW_SIZE}
                 photoUrl={photoUrl}
                 zoom={zoom}
+                initialOffsetNorm={photoOffset}
                 onUploadClick={() => fileInputRef.current?.click()}
                 onOffsetChange={(x, y) => setPhotoOffset({ x, y })}
                 onNatSize={(nw, nh) => setPhotoNatSize({ w: nw, h: nh })}

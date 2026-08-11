@@ -52,6 +52,28 @@ const PALETTE = [
 
 function clamp(v: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, v)) }
 
+// ─── Bozza persistita (sessionStorage) ─────────────────────────────────────────
+// Salviamo solo i metadati leggeri della foto già caricata su R2 (mai il blob/File),
+// così se il cliente lascia la pagina senza cliccare "Aggiungi al carrello" (es. dal
+// link "Carrello" in header) la selezione non va persa.
+
+const DRAFT_KEY = 'borraccia-alluminio-draft-v1'
+
+interface Draft {
+  uploadedUrl: string
+  name?: string
+  natW: number; natH: number
+  zoom: number
+  offsetX: number; offsetY: number
+  text: string
+  fontId: string
+  textColor: string
+  textSize: number
+  textBold: boolean
+  textPosX: number; textPosY: number
+  qty: number
+}
+
 // ─── Componente principale ────────────────────────────────────────────────────
 
 export default function BorracciaAlluminioPage() {
@@ -85,6 +107,54 @@ export default function BorracciaAlluminioPage() {
   const [addedOnce,     setAddedOnce]     = useState(false)
   const [showLeaveWarning, setShowLeaveWarning] = useState(false)
   const [tab,           setTab]           = useState<'foto' | 'testo'>('foto')
+
+  // Ripristina la bozza salvata (se presente) al primo caricamento della pagina
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY)
+      if (!raw) return
+      const draft: Draft = JSON.parse(raw)
+      if (!draft.uploadedUrl) return
+      // Ripristino di stato da uno store esterno (sessionStorage) al mount: le chiamate
+      // setState multiple sono intenzionali, non un side-effect da evitare.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPhotoUrl(draft.uploadedUrl)
+      setUploadedUrl(draft.uploadedUrl)
+      setUploading(false)
+      setPhotoFilename(draft.name)
+      setPhotoZoom(draft.zoom)
+      setPhotoOffset({ x: draft.offsetX, y: draft.offsetY })
+      setPhotoNatSize({ w: draft.natW, h: draft.natH })
+      setText(draft.text)
+      setFont(FONTS.find(f => f.id === draft.fontId) ?? FONTS[0])
+      setTextColor(draft.textColor)
+      setTextSize(draft.textSize)
+      setTextBold(draft.textBold)
+      setTextPos({ x: draft.textPosX, y: draft.textPosY })
+      setQty(draft.qty)
+    } catch {
+      sessionStorage.removeItem(DRAFT_KEY)
+    }
+  }, [])
+
+  // Salva la bozza (debounced) ad ogni modifica — solo se c'è una foto già caricata su R2
+  useEffect(() => {
+    if (!uploadedUrl || uploading) {
+      sessionStorage.removeItem(DRAFT_KEY)
+      return
+    }
+    const t = setTimeout(() => {
+      const draft: Draft = {
+        uploadedUrl, name: photoFilename,
+        natW: photoNatSize?.w ?? 0, natH: photoNatSize?.h ?? 0,
+        zoom: photoZoom, offsetX: photoOffset.x, offsetY: photoOffset.y,
+        text, fontId: font.id, textColor, textSize, textBold,
+        textPosX: textPos.x, textPosY: textPos.y, qty,
+      }
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+    }, 400)
+    return () => clearTimeout(t)
+  }, [uploadedUrl, uploading, photoFilename, photoNatSize, photoZoom, photoOffset, text, font, textColor, textSize, textBold, textPos, qty])
 
   // Carica Google Fonts
   useEffect(() => {
@@ -297,6 +367,7 @@ export default function BorracciaAlluminioPage() {
       image:        imageUrl,
       filename:     photoFilename,
     })
+    sessionStorage.removeItem(DRAFT_KEY)
     setAddedFeedback(true)
     setAddedOnce(true)
     setTimeout(() => setAddedFeedback(false), 2200)

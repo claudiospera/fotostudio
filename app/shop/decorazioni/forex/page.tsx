@@ -19,6 +19,24 @@ interface ForexVariant {
   heightCm: number
 }
 
+// ─── Bozza persistita (sessionStorage) ─────────────────────────────────────────
+// Salviamo solo i metadati leggeri della foto già caricata su R2 (mai il blob/File),
+// così se il cliente lascia la pagina senza cliccare "Aggiungi al carrello" (es. dal
+// link "Carrello" in header) la configurazione non va persa.
+
+const DRAFT_KEY = 'forex-draft-v1'
+
+interface Draft {
+  uploadedUrl: string
+  filename?: string
+  natW: number; natH: number
+  zoom: number
+  offsetX: number; offsetY: number
+  variantId: string
+  rotated: boolean
+  qty: number
+}
+
 const VARIANTS: ForexVariant[] = [
   { id: 'fx-15x20', label: '15×20 cm', price: 1000, widthCm: 15, heightCm: 20 },
   { id: 'fx-20x30', label: '20×30 cm', price: 2000, widthCm: 20, heightCm: 30 },
@@ -226,6 +244,7 @@ export default function ForexPage() {
       filename,
       ...(cropX != null && { cropX, cropY, cropZoom, formatLabel }),
     })
+    sessionStorage.removeItem(DRAFT_KEY)
     setAddedFeedback(true)
     setAddedOnce(true)
     setTimeout(() => setAddedFeedback(false), 2200)
@@ -234,6 +253,53 @@ export default function ForexPage() {
   // Ogni modifica alla configurazione invalida l'ultimo "aggiungi al carrello"
   useEffect(() => { setAddedOnce(false) }, [photoUrl, zoom, photoOffset, variant, rotated, qty])
   useEffect(() => { if (addedOnce) setShowLeaveWarning(false) }, [addedOnce])
+
+  // Ripristina la bozza salvata (se presente) al primo caricamento della pagina
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY)
+      if (!raw) return
+      const draft: Draft = JSON.parse(raw)
+      if (!draft.uploadedUrl) return
+      // Idratazione da sessionStorage al mount (sistema esterno) — non derivabile dal render
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setVariant(VARIANTS.find(v => v.id === draft.variantId) ?? VARIANTS[3])
+      setPhotoUrl(draft.uploadedUrl)
+      setUploadedUrl(draft.uploadedUrl)
+      setPhotoFilename(draft.filename)
+      setZoom(draft.zoom)
+      setPhotoOffset({ x: draft.offsetX, y: draft.offsetY })
+      setPhotoNatSize({ w: draft.natW, h: draft.natH })
+      setRotated(draft.rotated)
+      setQty(draft.qty)
+    } catch {
+      sessionStorage.removeItem(DRAFT_KEY)
+    }
+  }, []) // eslint-disable-line
+
+  // Salva la bozza (debounced) ad ogni modifica — solo se la foto è già stata caricata su R2
+  useEffect(() => {
+    if (!uploadedUrl || uploading) {
+      sessionStorage.removeItem(DRAFT_KEY)
+      return
+    }
+    const t = setTimeout(() => {
+      const draft: Draft = {
+        uploadedUrl,
+        filename: photoFilename,
+        natW: photoNatSize?.w ?? 0,
+        natH: photoNatSize?.h ?? 0,
+        zoom,
+        offsetX: photoOffset.x,
+        offsetY: photoOffset.y,
+        variantId: variant.id,
+        rotated,
+        qty,
+      }
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+    }, 400)
+    return () => clearTimeout(t)
+  }, [uploadedUrl, uploading, photoFilename, photoNatSize, zoom, photoOffset, variant, rotated, qty])
 
   // ─── Render ────────────────────────────────────────────────────────────────
 

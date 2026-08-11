@@ -54,6 +54,39 @@ interface UploadedPhoto {
   labelOffsetY: number
 }
 
+// ─── Bozza persistita (sessionStorage) ─────────────────────────────────────────
+// Salviamo solo i metadati leggeri delle foto già caricate su R2 (mai il blob/File),
+// così se il cliente lascia la pagina senza cliccare "Aggiungi al carrello" (es. dal
+// link "Carrello" in header) la selezione non va persa.
+
+const DRAFT_KEY = 'instax-draft-v1'
+
+interface DraftPhoto {
+  id: string
+  uploadedUrl: string
+  name: string
+  natW: number; natH: number
+  zoom: number
+  offsetX: number; offsetY: number
+  copies: number
+  fitMode: UploadedPhoto['fitMode']
+  label: string
+  labelSize: number
+  labelColor: string
+  labelBold: boolean
+  labelItalic: boolean
+  labelAlign: UploadedPhoto['labelAlign']
+  labelFont: string
+  labelOffsetX: number
+  labelOffsetY: number
+}
+
+interface Draft {
+  formatId: string
+  frameId: string
+  photos: DraftPhoto[]
+}
+
 // ─── Dati ────────────────────────────────────────────────────────────────────
 
 const FORMATS: InstaxFormat[] = [
@@ -682,6 +715,57 @@ export default function InstaxPage() {
   useEffect(() => { setAddedOnce(false) }, [photos])
   useEffect(() => { if (addedOnce) setShowLeaveWarning(false) }, [addedOnce])
 
+  // Ripristina la bozza salvata (se presente) al primo caricamento della pagina
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY)
+      if (!raw) return
+      const draft: Draft = JSON.parse(raw)
+      if (!draft.photos?.length) return
+      const restored: UploadedPhoto[] = draft.photos.map(p => ({
+        id: p.id, url: p.uploadedUrl, uploadedUrl: p.uploadedUrl, uploading: false,
+        name: p.name, natW: p.natW, natH: p.natH,
+        zoom: p.zoom, offsetX: p.offsetX, offsetY: p.offsetY, copies: p.copies,
+        fitMode: p.fitMode,
+        label: p.label, labelSize: p.labelSize, labelColor: p.labelColor,
+        labelBold: p.labelBold, labelItalic: p.labelItalic, labelAlign: p.labelAlign,
+        labelFont: p.labelFont, labelOffsetX: p.labelOffsetX, labelOffsetY: p.labelOffsetY,
+      }))
+      setFormat(FORMATS.find(f => f.id === draft.formatId) ?? FORMATS[0])
+      setFrame(FRAMES.find(f => f.id === draft.frameId) ?? FRAMES[0])
+      setPhotos(restored)
+      setActiveId(restored[0].id)
+      setStep(3)
+    } catch {
+      sessionStorage.removeItem(DRAFT_KEY)
+    }
+  }, [])
+
+  // Salva la bozza (debounced) ad ogni modifica — solo le foto già caricate su R2
+  useEffect(() => {
+    const readyPhotos = photos.filter((p): p is UploadedPhoto & { uploadedUrl: string } => !!p.uploadedUrl && !p.uploading)
+    if (readyPhotos.length === 0) {
+      sessionStorage.removeItem(DRAFT_KEY)
+      return
+    }
+    const t = setTimeout(() => {
+      const draft: Draft = {
+        formatId: format.id,
+        frameId: frame.id,
+        photos: readyPhotos.map(p => ({
+          id: p.id, uploadedUrl: p.uploadedUrl, name: p.name, natW: p.natW, natH: p.natH,
+          zoom: p.zoom, offsetX: p.offsetX, offsetY: p.offsetY, copies: p.copies,
+          fitMode: p.fitMode,
+          label: p.label, labelSize: p.labelSize, labelColor: p.labelColor,
+          labelBold: p.labelBold, labelItalic: p.labelItalic, labelAlign: p.labelAlign,
+          labelFont: p.labelFont, labelOffsetX: p.labelOffsetX, labelOffsetY: p.labelOffsetY,
+        })),
+      }
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+    }, 400)
+    return () => clearTimeout(t)
+  }, [photos, format, frame])
+
   const uploadToR2 = useCallback(async (id: string, file: File) => {
     try {
       const uploadFile = await normalizeImageOrientation(file)
@@ -813,6 +897,7 @@ export default function InstaxPage() {
           instaxLabelFont:  p.label ? p.labelFont  : undefined,
         })
       }
+      sessionStorage.removeItem(DRAFT_KEY)
       setAddedFeedback(true)
       setAddedOnce(true)
       setTimeout(() => setAddedFeedback(false), 2500)

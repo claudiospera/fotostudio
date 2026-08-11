@@ -52,6 +52,28 @@ const PALETTE = [
 
 function clamp(v: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, v)) }
 
+// ─── Bozza persistita (sessionStorage) ─────────────────────────────────────────
+// Salviamo solo i metadati leggeri della foto già caricata su R2 (mai il blob/File),
+// così se il cliente lascia la pagina senza cliccare "Aggiungi al carrello" (es. dal
+// link "Carrello" in header) la selezione non va persa.
+
+const DRAFT_KEY = 'salvadanaio-draft-v1'
+
+interface Draft {
+  uploadedUrl: string
+  name?: string
+  natW: number; natH: number
+  zoom: number
+  offsetX: number; offsetY: number
+  text: string
+  fontId: string
+  textColor: string
+  textSize: number
+  textBold: boolean
+  textPosX: number; textPosY: number
+  qty: number
+}
+
 // ─── Componente principale ────────────────────────────────────────────────────
 
 export default function SalvadanaiPage() {
@@ -299,6 +321,7 @@ export default function SalvadanaiPage() {
       image:        imageUrl,
       filename:     photoFilename,
     })
+    sessionStorage.removeItem(DRAFT_KEY)
     setAddedFeedback(true)
     setAddedOnce(true)
     setTimeout(() => setAddedFeedback(false), 2200)
@@ -307,6 +330,61 @@ export default function SalvadanaiPage() {
   // Ogni modifica invalida l'ultimo "aggiungi al carrello"
   useEffect(() => { setAddedOnce(false) }, [photoUrl, photoZoom, photoOffset, text, font, textColor, textSize, textBold, textPos, qty])
   useEffect(() => { if (addedOnce) setShowLeaveWarning(false) }, [addedOnce])
+
+  // Ripristina la bozza salvata (se presente) al primo caricamento della pagina
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY)
+      if (!raw) return
+      const draft: Draft = JSON.parse(raw)
+      if (!draft.uploadedUrl) return
+      const restoredFont = FONTS.find(f => f.id === draft.fontId) ?? FONTS[0]
+      // Sincronizzazione con storage esterno (sessionStorage) al mount, non stato derivabile dal render
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPhotoUrl(draft.uploadedUrl)
+      setUploadedUrl(draft.uploadedUrl)
+      setUploading(false)
+      setUploadFailed(false)
+      setPhotoFilename(draft.name)
+      setPhotoZoom(draft.zoom)
+      setPhotoOffset({ x: draft.offsetX, y: draft.offsetY })
+      setPhotoNatSize({ w: draft.natW, h: draft.natH })
+      setText(draft.text)
+      setFont(restoredFont)
+      setTextColor(draft.textColor)
+      setTextSize(draft.textSize)
+      setTextBold(draft.textBold)
+      setTextPos({ x: draft.textPosX, y: draft.textPosY })
+      setQty(draft.qty)
+      setTab('foto')
+    } catch {
+      sessionStorage.removeItem(DRAFT_KEY)
+    }
+  }, [])
+
+  // Salva la bozza (debounced) ad ogni modifica rilevante — solo se c'è una foto
+  // già caricata su R2 (uploadedUrl presente e non in upload), altrimenti rimuovi la bozza
+  useEffect(() => {
+    if (!uploadedUrl || uploading) {
+      sessionStorage.removeItem(DRAFT_KEY)
+      return
+    }
+    const t = setTimeout(() => {
+      const draft: Draft = {
+        uploadedUrl,
+        name: photoFilename,
+        natW: photoNatSize?.w ?? 0,
+        natH: photoNatSize?.h ?? 0,
+        zoom: photoZoom,
+        offsetX: photoOffset.x, offsetY: photoOffset.y,
+        text, fontId: font.id, textColor, textSize, textBold,
+        textPosX: textPos.x, textPosY: textPos.y,
+        qty,
+      }
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+    }, 400)
+    return () => clearTimeout(t)
+  }, [uploadedUrl, uploading, photoFilename, photoNatSize, photoZoom, photoOffset, text, font, textColor, textSize, textBold, textPos, qty])
 
   const total = PRICE * qty
 

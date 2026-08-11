@@ -16,17 +16,45 @@ function formatPrice(cents: number): string {
 
 const PRICE = 1000
 
+// ─── Bozza persistita (sessionStorage) ─────────────────────────────────────────
+// Salviamo solo i metadati leggeri della foto già caricata su R2 (mai il blob/File),
+// così se il cliente lascia la pagina senza cliccare "Aggiungi al carrello" (es. dal
+// link "Carrello" in header) la selezione non va persa.
+
+const DRAFT_KEY = 'portachiavi-draft-v1'
+
+interface Draft {
+  uploadedUrl: string
+  filename?: string
+  zoom: number
+  qty: number
+}
+
+// Legge la bozza salvata (se presente e valida) — usata come lazy initializer dello
+// state, così il ripristino avviene al primo render senza un effect + setState extra.
+function readDraft(): Draft | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = sessionStorage.getItem(DRAFT_KEY)
+    if (!raw) return null
+    const draft: Draft = JSON.parse(raw)
+    return draft.uploadedUrl ? draft : null
+  } catch {
+    return null
+  }
+}
+
 export default function PortachiavPage() {
   const { addItem } = useCart()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const [photoUrl,      setPhotoUrl]      = useState<string | null>(null)
-  const [uploadedUrl,   setUploadedUrl]   = useState<string | null>(null)
+  const [photoUrl,      setPhotoUrl]      = useState<string | null>(() => readDraft()?.uploadedUrl ?? null)
+  const [uploadedUrl,   setUploadedUrl]   = useState<string | null>(() => readDraft()?.uploadedUrl ?? null)
   const [uploading,     setUploading]     = useState(false)
   const [uploadFailed,  setUploadFailed]  = useState(false)
-  const [photoFilename, setPhotoFilename] = useState<string | undefined>(undefined)
-  const [zoom,          setZoom]          = useState(1)
-  const [qty,           setQty]           = useState(1)
+  const [photoFilename, setPhotoFilename] = useState<string | undefined>(() => readDraft()?.filename)
+  const [zoom,          setZoom]          = useState(() => readDraft()?.zoom ?? 1)
+  const [qty,           setQty]           = useState(() => readDraft()?.qty ?? 1)
   const [addedFeedback, setAddedFeedback] = useState(false)
   const [addedOnce,     setAddedOnce]     = useState(false)
   const [showLeaveWarning, setShowLeaveWarning] = useState(false)
@@ -122,6 +150,7 @@ export default function PortachiavPage() {
       image:        imageUrl,
       filename:     photoFilename,
     })
+    sessionStorage.removeItem(DRAFT_KEY)
     setAddedFeedback(true)
     setAddedOnce(true)
     setTimeout(() => setAddedFeedback(false), 2200)
@@ -130,6 +159,19 @@ export default function PortachiavPage() {
   // Ogni modifica invalida l'ultimo "aggiungi al carrello"
   useEffect(() => { setAddedOnce(false) }, [photoUrl, zoom, qty])
   useEffect(() => { if (addedOnce) setShowLeaveWarning(false) }, [addedOnce])
+
+  // Salva la bozza (debounced) ad ogni modifica — solo se c'è una foto già caricata su R2
+  useEffect(() => {
+    if (!uploadedUrl || uploading) {
+      sessionStorage.removeItem(DRAFT_KEY)
+      return
+    }
+    const t = setTimeout(() => {
+      const draft: Draft = { uploadedUrl, filename: photoFilename, zoom, qty }
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+    }, 400)
+    return () => clearTimeout(t)
+  }, [uploadedUrl, uploading, photoFilename, zoom, qty])
 
   return (
     <div style={{ fontFamily: 'Montserrat, sans-serif', background: '#f9f9f9', minHeight: '100vh' }}>

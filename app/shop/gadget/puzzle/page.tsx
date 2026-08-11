@@ -32,6 +32,23 @@ const VARIANTS: PuzzleVariant[] = [
   { id: 'puz-gran-30x40', tessera: 'grande',       size: '30×40 cm', widthCm: 30, heightCm: 40, pieces: 96,  label: 'Grande 30×40 cm — 96 pezzi',        price: 2800 },
 ]
 
+// ─── Bozza persistita (sessionStorage) ─────────────────────────────────────────
+// Salviamo solo i metadati leggeri della foto già caricata su R2 (mai il blob/File),
+// così se il cliente lascia la pagina senza cliccare "Aggiungi al carrello" (es. dal
+// link "Carrello" in header) la configurazione non va persa.
+
+const DRAFT_KEY = 'puzzle-draft-v1'
+
+interface Draft {
+  uploadedUrl: string
+  filename?: string
+  zoom: number
+  tessera: 'tradizionale' | 'grande'
+  variantId: string
+  rotated: boolean
+  qty: number
+}
+
 export default function PuzzlePage() {
   const { addItem } = useCart()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -50,9 +67,13 @@ export default function PuzzlePage() {
   const [photoFilename, setPhotoFilename] = useState<string | undefined>(undefined)
   const [zoom,          setZoom]          = useState(1)
   const fileRef = useRef<File | null>(null)
+  // Evita che il reset automatico del formato (sotto) sovrascriva la variante
+  // ripristinata dalla bozza quando cambiamo `tessera` in blocco al restore
+  const isRestoringDraftRef = useRef(false)
 
   // Quando cambia tessera, seleziona primo formato disponibile
   useEffect(() => {
+    if (isRestoringDraftRef.current) { isRestoringDraftRef.current = false; return }
     const first = VARIANTS.find(v => v.tessera === tessera)
     if (first) setVariant(first)
   }, [tessera])
@@ -145,6 +166,7 @@ export default function PuzzlePage() {
       image:        imageUrl,
       filename:     photoFilename,
     })
+    sessionStorage.removeItem(DRAFT_KEY)
     setAddedFeedback(true)
     setAddedOnce(true)
     setTimeout(() => setAddedFeedback(false), 2200)
@@ -153,6 +175,51 @@ export default function PuzzlePage() {
   // Ogni modifica invalida l'ultimo "aggiungi al carrello"
   useEffect(() => { setAddedOnce(false) }, [photoUrl, zoom, variant, rotated, qty])
   useEffect(() => { if (addedOnce) setShowLeaveWarning(false) }, [addedOnce])
+
+  // Ripristina la bozza salvata (se presente) al primo caricamento della pagina
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY)
+      if (!raw) return
+      const draft: Draft = JSON.parse(raw)
+      if (!draft.uploadedUrl) return
+      const restoredVariant = VARIANTS.find(v => v.id === draft.variantId) ?? VARIANTS[0]
+      if (draft.tessera !== tessera) isRestoringDraftRef.current = true
+      // Idratazione da sessionStorage al mount (sistema esterno) — non derivabile dal render
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setTessera(draft.tessera)
+      setVariant(restoredVariant)
+      setPhotoUrl(draft.uploadedUrl)
+      setUploadedUrl(draft.uploadedUrl)
+      setPhotoFilename(draft.filename)
+      setZoom(draft.zoom)
+      setRotated(draft.rotated)
+      setQty(draft.qty)
+    } catch {
+      sessionStorage.removeItem(DRAFT_KEY)
+    }
+  }, []) // eslint-disable-line
+
+  // Salva la bozza (debounced) ad ogni modifica — solo se la foto è già stata caricata su R2
+  useEffect(() => {
+    if (!uploadedUrl || uploading) {
+      sessionStorage.removeItem(DRAFT_KEY)
+      return
+    }
+    const t = setTimeout(() => {
+      const draft: Draft = {
+        uploadedUrl,
+        filename: photoFilename,
+        zoom,
+        tessera,
+        variantId: variant.id,
+        rotated,
+        qty,
+      }
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+    }, 400)
+    return () => clearTimeout(t)
+  }, [uploadedUrl, uploading, photoFilename, zoom, tessera, variant, rotated, qty])
 
   return (
     <div style={{ fontFamily: 'Montserrat, sans-serif', background: '#f9f9f9', minHeight: '100vh' }}>

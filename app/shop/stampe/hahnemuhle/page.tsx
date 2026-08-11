@@ -27,6 +27,29 @@ interface FormatPrice {
   pr: number; me: number; pmb: number; mf: number  // centesimi per carta
 }
 
+// ─── Bozza persistita (sessionStorage) ─────────────────────────────────────────
+// Salviamo solo i metadati leggeri della foto già caricata su R2 (mai il blob/File),
+// così se il cliente lascia la pagina senza cliccare "Aggiungi al carrello" (es. dal
+// link "Carrello" in header) la configurazione non va persa.
+
+const DRAFT_KEY = 'hahnemuhle-draft-v1'
+
+interface Draft {
+  uploadedUrl: string
+  filename?: string
+  natW: number; natH: number
+  zoom: number
+  offsetX: number; offsetY: number
+  paperId: string
+  formatFmt: string
+  whiteBorder: boolean
+  borderCm: 2.5 | 5
+  rotated: boolean
+  spray: boolean
+  certificato: boolean
+  qty: number
+}
+
 // ─── Dati ────────────────────────────────────────────────────────────────────
 
 const PAPERS: PaperType[] = [
@@ -495,6 +518,7 @@ export default function HahnemuhlePage() {
       filename,
       ...(cropX != null && { cropX, cropY, cropZoom, formatLabel }),
     })
+    sessionStorage.removeItem(DRAFT_KEY)
     setAdded(true)
     setAddedOnce(true)
     setTimeout(() => setAdded(false), 2500)
@@ -503,6 +527,63 @@ export default function HahnemuhlePage() {
   // Ogni modifica alla configurazione invalida l'ultimo "aggiungi al carrello"
   useEffect(() => { setAddedOnce(false) }, [photoUrl, zoom, photoOffset, whiteBorder, borderCm, rotated, spray, certificato, format, paper, qty])
   useEffect(() => { if (addedOnce) setShowLeaveWarning(false) }, [addedOnce])
+
+  // Ripristina la bozza salvata (se presente) al primo caricamento della pagina
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY)
+      if (!raw) return
+      const draft: Draft = JSON.parse(raw)
+      if (!draft.uploadedUrl) return
+      // Idratazione da sessionStorage al mount (sistema esterno) — non derivabile dal render
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPaper(PAPERS.find(p => p.id === draft.paperId) ?? PAPERS[0])
+      setFormat(FORMATS.find(f => f.fmt === draft.formatFmt) ?? null)
+      setPhotoUrl(draft.uploadedUrl)
+      setUploadedUrl(draft.uploadedUrl)
+      setPhotoFilename(draft.filename)
+      setZoom(draft.zoom)
+      setPhotoOffset({ x: draft.offsetX, y: draft.offsetY })
+      setPhotoNatSize({ w: draft.natW, h: draft.natH })
+      setWhiteBorder(draft.whiteBorder)
+      setBorderCm(draft.borderCm)
+      setRotated(draft.rotated)
+      setSpray(draft.spray)
+      setCertificato(draft.certificato)
+      setQty(draft.qty)
+    } catch {
+      sessionStorage.removeItem(DRAFT_KEY)
+    }
+  }, []) // eslint-disable-line
+
+  // Salva la bozza (debounced) ad ogni modifica — solo se la foto è già stata caricata su R2
+  useEffect(() => {
+    if (!uploadedUrl || uploading) {
+      sessionStorage.removeItem(DRAFT_KEY)
+      return
+    }
+    const t = setTimeout(() => {
+      const draft: Draft = {
+        uploadedUrl,
+        filename: photoFilename,
+        natW: photoNatSize?.w ?? 0,
+        natH: photoNatSize?.h ?? 0,
+        zoom,
+        offsetX: photoOffset.x,
+        offsetY: photoOffset.y,
+        paperId: paper.id,
+        formatFmt: format?.fmt ?? '',
+        whiteBorder,
+        borderCm,
+        rotated,
+        spray,
+        certificato,
+        qty,
+      }
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+    }, 400)
+    return () => clearTimeout(t)
+  }, [uploadedUrl, uploading, photoFilename, photoNatSize, zoom, photoOffset, paper, format, whiteBorder, borderCm, rotated, spray, certificato, qty])
 
   // Dimensioni slot preview proporzionali al formato selezionato (con rotazione)
   const PREVIEW_MAX = 340

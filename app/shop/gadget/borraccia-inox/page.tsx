@@ -52,6 +52,35 @@ const PALETTE = [
 
 function clamp(v: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, v)) }
 
+// ─── Bozza persistita (sessionStorage) ─────────────────────────────────────────
+// Salviamo solo i metadati leggeri della foto già caricata su R2 (mai il blob/File),
+// così se il cliente lascia la pagina senza cliccare "Aggiungi al carrello" (es. dal
+// link "Carrello" in header) la personalizzazione non va persa.
+
+const DRAFT_KEY = 'borraccia-inox-draft-v1'
+
+interface DraftPhoto {
+  uploadedUrl: string
+  filename?: string
+  natW: number
+  natH: number
+  zoom: number
+  offsetX: number
+  offsetY: number
+}
+
+interface Draft {
+  photo: DraftPhoto
+  text: string
+  fontId: string
+  textColor: string
+  textSize: number
+  textBold: boolean
+  textPosX: number
+  textPosY: number
+  qty: number
+}
+
 // ─── Componente principale ────────────────────────────────────────────────────
 
 export default function BorracciaSportPage() {
@@ -297,6 +326,7 @@ export default function BorracciaSportPage() {
       image:        imageUrl,
       filename:     photoFilename,
     })
+    sessionStorage.removeItem(DRAFT_KEY)
     setAddedFeedback(true)
     setAddedOnce(true)
     setTimeout(() => setAddedFeedback(false), 2200)
@@ -305,6 +335,66 @@ export default function BorracciaSportPage() {
   // Ogni modifica invalida l'ultimo "aggiungi al carrello"
   useEffect(() => { setAddedOnce(false) }, [photoUrl, photoZoom, photoOffset, text, font, textColor, textSize, textBold, textPos, qty])
   useEffect(() => { if (addedOnce) setShowLeaveWarning(false) }, [addedOnce])
+
+  // Ripristina la bozza salvata (se presente) al primo caricamento della pagina
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY)
+      if (!raw) return
+      const draft: Draft = JSON.parse(raw)
+      if (!draft.photo?.uploadedUrl) return
+      const f = FONTS.find(x => x.id === draft.fontId)
+      // Ripristino di stato da uno store esterno (sessionStorage) al mount: le chiamate
+      // setState multiple sono intenzionali, non un side-effect da evitare.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPhotoUrl(draft.photo.uploadedUrl)
+      setUploadedUrl(draft.photo.uploadedUrl)
+      setPhotoFilename(draft.photo.filename)
+      setPhotoZoom(draft.photo.zoom)
+      setPhotoOffset({ x: draft.photo.offsetX, y: draft.photo.offsetY })
+      setPhotoNatSize({ w: draft.photo.natW, h: draft.photo.natH })
+      setText(draft.text)
+      if (f) setFont(f)
+      setTextColor(draft.textColor)
+      setTextSize(draft.textSize)
+      setTextBold(draft.textBold)
+      setTextPos({ x: draft.textPosX, y: draft.textPosY })
+      setQty(draft.qty)
+    } catch {
+      sessionStorage.removeItem(DRAFT_KEY)
+    }
+  }, []) // eslint-disable-line
+
+  // Salva la bozza (debounced) ad ogni modifica — solo se la foto è già caricata su R2
+  useEffect(() => {
+    if (!uploadedUrl || uploading || !photoNatSize) {
+      sessionStorage.removeItem(DRAFT_KEY)
+      return
+    }
+    const t = setTimeout(() => {
+      const draft: Draft = {
+        photo: {
+          uploadedUrl,
+          filename: photoFilename,
+          natW: photoNatSize.w,
+          natH: photoNatSize.h,
+          zoom: photoZoom,
+          offsetX: photoOffset.x,
+          offsetY: photoOffset.y,
+        },
+        text,
+        fontId: font.id,
+        textColor,
+        textSize,
+        textBold,
+        textPosX: textPos.x,
+        textPosY: textPos.y,
+        qty,
+      }
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+    }, 400)
+    return () => clearTimeout(t)
+  }, [uploadedUrl, uploading, photoNatSize, photoFilename, photoZoom, photoOffset, text, font, textColor, textSize, textBold, textPos, qty])
 
   const total = PRICE * qty
 

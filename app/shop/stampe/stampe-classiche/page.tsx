@@ -50,6 +50,32 @@ interface PhotoItem {
   slotOrientation: 'portrait' | 'landscape'
 }
 
+// ─── Bozza persistita (sessionStorage) ─────────────────────────────────────────
+// Salviamo solo i metadati leggeri delle foto già caricate su R2 (mai il blob/File),
+// così se il cliente lascia la pagina senza cliccare "Aggiungi al carrello" (es. dal
+// link "Carrello" in header) la selezione non va persa.
+
+const DRAFT_KEY = 'sc-draft-v1'
+
+interface DraftPhoto {
+  id: string
+  uploadedUrl: string
+  name: string
+  natW: number; natH: number
+  orientation: PhotoItem['orientation']
+  zoom: number
+  offsetX: number; offsetY: number
+  copies: number
+  fitMode: PhotoItem['fitMode']
+  variantId: string
+  slotOrientation: PhotoItem['slotOrientation']
+}
+
+interface Draft {
+  variantId: string
+  photos: DraftPhoto[]
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function uid() { return Math.random().toString(36).slice(2, 10) }
@@ -288,6 +314,49 @@ export default function StampeClassichePage() {
   useEffect(() => { setAddedOnce(false) }, [photos])
   useEffect(() => { if (addedOnce) setShowLeaveWarning(false) }, [addedOnce])
 
+  // Ripristina la bozza salvata (se presente) al primo caricamento della pagina
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY)
+      if (!raw) return
+      const draft: Draft = JSON.parse(raw)
+      if (!draft.photos?.length) return
+      const restored: PhotoItem[] = draft.photos.map(p => ({
+        id: p.id, url: p.uploadedUrl, uploadedUrl: p.uploadedUrl, uploading: false,
+        name: p.name, natW: p.natW, natH: p.natH, orientation: p.orientation,
+        zoom: p.zoom, offsetX: p.offsetX, offsetY: p.offsetY, copies: p.copies,
+        fitMode: p.fitMode, variantId: p.variantId, slotOrientation: p.slotOrientation,
+      }))
+      setVariant(VARIANTS.find(v => v.id === draft.variantId) ?? VARIANTS[0])
+      setPhotos(restored)
+      setActiveId(restored[0].id)
+      setStep(3)
+    } catch {
+      sessionStorage.removeItem(DRAFT_KEY)
+    }
+  }, []) // eslint-disable-line
+
+  // Salva la bozza (debounced) ad ogni modifica — solo le foto già caricate su R2
+  useEffect(() => {
+    const readyPhotos = photos.filter((p): p is PhotoItem & { uploadedUrl: string } => !!p.uploadedUrl && !p.uploading)
+    if (readyPhotos.length === 0) {
+      sessionStorage.removeItem(DRAFT_KEY)
+      return
+    }
+    const t = setTimeout(() => {
+      const draft: Draft = {
+        variantId: variant.id,
+        photos: readyPhotos.map(p => ({
+          id: p.id, uploadedUrl: p.uploadedUrl, name: p.name, natW: p.natW, natH: p.natH,
+          orientation: p.orientation, zoom: p.zoom, offsetX: p.offsetX, offsetY: p.offsetY,
+          copies: p.copies, fitMode: p.fitMode, variantId: p.variantId, slotOrientation: p.slotOrientation,
+        })),
+      }
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+    }, 400)
+    return () => clearTimeout(t)
+  }, [photos, variant])
+
   const uploadToR2 = useCallback(async (id: string, file: File) => {
     try {
       const uploadFile = await normalizeImageOrientation(file)
@@ -423,6 +492,7 @@ export default function StampeClassichePage() {
           ...(p.fitMode !== 'contain' && { cropX, cropY, cropZoom, formatLabel }),
         })
       }
+      sessionStorage.removeItem(DRAFT_KEY)
       setAdded(true)
       setAddedOnce(true)
       setTimeout(() => setAdded(false), 2500)

@@ -17,6 +17,25 @@ const PRICE    = 1300
 const WIDTH_CM = 19
 const HEIGHT_CM = 23
 
+// ─── Bozza persistita (sessionStorage) ─────────────────────────────────────────
+// Salviamo solo i metadati leggeri della foto già caricata su R2 (mai il blob/File),
+// così se il cliente lascia la pagina senza cliccare "Aggiungi al carrello" (es. dal
+// link "Carrello" in header) la configurazione non va persa.
+
+const DRAFT_KEY = 'tappetino-draft-v1'
+
+interface Draft {
+  rotated: boolean
+  qty: number
+  uploadedUrl: string
+  photoFilename?: string
+  zoom: number
+  offsetX: number
+  offsetY: number
+  natW: number
+  natH: number
+}
+
 // ─── Drag helpers ─────────────────────────────────────────────────────────────
 
 function getCoverBounds(natW: number, natH: number, contW: number, contH: number, zoom: number) {
@@ -36,12 +55,15 @@ function clampVal(v: number, min: number, max: number) {
 // ─── PhotoSlot ────────────────────────────────────────────────────────────────
 
 function PhotoSlot({
-  w, h, photoUrl, zoom,
+  w, h, photoUrl, zoom, initialOffsetNorm,
   onUploadClick, onOffsetChange, onNatSize,
 }: {
   w: number; h: number
   photoUrl: string | null
   zoom: number
+  // Offset normalizzato (x/w, y/h) da cui ripartire quando photoUrl viene
+  // impostato per la prima volta — usato per ripristinare una bozza salvata
+  initialOffsetNorm?: { x: number; y: number }
   onUploadClick: () => void
   onOffsetChange?: (x: number, y: number) => void
   onNatSize?: (nw: number, nh: number) => void
@@ -57,11 +79,11 @@ function PhotoSlot({
   }, [offset, w, h, zoom, naturalSize])
 
   useEffect(() => {
-    setOffset({ x: 0, y: 0 })
+    setOffset({ x: (initialOffsetNorm?.x ?? 0) * w, y: (initialOffsetNorm?.y ?? 0) * h })
     setNaturalSize(null)
     setIsDragging(false)
     dragRef.current = null
-  }, [photoUrl])
+  }, [photoUrl]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!naturalSize) return
@@ -188,9 +210,6 @@ export default function TappetinoMousePage() {
   const [showLeaveWarning, setShowLeaveWarning] = useState(false)
   const fileRef = useRef<File | null>(null)
 
-  // Reset orientamento quando cambia la foto
-  useEffect(() => { setRotated(false) }, [photoUrl])
-
   const effW = rotated ? HEIGHT_CM : WIDTH_CM
   const effH = rotated ? WIDTH_CM  : HEIGHT_CM
 
@@ -213,6 +232,7 @@ export default function TappetinoMousePage() {
     fileRef.current = file
     setZoom(1)
     setPhotoOffset({ x: 0, y: 0 })
+    setRotated(false) // nuova foto: riparti dall'orientamento verticale di default
     e.target.value = ''
     try {
       const uploadFile = await normalizeImageOrientation(file)
@@ -273,7 +293,7 @@ export default function TappetinoMousePage() {
 
   async function handleAddToCart() {
     if (uploading || isRendering || uploadFailed) return
-    let imageUrl = uploadedUrl ?? photoUrl ?? '/images/shop/gadget/tappetino-mouse.png'
+    const imageUrl = uploadedUrl ?? photoUrl ?? '/images/shop/gadget/tappetino-mouse.png'
     const orientLabel = rotated ? ' — Orizzontale' : ''
 
     addItem({
@@ -286,6 +306,7 @@ export default function TappetinoMousePage() {
       image:        imageUrl,
       filename:     photoFilename,
     })
+    sessionStorage.removeItem(DRAFT_KEY)
     setAddedFeedback(true)
     setAddedOnce(true)
     setTimeout(() => setAddedFeedback(false), 2200)
@@ -294,6 +315,43 @@ export default function TappetinoMousePage() {
   // Ogni modifica invalida l'ultimo "aggiungi al carrello"
   useEffect(() => { setAddedOnce(false) }, [photoUrl, zoom, photoOffset, rotated, qty])
   useEffect(() => { if (addedOnce) setShowLeaveWarning(false) }, [addedOnce])
+
+  // Ripristina la bozza salvata (se presente) al primo caricamento della pagina
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY)
+      if (!raw) return
+      const draft: Draft = JSON.parse(raw)
+      if (!draft.uploadedUrl) return
+      setRotated(draft.rotated)
+      setQty(draft.qty)
+      setPhotoUrl(draft.uploadedUrl)
+      setUploadedUrl(draft.uploadedUrl)
+      setPhotoFilename(draft.photoFilename)
+      setZoom(draft.zoom)
+      setPhotoOffset({ x: draft.offsetX, y: draft.offsetY })
+      setPhotoNatSize({ w: draft.natW, h: draft.natH })
+    } catch {
+      sessionStorage.removeItem(DRAFT_KEY)
+    }
+  }, []) // eslint-disable-line
+
+  // Salva la bozza (debounced) ad ogni modifica — solo se la foto è già caricata su R2
+  useEffect(() => {
+    if (!uploadedUrl || uploading) {
+      sessionStorage.removeItem(DRAFT_KEY)
+      return
+    }
+    const t = setTimeout(() => {
+      const draft: Draft = {
+        rotated, qty, uploadedUrl, photoFilename, zoom,
+        offsetX: photoOffset.x, offsetY: photoOffset.y,
+        natW: photoNatSize?.w ?? 0, natH: photoNatSize?.h ?? 0,
+      }
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+    }, 400)
+    return () => clearTimeout(t)
+  }, [uploadedUrl, uploading, rotated, qty, zoom, photoOffset, photoNatSize, photoFilename])
 
   const total = PRICE * qty
 
@@ -348,6 +406,7 @@ export default function TappetinoMousePage() {
                 h={previewH}
                 photoUrl={photoUrl}
                 zoom={zoom}
+                initialOffsetNorm={photoOffset}
                 onUploadClick={() => fileInputRef.current?.click()}
                 onOffsetChange={(x, y) => setPhotoOffset({ x, y })}
                 onNatSize={(nw, nh) => setPhotoNatSize({ w: nw, h: nh })}

@@ -54,6 +54,27 @@ const BORDER_INFO: Record<string, { title: string; body: string }> = {
   nero:       { title: 'Bordo Nero',       body: "Il bordo nero conferisce alla stampa un aspetto moderno e di forte impatto visivo. I lati scuri creano un contrasto deciso che valorizza l'immagine al centro, rendendola protagonista assoluta. Ideale per fotografie in bianco e nero o con palette cromatiche scure e raffinate." },
 }
 
+// ─── Bozza persistita (sessionStorage) ─────────────────────────────────────────
+// Salviamo solo i metadati leggeri della foto già caricata su R2 (mai il blob/File),
+// così se il cliente lascia la pagina senza cliccare "Aggiungi al carrello" (es. dal
+// link "Carrello" in header) la configurazione non va persa.
+
+const DRAFT_KEY = 'tela-draft-v1'
+
+interface Draft {
+  variantId: string
+  rotated: boolean
+  borderTypeId: string
+  qty: number
+  uploadedUrl: string
+  photoFilename?: string
+  zoom: number
+  offsetX: number
+  offsetY: number
+  natW: number
+  natH: number
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function formatPrice(cents: number): string {
@@ -215,7 +236,7 @@ export default function TelaPage() {
   async function handleAddToCart() {
     if (uploading || isRendering || uploadFailed) return
     const orientLabel = isSquare ? '' : (rotated ? ' — Orizzontale' : ' — Verticale')
-    let imageUrl = uploadedUrl ?? photoUrl ?? '/images/shop/tela/catalogo.jpg'
+    const imageUrl = uploadedUrl ?? photoUrl ?? '/images/shop/tela/catalogo.jpg'
     const filename = photoFilename
 
     // Compute crop data using CM dimensions as scale-independent proxy
@@ -246,6 +267,7 @@ export default function TelaPage() {
       filename,
       ...(cropX != null && { cropX, cropY, cropZoom, formatLabel }),
     })
+    sessionStorage.removeItem(DRAFT_KEY)
     setAddedFeedback(true)
     setAddedOnce(true)
     setTimeout(() => setAddedFeedback(false), 2200)
@@ -254,6 +276,48 @@ export default function TelaPage() {
   // Ogni modifica alla configurazione invalida l'ultimo "aggiungi al carrello"
   useEffect(() => { setAddedOnce(false) }, [photoUrl, zoom, offsetNorm, variant, rotated, borderType, qty])
   useEffect(() => { if (addedOnce) setShowLeaveWarning(false) }, [addedOnce])
+
+  // Ripristina la bozza salvata (se presente) al primo caricamento della pagina
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY)
+      if (!raw) return
+      const draft: Draft = JSON.parse(raw)
+      if (!draft.uploadedUrl) return
+      const v = VARIANTS.find(x => x.id === draft.variantId)
+      if (v) setVariant(v)
+      setRotated(draft.rotated)
+      const bt = BORDER_TYPES.find(x => x.id === draft.borderTypeId)
+      if (bt) setBorderType(bt)
+      setQty(draft.qty)
+      setPhotoUrl(draft.uploadedUrl)
+      setUploadedUrl(draft.uploadedUrl)
+      setPhotoFilename(draft.photoFilename)
+      setZoom(draft.zoom)
+      setOffsetNorm({ x: draft.offsetX, y: draft.offsetY })
+      setPhotoNatSize({ w: draft.natW, h: draft.natH })
+    } catch {
+      sessionStorage.removeItem(DRAFT_KEY)
+    }
+  }, []) // eslint-disable-line
+
+  // Salva la bozza (debounced) ad ogni modifica — solo se la foto è già caricata su R2
+  useEffect(() => {
+    if (!uploadedUrl || uploading) {
+      sessionStorage.removeItem(DRAFT_KEY)
+      return
+    }
+    const t = setTimeout(() => {
+      const draft: Draft = {
+        variantId: variant.id, rotated, borderTypeId: borderType.id, qty,
+        uploadedUrl, photoFilename, zoom,
+        offsetX: offsetNorm.x, offsetY: offsetNorm.y,
+        natW: photoNatSize?.w ?? 0, natH: photoNatSize?.h ?? 0,
+      }
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+    }, 400)
+    return () => clearTimeout(t)
+  }, [uploadedUrl, uploading, variant, rotated, borderType, qty, zoom, offsetNorm, photoNatSize, photoFilename])
 
   // ─── Render ────────────────────────────────────────────────────────────────
 

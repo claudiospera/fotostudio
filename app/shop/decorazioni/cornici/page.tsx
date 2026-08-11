@@ -81,6 +81,36 @@ function getRecommendedPasseSize(v: { widthCm: number; heightCm: number }) {
 const SCHIENALE_VARIANTS = new Set(['10x15', '13x18', '15x20', '20x30'])
 const SCHIENALE_PRICE = 0 // gratuito
 
+// ─── Bozza persistita (sessionStorage) ─────────────────────────────────────────
+// Salviamo solo i metadati leggeri della foto già caricata su R2 (mai il blob/File),
+// così se il cliente lascia la pagina senza cliccare "Aggiungi al carrello" (es. dal
+// link "Carrello" in header) la configurazione non va persa.
+
+const DRAFT_KEY = 'cornici-draft-v1'
+
+interface DraftPhoto {
+  uploadedUrl: string
+  filename?: string
+  natW: number
+  natH: number
+  zoom: number
+  offsetX: number
+  offsetY: number
+}
+
+interface Draft {
+  variantId: string
+  frameId: string
+  printTypeId: string
+  passeEnabled: boolean
+  passeId: string
+  passeSizeId: string
+  schienaleEnabled: boolean
+  rotated: boolean
+  qty: number
+  photo: DraftPhoto
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function formatPrice(cents: number): string {
@@ -302,6 +332,7 @@ export default function CorniciPage() {
       filename,
       ...(cropX != null && { cropX, cropY, cropZoom, formatLabel }),
     })
+    sessionStorage.removeItem(DRAFT_KEY)
     setAddedFeedback(true)
     setAddedOnce(true)
     setTimeout(() => setAddedFeedback(false), 2200)
@@ -310,6 +341,73 @@ export default function CorniciPage() {
   // Ogni modifica alla configurazione invalida l'ultimo "aggiungi al carrello"
   useEffect(() => { setAddedOnce(false) }, [photoUrl, zoom, photoOffset, variant, frame, printType, passeEnabled, passe, passeSize, schienaleEnabled, rotated, qty])
   useEffect(() => { if (addedOnce) setShowLeaveWarning(false) }, [addedOnce])
+
+  // Ripristina la bozza salvata (se presente) al primo caricamento della pagina
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY)
+      if (!raw) return
+      const draft: Draft = JSON.parse(raw)
+      if (!draft.photo?.uploadedUrl) return
+      const v = VARIANTS.find(x => x.id === draft.variantId)
+      const f = FRAMES.find(x => x.id === draft.frameId)
+      const pt = PRINT_TYPES.find(x => x.id === draft.printTypeId)
+      const pOpt = PASSEPARTOUT_OPTIONS.find(x => x.id === draft.passeId)
+      const pSize = PASSEPARTOUT_SIZES.find(x => x.id === draft.passeSizeId)
+      // Ripristino di stato da uno store esterno (sessionStorage) al mount: le chiamate
+      // setState multiple sono intenzionali, non un side-effect da evitare.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (v) setVariant(v)
+      if (f) setFrame(f)
+      if (pt) setPrintType(pt)
+      setPasseEnabled(draft.passeEnabled)
+      if (pOpt) setPasse(pOpt)
+      if (pSize) setPasseSize(pSize)
+      setSchienaleEnabled(draft.schienaleEnabled)
+      setRotated(draft.rotated)
+      setQty(draft.qty)
+      setPhotoUrl(draft.photo.uploadedUrl)
+      setUploadedUrl(draft.photo.uploadedUrl)
+      setPhotoFilename(draft.photo.filename)
+      setZoom(draft.photo.zoom)
+      setPhotoOffset({ x: draft.photo.offsetX, y: draft.photo.offsetY })
+      setPhotoNatSize({ w: draft.photo.natW, h: draft.photo.natH })
+    } catch {
+      sessionStorage.removeItem(DRAFT_KEY)
+    }
+  }, []) // eslint-disable-line
+
+  // Salva la bozza (debounced) ad ogni modifica — solo se la foto è già caricata su R2
+  useEffect(() => {
+    if (!uploadedUrl || uploading || !photoNatSize) {
+      sessionStorage.removeItem(DRAFT_KEY)
+      return
+    }
+    const t = setTimeout(() => {
+      const draft: Draft = {
+        variantId: variant.id,
+        frameId: frame.id,
+        printTypeId: printType.id,
+        passeEnabled,
+        passeId: passe.id,
+        passeSizeId: passeSize.id,
+        schienaleEnabled,
+        rotated,
+        qty,
+        photo: {
+          uploadedUrl,
+          filename: photoFilename,
+          natW: photoNatSize.w,
+          natH: photoNatSize.h,
+          zoom,
+          offsetX: photoOffset.x,
+          offsetY: photoOffset.y,
+        },
+      }
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+    }, 400)
+    return () => clearTimeout(t)
+  }, [uploadedUrl, uploading, photoNatSize, photoFilename, zoom, photoOffset, variant, frame, printType, passeEnabled, passe, passeSize, schienaleEnabled, rotated, qty])
 
   // ─── Render ────────────────────────────────────────────────────────────────
 

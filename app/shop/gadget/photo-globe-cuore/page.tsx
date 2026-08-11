@@ -47,6 +47,28 @@ const PALETTE = [
   '#6600cc','#9933cc','#cc66ff','#ff00ff','#cc0088','#c05080',
 ]
 
+// ─── Bozza persistita (sessionStorage) ─────────────────────────────────────────
+// Salviamo solo i metadati leggeri della foto già caricata su R2 (mai il blob/File),
+// così se il cliente lascia la pagina senza cliccare "Aggiungi al carrello" (es. dal
+// link "Carrello" in header) la personalizzazione non va persa.
+
+const DRAFT_KEY = 'pgc-draft-v1'
+
+interface Draft {
+  uploadedUrl: string
+  filename?: string
+  natW: number; natH: number
+  zoom: number
+  offsetX: number; offsetY: number
+  text: string
+  fontId: string
+  textColor: string
+  textSize: number
+  textBold: boolean
+  textPosX: number; textPosY: number
+  qty: number
+}
+
 export default function PhotoGlobeCuorePage() {
   const { addItem } = useCart()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -122,6 +144,72 @@ export default function PhotoGlobeCuorePage() {
   useEffect(() => {
     return () => { if (photoUrl) URL.revokeObjectURL(photoUrl) }
   }, [photoUrl])
+
+  // Ripristina la bozza salvata (se presente) al primo caricamento della pagina
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY)
+      if (!raw) return
+      const draft: Draft = JSON.parse(raw)
+      if (!draft.uploadedUrl) return
+      const restoredUrl = draft.uploadedUrl
+      // Idratazione da sessionStorage al mount (sistema esterno) — non derivabile dal render
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPhotoUrl(restoredUrl)
+      setUploadedUrl(restoredUrl)
+      setPhotoFilename(draft.filename)
+      setPhotoZoom(draft.zoom)
+      setPhotoOffset({ x: draft.offsetX, y: draft.offsetY })
+      setText(draft.text)
+      setFont(FONTS.find(f => f.id === draft.fontId) ?? FONTS[0])
+      setTextColor(draft.textColor)
+      setTextSize(draft.textSize)
+      setTextBold(draft.textBold)
+      setTextPos({ x: draft.textPosX, y: draft.textPosY })
+      setQty(draft.qty)
+      // Ricarica l'immagine in memoria: serve caricata (non solo l'URL) sia per
+      // ridisegnare il canvas di anteprima sia per la composizione finale al
+      // momento dell'aggiunta al carrello.
+      const img = new window.Image()
+      img.crossOrigin = 'anonymous'
+      img.onload = () => {
+        photoImgRef.current = img
+        setPhotoNatSize({ w: draft.natW, h: draft.natH })
+      }
+      img.src = draft.uploadedUrl
+    } catch {
+      sessionStorage.removeItem(DRAFT_KEY)
+    }
+  }, []) // eslint-disable-line
+
+  // Salva la bozza (debounced) ad ogni modifica — solo se la foto è già stata caricata su R2
+  useEffect(() => {
+    if (!uploadedUrl || uploading) {
+      sessionStorage.removeItem(DRAFT_KEY)
+      return
+    }
+    const t = setTimeout(() => {
+      const draft: Draft = {
+        uploadedUrl,
+        filename: photoFilename,
+        natW: photoNatSize?.w ?? 0,
+        natH: photoNatSize?.h ?? 0,
+        zoom: photoZoom,
+        offsetX: photoOffset.x,
+        offsetY: photoOffset.y,
+        text,
+        fontId: font.id,
+        textColor,
+        textSize,
+        textBold,
+        textPosX: textPos.x,
+        textPosY: textPos.y,
+        qty,
+      }
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+    }, 400)
+    return () => clearTimeout(t)
+  }, [uploadedUrl, uploading, photoFilename, photoNatSize, photoZoom, photoOffset, text, font, textColor, textSize, textBold, textPos, qty])
 
   // ─── Drag foto ────────────────────────────────────────────────────────────
   const photoDragRef = useRef<{ sx: number; sy: number; ox: number; oy: number } | null>(null)
@@ -298,6 +386,7 @@ export default function PhotoGlobeCuorePage() {
       variantLabel: `9×9 cm${text.trim() ? ` · "${text.slice(0, 20)}"` : ''}`,
       price: PRICE, image: imageUrl, filename: photoFilename,
     })
+    sessionStorage.removeItem(DRAFT_KEY)
     setAddedFeedback(true)
     setTimeout(() => setAddedFeedback(false), 2200)
   }
