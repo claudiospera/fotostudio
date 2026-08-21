@@ -149,6 +149,7 @@ export default function PortachiavPage() {
       price:        PRICE,
       image:        imageUrl,
       filename:     photoFilename,
+      ...(photoUrl && { cropX: 50, cropY: 50, cropZoom: zoom, formatLabel: '5×5 cm' }),
     })
     sessionStorage.removeItem(DRAFT_KEY)
     setAddedFeedback(true)

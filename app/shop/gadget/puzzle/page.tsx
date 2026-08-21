@@ -13,6 +13,22 @@ function formatPrice(cents: number): string {
   return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(cents / 100)
 }
 
+/** Bounds di drag considerando l'overflow reale di object-fit:cover + zoom */
+function getCoverBounds(natW: number, natH: number, contW: number, contH: number, zoom: number) {
+  const coverScale = Math.max(contW / natW, contH / natH)
+  return {
+    maxX: Math.max(0, (natW * coverScale * zoom - contW) / 2),
+    maxY: Math.max(0, (natH * coverScale * zoom - contH) / 2),
+  }
+}
+
+function clampOffset(ox: number, oy: number, maxX: number, maxY: number) {
+  return {
+    x: Math.max(-maxX, Math.min(maxX, ox)),
+    y: Math.max(-maxY, Math.min(maxY, oy)),
+  }
+}
+
 interface PuzzleVariant {
   id: string
   label: string
@@ -43,6 +59,10 @@ interface Draft {
   uploadedUrl: string
   filename?: string
   zoom: number
+  offsetX: number
+  offsetY: number
+  natW: number
+  natH: number
   tessera: 'tradizionale' | 'grande'
   variantId: string
   rotated: boolean
@@ -66,6 +86,8 @@ export default function PuzzlePage() {
   const [uploadFailed,  setUploadFailed]  = useState(false)
   const [photoFilename, setPhotoFilename] = useState<string | undefined>(undefined)
   const [zoom,          setZoom]          = useState(1)
+  const [offsetNorm,    setOffsetNorm]    = useState({ x: 0, y: 0 })
+  const [photoNatSize,  setPhotoNatSize]  = useState<{ w: number; h: number } | null>(null)
   const fileRef = useRef<File | null>(null)
   // Evita che il reset automatico del formato (sotto) sovrascriva la variante
   // ripristinata dalla bozza quando cambiamo `tessera` in blocco al restore
@@ -95,6 +117,8 @@ export default function PuzzlePage() {
     setUploadFailed(false)
     fileRef.current = file
     setZoom(1)
+    setOffsetNorm({ x: 0, y: 0 })
+    setPhotoNatSize(null)
     e.target.value = ''
     try {
       const uploadFile = await normalizeImageOrientation(file)
@@ -149,6 +173,8 @@ export default function PuzzlePage() {
     setUploadedUrl(null)
     setPhotoFilename(undefined)
     setZoom(1)
+    setOffsetNorm({ x: 0, y: 0 })
+    setPhotoNatSize(null)
   }, [photoUrl])
 
   const total = variant.price * qty
@@ -156,6 +182,24 @@ export default function PuzzlePage() {
   function handleAddToCart() {
     if (uploading || uploadFailed) return
     const imageUrl = uploadedUrl ?? photoUrl ?? '/images/shop/gadget/puzzle.png'
+
+    // Compute crop data using CM dimensions as scale-independent proxy
+    let cropX: number | undefined
+    let cropY: number | undefined
+    let cropZoom: number | undefined
+    let formatLabel: string | undefined
+    if (photoUrl && photoNatSize) {
+      const natW = photoNatSize.w
+      const natH = photoNatSize.h
+      const coverScale = Math.max(previewW / natW, previewH / natH)
+      const imgW_equiv = natW * coverScale * zoom
+      const imgH_equiv = natH * coverScale * zoom
+      cropX = Math.max(0, Math.min(100, 50 - (offsetNorm.x * previewW / imgW_equiv) * 100))
+      cropY = Math.max(0, Math.min(100, 50 - (offsetNorm.y * previewH / imgH_equiv) * 100))
+      cropZoom = zoom
+      formatLabel = `${previewW}×${previewH} cm`
+    }
+
     addItem({
       productId:    'puzzle',
       variantId:    `${variant.id}${rotated ? '__h' : '__v'}`,
@@ -165,6 +209,7 @@ export default function PuzzlePage() {
       price:        variant.price,
       image:        imageUrl,
       filename:     photoFilename,
+      ...(cropX != null && { cropX, cropY, cropZoom, formatLabel }),
     })
     sessionStorage.removeItem(DRAFT_KEY)
     setAddedFeedback(true)
@@ -173,7 +218,7 @@ export default function PuzzlePage() {
   }
 
   // Ogni modifica invalida l'ultimo "aggiungi al carrello"
-  useEffect(() => { setAddedOnce(false) }, [photoUrl, zoom, variant, rotated, qty])
+  useEffect(() => { setAddedOnce(false) }, [photoUrl, zoom, offsetNorm, variant, rotated, qty])
   useEffect(() => { if (addedOnce) setShowLeaveWarning(false) }, [addedOnce])
 
   // Ripristina la bozza salvata (se presente) al primo caricamento della pagina
@@ -193,6 +238,8 @@ export default function PuzzlePage() {
       setUploadedUrl(draft.uploadedUrl)
       setPhotoFilename(draft.filename)
       setZoom(draft.zoom)
+      setOffsetNorm({ x: draft.offsetX ?? 0, y: draft.offsetY ?? 0 })
+      if (draft.natW && draft.natH) setPhotoNatSize({ w: draft.natW, h: draft.natH })
       setRotated(draft.rotated)
       setQty(draft.qty)
     } catch {
@@ -211,6 +258,10 @@ export default function PuzzlePage() {
         uploadedUrl,
         filename: photoFilename,
         zoom,
+        offsetX: offsetNorm.x,
+        offsetY: offsetNorm.y,
+        natW: photoNatSize?.w ?? 0,
+        natH: photoNatSize?.h ?? 0,
         tessera,
         variantId: variant.id,
         rotated,
@@ -219,7 +270,7 @@ export default function PuzzlePage() {
       sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
     }, 400)
     return () => clearTimeout(t)
-  }, [uploadedUrl, uploading, photoFilename, zoom, tessera, variant, rotated, qty])
+  }, [uploadedUrl, uploading, photoFilename, zoom, offsetNorm, photoNatSize, tessera, variant, rotated, qty])
 
   return (
     <div style={{ fontFamily: 'Montserrat, sans-serif', background: '#f9f9f9', minHeight: '100vh' }}>
@@ -253,60 +304,15 @@ export default function PuzzlePage() {
             Anteprima foto
           </p>
 
-          {/* Preview puzzle — proporzioni reali del formato selezionato */}
-          <div style={{
-            position: 'relative',
-            width: '100%',
-            aspectRatio: `${previewW} / ${previewH}`,
-            borderRadius: 14,
-            overflow: 'hidden',
-            background: '#efefef',
-            border: '1px solid #e0e0e0',
-            transition: 'aspect-ratio .3s ease',
-          }}>
-            {photoUrl ? (
-              <img
-                src={photoUrl}
-                alt="Anteprima"
-                style={{
-                  width: '100%', height: '100%',
-                  objectFit: 'cover',
-                  transform: `scale(${zoom})`,
-                  transition: 'transform .1s',
-                }}
-              />
-            ) : (
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                style={{
-                  width: '100%', height: '100%',
-                  border: 'none', background: 'transparent',
-                  display: 'flex', flexDirection: 'column',
-                  alignItems: 'center', justifyContent: 'center',
-                  gap: 10, cursor: 'pointer',
-                }}
-              >
-                <Image
-                  src="/images/shop/gadget/puzzle.png"
-                  alt="Puzzle"
-                  fill
-                  style={{ objectFit: 'cover', opacity: 0.5 }}
-                />
-                <div style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
-                  <div style={{
-                    width: 52, height: 52, borderRadius: '50%',
-                    background: 'rgba(0,193,222,0.15)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    margin: '0 auto 8px',
-                  }}>
-                    <Upload size={22} color="#00c1de" />
-                  </div>
-                  <p style={{ fontSize: '13px', fontWeight: 700, color: '#0a0a0a' }}>Carica la tua foto</p>
-                  <p style={{ fontSize: '11px', color: '#888', marginTop: 4 }}>Clicca per selezionare</p>
-                </div>
-              </button>
-            )}
-
+          {/* Preview puzzle — proporzioni reali del formato selezionato, drag+zoom */}
+          <PuzzlePhotoSlot
+            previewW={previewW} previewH={previewH}
+            photoUrl={photoUrl} zoom={zoom}
+            offsetNorm={offsetNorm}
+            onOffsetNormChange={(x, y) => setOffsetNorm({ x, y })}
+            onUploadClick={() => fileInputRef.current?.click()}
+            onNatSize={(nw, nh) => setPhotoNatSize({ w: nw, h: nh })}
+          >
             {/* Overlay griglia puzzle — celle proporzionate ai pezzi reali */}
             {photoUrl && (() => {
               // calcola righe/colonne approssimative dalla radice quadrata dei pezzi
@@ -322,7 +328,7 @@ export default function PuzzlePage() {
                 }} />
               )
             })()}
-          </div>
+          </PuzzlePhotoSlot>
 
           {/* Controlli foto */}
           {photoUrl ? (
@@ -364,6 +370,9 @@ export default function PuzzlePage() {
                   <RotateCcw size={12} />
                 </button>
               </div>
+              <p style={{ fontSize: '11px', color: '#bbb', textAlign: 'center', margin: 0 }}>
+                Trascina la foto per centrare il soggetto
+              </p>
             </div>
           ) : null}
 
@@ -650,6 +659,188 @@ export default function PuzzlePage() {
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+// ─── PuzzlePhotoSlot ────────────────────────────────────────────────────────
+// Anteprima a larghezza fluida (aspect-ratio del formato) con drag + zoom.
+// Misura il box reale via ResizeObserver, poi applica lo stesso pattern
+// background-image/backgroundPosition usato in cornici/tela per lo spostamento.
+
+function PuzzlePhotoSlot({
+  previewW, previewH, photoUrl, zoom, offsetNorm, onOffsetNormChange, onUploadClick, onNatSize, children,
+}: {
+  previewW: number; previewH: number
+  photoUrl: string | null
+  zoom: number
+  offsetNorm: { x: number; y: number }
+  onOffsetNormChange: (x: number, y: number) => void
+  onUploadClick: () => void
+  onNatSize?: (nw: number, nh: number) => void
+  children?: React.ReactNode
+}) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [size, setSize] = useState({ w: 0, h: 0 })
+  const [isDragging, setIsDragging] = useState(false)
+  const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null)
+  const dragRef = useRef<{ startMouseX: number; startMouseY: number; startOffsetX: number; startOffsetY: number } | null>(null)
+  const stateRef = useRef({ w: 0, h: 0, zoom, natW: 0, natH: 0, oxNorm: 0, oyNorm: 0 })
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const ro = new ResizeObserver(([entry]) => {
+      setSize({ w: Math.round(entry.contentRect.width), h: Math.round(entry.contentRect.height) })
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  useEffect(() => {
+    stateRef.current = { w: size.w, h: size.h, zoom, natW: naturalSize?.w ?? 0, natH: naturalSize?.h ?? 0, oxNorm: offsetNorm.x, oyNorm: offsetNorm.y }
+  }, [size, zoom, naturalSize, offsetNorm])
+
+  // Reset dimensioni naturali quando cambia la foto
+  useEffect(() => { setNaturalSize(null); setIsDragging(false); dragRef.current = null }, [photoUrl])
+
+  // Ri-clamp quando cambiano zoom o dimensioni del box
+  useEffect(() => {
+    if (!naturalSize || !size.w || !size.h) return
+    const { maxX, maxY } = getCoverBounds(naturalSize.w, naturalSize.h, size.w, size.h, zoom)
+    const curPx = { x: offsetNorm.x * size.w, y: offsetNorm.y * size.h }
+    const clamped = clampOffset(curPx.x, curPx.y, maxX, maxY)
+    if (clamped.x !== curPx.x || clamped.y !== curPx.y) {
+      onOffsetNormChange(clamped.x / size.w, clamped.y / size.h)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zoom, size, naturalSize])
+
+  // Listener SEMPRE attivi quando c'è una foto — non condizionati a isDragging
+  // per evitare la race condition tra setIsDragging e useEffect
+  useEffect(() => {
+    if (!photoUrl) return
+    const onMove = (clientX: number, clientY: number) => {
+      if (!dragRef.current) return
+      const { w: cw, h: ch, zoom: cz, natW, natH } = stateRef.current
+      if (!natW || !natH || !cw || !ch) return
+      const { maxX, maxY } = getCoverBounds(natW, natH, cw, ch, cz)
+      const dx = clientX - dragRef.current.startMouseX
+      const dy = clientY - dragRef.current.startMouseY
+      const clamped = clampOffset(dragRef.current.startOffsetX + dx, dragRef.current.startOffsetY + dy, maxX, maxY)
+      onOffsetNormChange(clamped.x / cw, clamped.y / ch)
+    }
+    const onEnd = () => { if (!dragRef.current) return; dragRef.current = null; setIsDragging(false) }
+    const onMouseMove = (e: MouseEvent) => onMove(e.clientX, e.clientY)
+    const onTouchMove = (e: TouchEvent) => {
+      if (!dragRef.current) return
+      e.preventDefault()
+      onMove(e.touches[0].clientX, e.touches[0].clientY)
+    }
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup', onEnd)
+    window.addEventListener('touchmove', onTouchMove, { passive: false })
+    window.addEventListener('touchend', onEnd)
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onEnd)
+      window.removeEventListener('touchmove', onTouchMove)
+      window.removeEventListener('touchend', onEnd)
+    }
+  }, [photoUrl]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const canDrag = naturalSize != null && size.w > 0 && (() => {
+    const { maxX, maxY } = getCoverBounds(naturalSize.w, naturalSize.h, size.w, size.h, zoom)
+    return maxX > 0.5 || maxY > 0.5
+  })()
+
+  function startDrag(clientX: number, clientY: number) {
+    if (!canDrag) return
+    const { w: cw, h: ch, oxNorm, oyNorm } = stateRef.current
+    dragRef.current = { startMouseX: clientX, startMouseY: clientY, startOffsetX: oxNorm * cw, startOffsetY: oyNorm * ch }
+    setIsDragging(true)
+  }
+
+  const coverScale = naturalSize && size.w ? Math.max(size.w / naturalSize.w, size.h / naturalSize.h) : 1
+  const imgW = naturalSize ? naturalSize.w * coverScale * zoom : size.w
+  const imgH = naturalSize ? naturalSize.h * coverScale * zoom : size.h
+  const posX = (size.w - imgW) / 2 + offsetNorm.x * size.w
+  const posY = (size.h - imgH) / 2 + offsetNorm.y * size.h
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        position: 'relative',
+        width: '100%',
+        aspectRatio: `${previewW} / ${previewH}`,
+        borderRadius: 14,
+        overflow: 'hidden',
+        background: '#efefef',
+        border: '1px solid #e0e0e0',
+        transition: 'aspect-ratio .3s ease',
+      }}
+    >
+      {photoUrl ? (
+        <div
+          style={{
+            position: 'absolute', inset: 0,
+            cursor: !canDrag ? 'default' : isDragging ? 'grabbing' : 'grab',
+            userSelect: 'none', touchAction: 'none',
+            backgroundImage: `url(${photoUrl})`,
+            backgroundRepeat: 'no-repeat',
+            backgroundSize: naturalSize && size.w ? `${imgW}px ${imgH}px` : 'cover',
+            backgroundPosition: naturalSize && size.w ? `${posX}px ${posY}px` : 'center',
+            transition: isDragging ? 'none' : 'background-size .08s linear, background-position .08s linear',
+          }}
+          onMouseDown={e => { e.preventDefault(); startDrag(e.clientX, e.clientY) }}
+          onTouchStart={e => startDrag(e.touches[0].clientX, e.touches[0].clientY)}
+        >
+          {/* img nascosta solo per leggere naturalWidth/naturalHeight */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={photoUrl} alt=""
+            style={{ display: 'none' }}
+            onLoad={e => {
+              const img = e.currentTarget
+              setNaturalSize({ w: img.naturalWidth, h: img.naturalHeight })
+              onNatSize?.(img.naturalWidth, img.naturalHeight)
+            }}
+          />
+        </div>
+      ) : (
+        <button
+          onClick={onUploadClick}
+          style={{
+            width: '100%', height: '100%',
+            border: 'none', background: 'transparent',
+            display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
+            gap: 10, cursor: 'pointer',
+          }}
+        >
+          <Image
+            src="/images/shop/gadget/puzzle.png"
+            alt="Puzzle"
+            fill
+            style={{ objectFit: 'cover', opacity: 0.5 }}
+          />
+          <div style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
+            <div style={{
+              width: 52, height: 52, borderRadius: '50%',
+              background: 'rgba(0,193,222,0.15)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 8px',
+            }}>
+              <Upload size={22} color="#00c1de" />
+            </div>
+            <p style={{ fontSize: '13px', fontWeight: 700, color: '#0a0a0a' }}>Carica la tua foto</p>
+            <p style={{ fontSize: '11px', color: '#888', marginTop: 4 }}>Clicca per selezionare</p>
+          </div>
+        </button>
+      )}
+
+      {children}
     </div>
   )
 }

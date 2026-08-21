@@ -296,6 +296,23 @@ export default function TappetinoMousePage() {
     const imageUrl = uploadedUrl ?? photoUrl ?? '/images/shop/gadget/tappetino-mouse.png'
     const orientLabel = rotated ? ' — Orizzontale' : ''
 
+    // Compute crop data using le dimensioni della preview come proxy scale-independent
+    let cropX: number | undefined
+    let cropY: number | undefined
+    let cropZoom: number | undefined
+    let formatLabel: string | undefined
+    if (photoUrl && photoNatSize) {
+      const natW = photoNatSize.w
+      const natH = photoNatSize.h
+      const coverScale = Math.max(previewW / natW, previewH / natH)
+      const imgW_equiv = natW * coverScale * zoom
+      const imgH_equiv = natH * coverScale * zoom
+      cropX = Math.max(0, Math.min(100, 50 - (photoOffset.x * previewW / imgW_equiv) * 100))
+      cropY = Math.max(0, Math.min(100, 50 - (photoOffset.y * previewH / imgH_equiv) * 100))
+      cropZoom = zoom
+      formatLabel = `${effW}×${effH} cm`
+    }
+
     addItem({
       productId:    'tappetino-mouse',
       variantId:    `tap-rett${rotated ? '__h' : '__v'}`,
@@ -305,6 +322,7 @@ export default function TappetinoMousePage() {
       price:        PRICE,
       image:        imageUrl,
       filename:     photoFilename,
+      ...(cropX != null && { cropX, cropY, cropZoom, formatLabel }),
     })
     sessionStorage.removeItem(DRAFT_KEY)
     setAddedFeedback(true)

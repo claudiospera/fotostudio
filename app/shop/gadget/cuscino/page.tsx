@@ -284,6 +284,23 @@ export default function CuscinoPage() {
     if (uploading || isRendering || uploadFailed) return
     const imageUrl = uploadedUrl ?? photoUrl ?? '/images/shop/gadget/cuscino.png'
 
+    // Compute crop data using la preview quadrata come proxy scale-independent
+    let cropX: number | undefined
+    let cropY: number | undefined
+    let cropZoom: number | undefined
+    let formatLabel: string | undefined
+    if (photoUrl && photoNatSize) {
+      const natW = photoNatSize.w
+      const natH = photoNatSize.h
+      const coverScale = Math.max(PREVIEW_SIZE / natW, PREVIEW_SIZE / natH)
+      const imgW_equiv = natW * coverScale * zoom
+      const imgH_equiv = natH * coverScale * zoom
+      cropX = Math.max(0, Math.min(100, 50 - (photoOffset.x * PREVIEW_SIZE / imgW_equiv) * 100))
+      cropY = Math.max(0, Math.min(100, 50 - (photoOffset.y * PREVIEW_SIZE / imgH_equiv) * 100))
+      cropZoom = zoom
+      formatLabel = '40×40 cm'
+    }
+
     addItem({
       productId:    'cuscino',
       variantId:    `cus-40x40__${backColor.id}`,
@@ -294,6 +311,7 @@ export default function CuscinoPage() {
       image:        imageUrl,
       filename:     photoFilename,
       notes:        `retro_colore:${backColor.label}`,
+      ...(cropX != null && { cropX, cropY, cropZoom, formatLabel }),
     })
     sessionStorage.removeItem(DRAFT_KEY)
     setAddedFeedback(true)
