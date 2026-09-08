@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   FileText, FileSignature, LayoutTemplate, Users2, Wallet, BookOpen, Plus, Search, UserPlus, X,
@@ -84,9 +84,9 @@ export const PreventiviDashboard = () => {
     setDeletingSlug(null)
   }
 
-  const handleSessioneCreata = (nuova: Sessione) => {
+  const handleSessioneCreata = useCallback((nuova: Sessione) => {
     setSessioni(prev => [nuova, ...prev])
-  }
+  }, [])
 
   const handleSavePreventivo = async (data: Omit<Preventivo, 'id' | 'user_id' | 'created_at'>) => {
     try {
