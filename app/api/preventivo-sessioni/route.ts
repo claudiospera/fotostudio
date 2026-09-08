@@ -37,7 +37,7 @@ export async function GET() {
     SELECT * FROM preventivo_sessioni
     WHERE user_id = ${userId}
     ORDER BY created_at DESC
-    LIMIT 20
+    LIMIT 200
   `
   return NextResponse.json(rows)
 }
