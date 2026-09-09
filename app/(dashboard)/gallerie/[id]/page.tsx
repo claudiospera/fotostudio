@@ -1353,19 +1353,22 @@ export default function GalleryDetailPage() {
                     const toDownload = favPhotos.filter(p => selectedFavs.has(p.id))
                     if (!toDownload.length) return
                     setDownloading(true)
-                    for (const photo of toDownload) {
-                      try {
-                        const res = await fetch(photo.url)
-                        const blob = await res.blob()
-                        const a = document.createElement('a')
-                        a.href = URL.createObjectURL(blob)
-                        a.download = photo.filename
-                        a.click()
-                        URL.revokeObjectURL(a.href)
-                        await new Promise(r => setTimeout(r, 400))
-                      } catch { /* skip failed */ }
+                    try {
+                      const res = await fetch('/api/galleries/download', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ galleryId: id, photoIds: toDownload.map(p => p.id) }),
+                      })
+                      if (!res.ok) { alert('Errore durante il download'); return }
+                      const blob = await res.blob()
+                      const a = document.createElement('a')
+                      a.href = URL.createObjectURL(blob)
+                      a.download = `${(gallery?.name ?? 'galleria').replace(/[^a-z0-9]/gi, '_').toLowerCase()}-preferite.zip`
+                      a.click()
+                      URL.revokeObjectURL(a.href)
+                    } finally {
+                      setDownloading(false)
                     }
-                    setDownloading(false)
                   }
 
                   return (

@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   const { userId } = await auth()
   if (!userId) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
-  const { galleryId } = await req.json()
+  const { galleryId, photoIds } = await req.json()
   if (!galleryId) return NextResponse.json({ error: 'galleryId mancante' }, { status: 400 })
 
   // Verifica che la galleria appartenga all'utente
@@ -18,10 +18,16 @@ export async function POST(req: NextRequest) {
   if (galleries.length === 0) return NextResponse.json({ error: 'Non trovato' }, { status: 404 })
   const gallery = galleries[0]
 
-  // Leggi tutte le foto della galleria
-  const photos = await sql`
-    SELECT url, filename FROM photos WHERE gallery_id = ${galleryId} ORDER BY created_at ASC
-  `
+  // Leggi le foto della galleria (tutte, o solo quelle richieste)
+  const photos = Array.isArray(photoIds) && photoIds.length > 0
+    ? await sql`
+        SELECT url, filename FROM photos
+        WHERE gallery_id = ${galleryId} AND id::text = ANY(${photoIds})
+        ORDER BY created_at ASC
+      `
+    : await sql`
+        SELECT url, filename FROM photos WHERE gallery_id = ${galleryId} ORDER BY created_at ASC
+      `
   if (photos.length === 0) return NextResponse.json({ error: 'Nessuna foto' }, { status: 404 })
 
   const zip = new JSZip()
