@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Clock, Copy, FileText, Pencil, Plus, Trash2, RotateCcw, Send, Printer } from 'lucide-react'
+import { ChevronDown, ChevronUp, Clock, Copy, FileText, Pencil, Plus, Trash2, RotateCcw, Send, Printer } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { PREVENTIVO_TEMPLATES, SERVICE_TYPES_CERIMONIE } from '@/lib/constants'
 import type { PreventivoTemplate, ServiceType, VocePreventivo } from '@/lib/types'
@@ -332,6 +332,16 @@ const TemplateEditModal = ({
     })
   }
 
+  const moveVoce = (i: number, direction: -1 | 1) => {
+    setDraft(prev => {
+      const target = i + direction
+      if (target < 0 || target >= prev.voci.length) return prev
+      const voci = [...prev.voci]
+      ;[voci[i], voci[target]] = [voci[target], voci[i]]
+      return { ...prev, voci }
+    })
+  }
+
   const inputStyle: React.CSSProperties = {
     width: '100%',
     background: 'var(--s3)',
@@ -440,7 +450,7 @@ const TemplateEditModal = ({
             </label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {draft.voci.map((v, i) => (
-                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 110px 28px', gap: 8, alignItems: 'center' }}>
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 110px 20px 28px', gap: 8, alignItems: 'center' }}>
                   <input
                     style={inputStyle}
                     placeholder="Descrizione voce"
@@ -457,6 +467,32 @@ const TemplateEditModal = ({
                       onChange={e => updateVoce(i, 'prezzo', Number(e.target.value))}
                     />
                     <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: 'var(--t3)', pointerEvents: 'none' }}>€</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <button
+                      onClick={() => moveVoce(i, -1)}
+                      disabled={i === 0}
+                      style={{
+                        width: 20, height: 13, border: 'none', background: 'transparent',
+                        color: i === 0 ? 'var(--s3)' : 'var(--t3)', cursor: i === 0 ? 'not-allowed' : 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
+                      }}
+                      title="Sposta su"
+                    >
+                      <ChevronUp size={12} />
+                    </button>
+                    <button
+                      onClick={() => moveVoce(i, 1)}
+                      disabled={i === draft.voci.length - 1}
+                      style={{
+                        width: 20, height: 13, border: 'none', background: 'transparent',
+                        color: i === draft.voci.length - 1 ? 'var(--s3)' : 'var(--t3)', cursor: i === draft.voci.length - 1 ? 'not-allowed' : 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
+                      }}
+                      title="Sposta giù"
+                    >
+                      <ChevronDown size={12} />
+                    </button>
                   </div>
                   <button
                     onClick={() => removeVoce(i)}
