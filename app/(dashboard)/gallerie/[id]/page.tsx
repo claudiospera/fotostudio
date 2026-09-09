@@ -203,6 +203,7 @@ export default function GalleryDetailPage() {
   const [loadingInt, setLoadingInt]   = useState(false)
   const [selectedFavs, setSelectedFavs] = useState<Set<string>>(new Set())
   const [downloading, setDownloading]   = useState(false)
+  const [exportingSelection, setExportingSelection] = useState(false)
 
   // orders
   interface PrintOrderItem { photo_id: string; photo_url: string; filename: string; type: string; format_label: string; qty: number; unit_price: number; total: number }
@@ -1371,6 +1372,28 @@ export default function GalleryDetailPage() {
                     }
                   }
 
+                  const exportSelection = async () => {
+                    setExportingSelection(true)
+                    try {
+                      const res = await fetch(`/api/galleries/${id}/export-selection`)
+                      if (!res.ok) {
+                        const e = await res.json().catch(() => ({}))
+                        alert(e.error ?? 'Errore durante l\'esportazione')
+                        return
+                      }
+                      const blob = await res.blob()
+                      const disposition = res.headers.get('Content-Disposition') ?? ''
+                      const filename = disposition.match(/filename="?([^"]+)"?/)?.[1] ?? 'selezione.txt'
+                      const a = document.createElement('a')
+                      a.href = URL.createObjectURL(blob)
+                      a.download = filename
+                      a.click()
+                      URL.revokeObjectURL(a.href)
+                    } finally {
+                      setExportingSelection(false)
+                    }
+                  }
+
                   return (
                     <div style={{ marginBottom: 20 }}>
                       {/* Header con controlli */}
@@ -1383,6 +1406,26 @@ export default function GalleryDetailPage() {
                           style={{ fontSize: '11px', color: 'var(--t2)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px', borderRadius: 4 }}
                         >
                           {allSelected ? 'Deseleziona tutto' : 'Seleziona tutto'}
+                        </button>
+                        <button
+                          onClick={exportSelection}
+                          disabled={exportingSelection}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 5,
+                            background: 'var(--s2)', color: 'var(--t2)',
+                            border: '1px solid var(--b1)', borderRadius: 6, padding: '5px 10px',
+                            fontSize: '11px', fontWeight: 500, cursor: exportingSelection ? 'not-allowed' : 'pointer',
+                            opacity: exportingSelection ? .6 : 1, transition: 'all .15s',
+                          }}
+                        >
+                          {exportingSelection ? (
+                            <div style={{ width: 10, height: 10, border: '1.5px solid var(--t3)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .7s linear infinite' }} />
+                          ) : (
+                            <svg viewBox="0 0 24 24" width={11} height={11} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
+                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/>
+                            </svg>
+                          )}
+                          Esporta preferiti
                         </button>
                         {selectedFavs.size > 0 && (
                           <button
