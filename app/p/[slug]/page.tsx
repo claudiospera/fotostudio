@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { use } from 'react'
 
-interface Voce { desc: string; prezzo: number }
+interface Voce { desc: string; prezzo: number; gruppo?: string }
 interface Sessione {
   slug: string
   template_nome: string
@@ -71,9 +71,17 @@ export default function PreventivoClientePage({ params }: { params: Promise<{ sl
   }
 
   const toggle = useCallback(async (i: number) => {
-    const next = selected.includes(i)
-      ? selected.filter(x => x !== i)
-      : [...selected, i]
+    const voci = (sessione?.voci ?? []) as Voce[]
+    const gruppo = voci[i]?.gruppo
+    let next: number[]
+    if (selected.includes(i)) {
+      next = selected.filter(x => x !== i)
+    } else if (gruppo) {
+      // le voci con lo stesso gruppo sono mutuamente esclusive: rimuove le altre del gruppo
+      next = [...selected.filter(x => voci[x]?.gruppo !== gruppo), i]
+    } else {
+      next = [...selected, i]
+    }
     setSelected(next)
     setSaving(true)
     await fetch(`/api/preventivo-sessioni/${slug}`, {
@@ -82,7 +90,7 @@ export default function PreventivoClientePage({ params }: { params: Promise<{ sl
       body: JSON.stringify({ selected: next }),
     })
     setSaving(false)
-  }, [selected, slug])
+  }, [selected, slug, sessione])
 
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', fontFamily: '"Georgia", serif' }}>
@@ -161,14 +169,21 @@ export default function PreventivoClientePage({ params }: { params: Promise<{ sl
         {voci.map((v, i) => {
           const checked = selected.includes(i)
           const img = getImgForVoce(v.desc)
+          const prevSameGruppo = !!v.gruppo && voci[i - 1]?.gruppo === v.gruppo
+          const nextSameGruppo = !!v.gruppo && voci[i + 1]?.gruppo === v.gruppo
           return (
+            <div key={i}>
             <div
-              key={i}
               style={{
-                borderBottom: '1px solid #eee',
-                padding: '36px 0',
+                borderBottom: nextSameGruppo ? 'none' : '1px solid #eee',
+                padding: prevSameGruppo ? '10px 0 36px' : '36px 0',
               }}
             >
+              {v.gruppo && !prevSameGruppo && (
+                <p style={{ margin: '0 0 18px', fontSize: 12, fontWeight: 700, color: '#2e7d5e', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Scegli una opzione
+                </p>
+              )}
               {/* Riga principale: immagine + contenuto */}
               <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
 
@@ -233,6 +248,12 @@ export default function PreventivoClientePage({ params }: { params: Promise<{ sl
                   </div>
                 </div>
               </div>
+            </div>
+            {nextSameGruppo && (
+              <div style={{ textAlign: 'center', fontSize: 12, color: '#999', fontStyle: 'italic', padding: '2px 0' }}>
+                oppure
+              </div>
+            )}
             </div>
           )
         })}

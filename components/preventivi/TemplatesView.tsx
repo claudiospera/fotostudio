@@ -450,61 +450,69 @@ const TemplateEditModal = ({
             </label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {draft.voci.map((v, i) => (
-                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 110px 20px 28px', gap: 8, alignItems: 'center' }}>
-                  <input
-                    style={inputStyle}
-                    placeholder="Descrizione voce"
-                    value={v.desc}
-                    onChange={e => updateVoce(i, 'desc', e.target.value)}
-                  />
-                  <div style={{ position: 'relative' }}>
+                <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: 6, borderRadius: 'var(--r2)', background: v.gruppo ? 'rgba(142,201,176,0.05)' : 'transparent' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 110px 20px 28px', gap: 8, alignItems: 'center' }}>
                     <input
-                      style={{ ...inputStyle, paddingRight: 22 }}
-                      type="number"
-                      min={0}
-                      placeholder="0 = incluso"
-                      value={v.prezzo}
-                      onChange={e => updateVoce(i, 'prezzo', Number(e.target.value))}
+                      style={inputStyle}
+                      placeholder="Descrizione voce"
+                      value={v.desc}
+                      onChange={e => updateVoce(i, 'desc', e.target.value)}
                     />
-                    <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: 'var(--t3)', pointerEvents: 'none' }}>€</span>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        style={{ ...inputStyle, paddingRight: 22 }}
+                        type="number"
+                        min={0}
+                        placeholder="0 = incluso"
+                        value={v.prezzo}
+                        onChange={e => updateVoce(i, 'prezzo', Number(e.target.value))}
+                      />
+                      <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: 'var(--t3)', pointerEvents: 'none' }}>€</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <button
+                        onClick={() => moveVoce(i, -1)}
+                        disabled={i === 0}
+                        style={{
+                          width: 20, height: 13, border: 'none', background: 'transparent',
+                          color: i === 0 ? 'var(--s3)' : 'var(--t3)', cursor: i === 0 ? 'not-allowed' : 'pointer',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
+                        }}
+                        title="Sposta su"
+                      >
+                        <ChevronUp size={12} />
+                      </button>
+                      <button
+                        onClick={() => moveVoce(i, 1)}
+                        disabled={i === draft.voci.length - 1}
+                        style={{
+                          width: 20, height: 13, border: 'none', background: 'transparent',
+                          color: i === draft.voci.length - 1 ? 'var(--s3)' : 'var(--t3)', cursor: i === draft.voci.length - 1 ? 'not-allowed' : 'pointer',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
+                        }}
+                        title="Sposta giù"
+                      >
+                        <ChevronDown size={12} />
+                      </button>
+                    </div>
                     <button
-                      onClick={() => moveVoce(i, -1)}
-                      disabled={i === 0}
+                      onClick={() => removeVoce(i)}
                       style={{
-                        width: 20, height: 13, border: 'none', background: 'transparent',
-                        color: i === 0 ? 'var(--s3)' : 'var(--t3)', cursor: i === 0 ? 'not-allowed' : 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
+                        width: 28, height: 28, borderRadius: 6, border: '1px solid rgba(255,255,255,0.06)',
+                        background: 'transparent', color: 'var(--t3)', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
                       }}
-                      title="Sposta su"
+                      title="Rimuovi voce"
                     >
-                      <ChevronUp size={12} />
-                    </button>
-                    <button
-                      onClick={() => moveVoce(i, 1)}
-                      disabled={i === draft.voci.length - 1}
-                      style={{
-                        width: 20, height: 13, border: 'none', background: 'transparent',
-                        color: i === draft.voci.length - 1 ? 'var(--s3)' : 'var(--t3)', cursor: i === draft.voci.length - 1 ? 'not-allowed' : 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
-                      }}
-                      title="Sposta giù"
-                    >
-                      <ChevronDown size={12} />
+                      <Trash2 size={12} />
                     </button>
                   </div>
-                  <button
-                    onClick={() => removeVoce(i)}
-                    style={{
-                      width: 28, height: 28, borderRadius: 6, border: '1px solid rgba(255,255,255,0.06)',
-                      background: 'transparent', color: 'var(--t3)', cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}
-                    title="Rimuovi voce"
-                  >
-                    <Trash2 size={12} />
-                  </button>
+                  <input
+                    style={{ ...inputStyle, fontSize: 11, padding: '5px 10px', marginLeft: 0 }}
+                    placeholder="Gruppo alternativa (facoltativo) — es. 'album'. Voci con lo stesso gruppo: il cliente ne sceglie solo una"
+                    value={v.gruppo ?? ''}
+                    onChange={e => updateVoce(i, 'gruppo', e.target.value)}
+                  />
                 </div>
               ))}
               <button

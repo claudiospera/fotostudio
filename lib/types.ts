@@ -120,6 +120,7 @@ export interface Gallery {
 export interface VocePreventivo {
   desc: string
   prezzo: number
+  gruppo?: string  // voci con lo stesso gruppo sono mutuamente esclusive per il cliente
 }
 
 export interface Preventivo {
