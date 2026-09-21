@@ -193,6 +193,17 @@ const CATEGORY_TABS: { id: 'stampe' | 'decorazioni' | 'gadget'; label: string }[
   { id: 'gadget',      label: 'Gadget'      },
 ]
 
+// Inquadratura per singola foto: ogni foto del batch mantiene la propria centratura/zoom
+interface PhotoAdjust {
+  cropX: number
+  cropY: number
+  zoom: number
+  rotated: boolean
+  instaxText: string
+}
+
+const DEFAULT_ADJUST: PhotoAdjust = { cropX: 50, cropY: 50, zoom: 1, rotated: false, instaxText: '' }
+
 function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
   const [products, setProducts]           = useState<ShopProduct[] | null>(null)
   const [category, setCategory]           = useState<'stampe' | 'decorazioni' | 'gadget'>('stampe')
@@ -203,18 +214,22 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
   const [frameId, setFrameId]             = useState('')
   const [passepartoutId, setPassepartoutId] = useState('none')
   const [printTypeId, setPrintTypeId]     = useState('')
-  // crop/position (percentuali 0-100, default centro)
-  const [cropX, setCropX] = useState(50)
-  const [cropY, setCropY] = useState(50)
-  // zoom (1.0 = nessuno zoom, max 4.0)
-  const [zoom, setZoom] = useState(1)
-  // testo etichetta Instax (bordo inferiore)
-  const [instaxText, setInstaxText] = useState('')
-  // orientamento anteprima (scambia larghezza/altezza)
-  const [rotated, setRotated] = useState(false)
+  // navigazione tra le foto selezionate: quale foto si sta modificando ora
+  const [activeIndex, setActiveIndex] = useState(0)
+  // crop/zoom/rotazione/testo tenuti per singola foto (keyed by id), così ognuna mantiene la propria inquadratura
+  const [adjustments, setAdjustments] = useState<Record<string, PhotoAdjust>>({})
 
   const isBatch = photos.length > 1
-  const photo   = photos[0]  // preview foto: prima selezionata
+  const photo   = photos[activeIndex] ?? photos[0]
+  const adjust  = adjustments[photo.id] ?? DEFAULT_ADJUST
+
+  const updateAdjust = (patch: Partial<PhotoAdjust> | ((prev: PhotoAdjust) => Partial<PhotoAdjust>)) => {
+    setAdjustments(prev => {
+      const current = prev[photo.id] ?? DEFAULT_ADJUST
+      const next = typeof patch === 'function' ? patch(current) : patch
+      return { ...prev, [photo.id]: { ...current, ...next } }
+    })
+  }
 
   useEffect(() => {
     fetch('/api/shop-products')
@@ -229,12 +244,11 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
       setFrameId(selectedProduct.options?.frames?.[0]?.id ?? '')
       setPassepartoutId(selectedProduct.options?.passepartout?.[0]?.id ?? 'none')
       setPrintTypeId(selectedProduct.options?.printTypes?.[0]?.id ?? '')
-      setInstaxText('')
     }
     setQty(1)
   }, [selectedProduct])
 
-  useEffect(() => { setQty(1); setCropX(50); setCropY(50); setZoom(1); setRotated(false) }, [selectedVariantId])
+  useEffect(() => { setQty(1); setAdjustments({}) }, [selectedVariantId])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -291,6 +305,7 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
     const optionsSuffix = `${frameId}::${passepartoutId}::${printTypeId}`
     const photosToAdd = isBatch ? photos : [photo]
     photosToAdd.forEach(p => {
+      const a = adjustments[p.id] ?? DEFAULT_ADJUST
       onAdd({
         id: `${p.id}::${selectedProduct.id}::${variant.id}::${optionsSuffix}`,
         photoId: p.id,
@@ -310,10 +325,10 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
         passepartoutLabel: passepartoutId !== 'none' ? passepartoutLabel : undefined,
         printTypeId: printTypeId || undefined,
         printTypeLabel: printTypeLabel || undefined,
-        cropX,
-        cropY,
-        zoom: zoom !== 1 ? zoom : undefined,
-        instaxText: instaxText || undefined,
+        cropX: a.cropX,
+        cropY: a.cropY,
+        zoom: a.zoom !== 1 ? a.zoom : undefined,
+        instaxText: a.instaxText || undefined,
       })
     })
     onClose()
@@ -352,14 +367,25 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
             {selectedProduct && (
               <button onClick={() => setSelectedProduct(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t3)', width: 32, height: 32, display: 'grid', placeItems: 'center', borderRadius: 8, flexShrink: 0 }}>{ICON_BACK}</button>
             )}
-            {/* Anteprima foto: singola o strip di thumbnails */}
+            {/* Anteprima foto: singola, oppure foto attiva del batch con frecce prev/next */}
             {isBatch ? (
-              <div style={{ display: 'flex', gap: 3, flexShrink: 0 }}>
-                {photos.slice(0, 5).map((p, i) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img key={p.id} src={p.url} alt="" style={{ width: 36, height: 36, borderRadius: 6, objectFit: 'cover', opacity: i < 4 ? 1 : 0.5 }} />
-                ))}
-                {photos.length > 5 && <div style={{ width: 36, height: 36, borderRadius: 6, background: 'var(--s3)', display: 'grid', placeItems: 'center', fontSize: '11px', fontWeight: 700, color: 'var(--t2)', flexShrink: 0 }}>+{photos.length - 5}</div>}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                <button
+                  onClick={() => setActiveIndex(i => (i - 1 + photos.length) % photos.length)}
+                  title="Foto precedente"
+                  style={{ background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 6, width: 24, height: 24, display: 'grid', placeItems: 'center', cursor: 'pointer', color: 'var(--t2)', flexShrink: 0 }}
+                >
+                  <svg viewBox="0 0 24 24" width={12} height={12} fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={photo.url} alt="" style={{ width: 42, height: 42, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
+                <button
+                  onClick={() => setActiveIndex(i => (i + 1) % photos.length)}
+                  title="Foto successiva"
+                  style={{ background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 6, width: 24, height: 24, display: 'grid', placeItems: 'center', cursor: 'pointer', color: 'var(--t2)', flexShrink: 0 }}
+                >
+                  <svg viewBox="0 0 24 24" width={12} height={12} fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
               </div>
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
@@ -369,8 +395,8 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
               <p style={{ fontSize: '15px', fontFamily: 'Syne, sans-serif', fontWeight: 700, color: 'var(--tx)' }}>
                 {selectedProduct ? selectedProduct.name : 'Tutti i prodotti'}
               </p>
-              <p style={{ fontSize: '11px', color: 'var(--t3)', marginTop: 1 }}>
-                {isBatch ? `${photos.length} foto selezionate` : photo.filename}
+              <p style={{ fontSize: '11px', color: 'var(--t3)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {isBatch ? `Foto ${activeIndex + 1} di ${photos.length} · ${photo.filename}` : photo.filename}
               </p>
             </div>
           </div>
@@ -432,6 +458,26 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
           <>
             <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 0' }}>
 
+              {/* ── Strip miniature: passa da una foto all'altra senza chiudere il pannello ── */}
+              {isBatch && (
+                <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, marginBottom: 16 }}>
+                  {photos.map((p, i) => (
+                    <button
+                      key={p.id}
+                      onClick={() => setActiveIndex(i)}
+                      title={p.filename}
+                      style={{ position: 'relative', flexShrink: 0, padding: 0, lineHeight: 0, background: 'none', cursor: 'pointer', border: `2px solid ${i === activeIndex ? 'var(--ac)' : 'transparent'}`, borderRadius: 8 }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={p.url} alt="" style={{ width: 44, height: 44, borderRadius: 6, objectFit: 'cover', display: 'block', opacity: i === activeIndex ? 1 : 0.55 }} />
+                      {adjustments[p.id] && (
+                        <span title="Inquadratura personalizzata" style={{ position: 'absolute', top: -3, right: -3, width: 8, height: 8, borderRadius: '50%', background: 'var(--ac)', border: '1.5px solid var(--s1)' }} />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               {/* ── Anteprima inquadratura (drag per riposizionare) ── */}
               {(() => {
                 const wRaw = variant.widthCm
@@ -443,8 +489,8 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
                   ) : null
                 }
                 const canRotate = wRaw !== hRaw
-                const w = rotated ? hRaw : wRaw
-                const h = rotated ? wRaw : hRaw
+                const w = adjust.rotated ? hRaw : wRaw
+                const h = adjust.rotated ? wRaw : hRaw
                 const aspectRatio = h / w
 
                 // ── Drag + pinch handler (condiviso tra generic e instax) ──
@@ -456,12 +502,12 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
                   if (isTouch && e.touches.length === 2) {
                     const t = e.touches
                     let initDist = Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY)
-                    let initZoom = zoom
+                    let initZoom = adjust.zoom
                     const onPinchMove = (ev: TouchEvent) => {
                       if (ev.touches.length < 2) return
                       ev.preventDefault()
                       const d = Math.hypot(ev.touches[0].clientX - ev.touches[1].clientX, ev.touches[0].clientY - ev.touches[1].clientY)
-                      setZoom(Math.max(1, Math.min(4, initZoom * d / initDist)))
+                      updateAdjust({ zoom: Math.max(1, Math.min(4, initZoom * d / initDist)) })
                     }
                     const onPinchEnd = () => { window.removeEventListener('touchmove', onPinchMove); window.removeEventListener('touchend', onPinchEnd) }
                     window.addEventListener('touchmove', onPinchMove, { passive: false })
@@ -470,15 +516,18 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
                   }
                   const startX = isTouch ? e.touches[0].clientX : (e as React.MouseEvent).clientX
                   const startY = isTouch ? e.touches[0].clientY : (e as React.MouseEvent).clientY
-                  const startCropX = cropX
-                  const startCropY = cropY
+                  const startCropX = adjust.cropX
+                  const startCropY = adjust.cropY
+                  const startZoom = adjust.zoom
                   const onMove = (ev: MouseEvent | TouchEvent) => {
                     const cx = 'touches' in ev ? ev.touches[0].clientX : (ev as MouseEvent).clientX
                     const cy = 'touches' in ev ? ev.touches[0].clientY : (ev as MouseEvent).clientY
-                    const dx = ((startX - cx) / rect.width) * 100 / zoom
-                    const dy = ((startY - cy) / rect.height) * 100 / zoom
-                    setCropX(Math.max(0, Math.min(100, startCropX + dx)))
-                    setCropY(Math.max(0, Math.min(100, startCropY + dy)))
+                    const dx = ((startX - cx) / rect.width) * 100 / startZoom
+                    const dy = ((startY - cy) / rect.height) * 100 / startZoom
+                    updateAdjust({
+                      cropX: Math.max(0, Math.min(100, startCropX + dx)),
+                      cropY: Math.max(0, Math.min(100, startCropY + dy)),
+                    })
                   }
                   const onUp = () => {
                     window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp)
@@ -487,7 +536,7 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
                   window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp)
                   window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp)
                 }
-                const handleWheel = (e: React.WheelEvent) => { e.preventDefault(); setZoom(z => Math.max(1, Math.min(4, z - e.deltaY * 0.005))) }
+                const handleWheel = (e: React.WheelEvent) => { e.preventDefault(); updateAdjust(prev => ({ zoom: Math.max(1, Math.min(4, prev.zoom - e.deltaY * 0.005)) })) }
 
                 // ── INSTAX card preview ──────────────────────────────────────
                 const outerW = variant.outerW
@@ -515,9 +564,9 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
                           Anteprima {w}×{h} cm — trascina · pizzica
                         </p>
                         <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                          <button onClick={() => setZoom(z => Math.max(1, +(z - 0.25).toFixed(2)))} style={{ width: 28, height: 28, background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 6, color: 'var(--t2)', fontSize: '16px', cursor: 'pointer', display: 'grid', placeItems: 'center', lineHeight: 1 }}>−</button>
-                          <span style={{ fontSize: '11px', color: 'var(--t3)', minWidth: 32, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>{Math.round(zoom * 100)}%</span>
-                          <button onClick={() => setZoom(z => Math.min(4, +(z + 0.25).toFixed(2)))} style={{ width: 28, height: 28, background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 6, color: 'var(--t2)', fontSize: '16px', cursor: 'pointer', display: 'grid', placeItems: 'center', lineHeight: 1 }}>+</button>
+                          <button onClick={() => updateAdjust(prev => ({ zoom: Math.max(1, +(prev.zoom - 0.25).toFixed(2)) }))} style={{ width: 28, height: 28, background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 6, color: 'var(--t2)', fontSize: '16px', cursor: 'pointer', display: 'grid', placeItems: 'center', lineHeight: 1 }}>−</button>
+                          <span style={{ fontSize: '11px', color: 'var(--t3)', minWidth: 32, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>{Math.round(adjust.zoom * 100)}%</span>
+                          <button onClick={() => updateAdjust(prev => ({ zoom: Math.min(4, +(prev.zoom + 0.25).toFixed(2)) }))} style={{ width: 28, height: 28, background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 6, color: 'var(--t2)', fontSize: '16px', cursor: 'pointer', display: 'grid', placeItems: 'center', lineHeight: 1 }}>+</button>
                         </div>
                       </div>
                       {/* Card centrata — più stretta per i formati portrait */}
@@ -533,24 +582,24 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
                         }}>
                           {/* Area foto — drag attivo */}
                           <div
-                            style={{ position: 'absolute', left: `${photoLeft}%`, top: `${photoTop}%`, width: `${photoW}%`, height: `${photoH}%`, overflow: 'hidden', cursor: zoom > 1 ? 'move' : 'grab', touchAction: 'none', userSelect: 'none' }}
+                            style={{ position: 'absolute', left: `${photoLeft}%`, top: `${photoTop}%`, width: `${photoW}%`, height: `${photoH}%`, overflow: 'hidden', cursor: adjust.zoom > 1 ? 'move' : 'grab', touchAction: 'none', userSelect: 'none' }}
                             onWheel={handleWheel}
                             onMouseDown={handlePointerStart}
                             onTouchStart={handlePointerStart}
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={photo.url} alt="" draggable={false} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${cropX}% ${cropY}%`, transform: `scale(${zoom})`, transformOrigin: `${cropX}% ${cropY}%`, userSelect: 'none', pointerEvents: 'auto' }} />
+                            <img src={photo.url} alt="" draggable={false} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${adjust.cropX}% ${adjust.cropY}%`, transform: `scale(${adjust.zoom})`, transformOrigin: `${adjust.cropX}% ${adjust.cropY}%`, userSelect: 'none', pointerEvents: 'auto' }} />
                             <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', backgroundImage: 'linear-gradient(rgba(255,255,255,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.12) 1px, transparent 1px)', backgroundSize: '33.33% 33.33%' }} />
                           </div>
                           {/* Testo etichetta bordo inferiore */}
-                          {instaxText && (
+                          {adjust.instaxText && (
                             <div style={{ position: 'absolute', left: `${photoLeft}%`, top: `${textTop + textH * 0.1}%`, width: `${photoW}%`, height: `${textH * 0.8}%`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: textClr, fontFamily: 'DM Sans, sans-serif', textAlign: 'center', overflow: 'hidden', pointerEvents: 'none' }}>
-                              {instaxText}
+                              {adjust.instaxText}
                             </div>
                           )}
                           {/* Reset */}
-                          {(cropX !== 50 || cropY !== 50 || zoom !== 1) && (
-                            <button onClick={e => { e.stopPropagation(); setCropX(50); setCropY(50); setZoom(1) }} style={{ position: 'absolute', bottom: 6, right: 6, background: 'rgba(0,0,0,.55)', color: '#fff', border: 'none', borderRadius: 6, padding: '3px 8px', fontSize: '10px', cursor: 'pointer', fontWeight: 600, zIndex: 5 }}>
+                          {(adjust.cropX !== 50 || adjust.cropY !== 50 || adjust.zoom !== 1) && (
+                            <button onClick={e => { e.stopPropagation(); updateAdjust({ cropX: 50, cropY: 50, zoom: 1 }) }} style={{ position: 'absolute', bottom: 6, right: 6, background: 'rgba(0,0,0,.55)', color: '#fff', border: 'none', borderRadius: 6, padding: '3px 8px', fontSize: '10px', cursor: 'pointer', fontWeight: 600, zIndex: 5 }}>
                               Centra
                             </button>
                           )}
@@ -569,26 +618,26 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
                       </p>
                       <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
                         {canRotate && (
-                          <button onClick={() => { setRotated(r => !r); setCropX(50); setCropY(50); setZoom(1) }} title="Ruota orientamento" style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 6, padding: '4px 8px', fontSize: '11px', fontWeight: 600, color: 'var(--t2)', cursor: 'pointer' }}>
+                          <button onClick={() => updateAdjust(prev => ({ rotated: !prev.rotated, cropX: 50, cropY: 50, zoom: 1 }))} title="Ruota orientamento" style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 6, padding: '4px 8px', fontSize: '11px', fontWeight: 600, color: 'var(--t2)', cursor: 'pointer' }}>
                             <svg viewBox="0 0 24 24" width={12} height={12} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.9"/></svg>
-                            {rotated ? 'Vert.' : 'Oriz.'}
+                            {adjust.rotated ? 'Vert.' : 'Oriz.'}
                           </button>
                         )}
-                        <button onClick={() => setZoom(z => Math.max(1, +(z - 0.25).toFixed(2)))} style={{ width: 28, height: 28, background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 6, color: 'var(--t2)', fontSize: '16px', cursor: 'pointer', display: 'grid', placeItems: 'center', lineHeight: 1 }}>−</button>
-                        <span style={{ fontSize: '11px', color: 'var(--t3)', minWidth: 32, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>{Math.round(zoom * 100)}%</span>
-                        <button onClick={() => setZoom(z => Math.min(4, +(z + 0.25).toFixed(2)))} style={{ width: 28, height: 28, background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 6, color: 'var(--t2)', fontSize: '16px', cursor: 'pointer', display: 'grid', placeItems: 'center', lineHeight: 1 }}>+</button>
+                        <button onClick={() => updateAdjust(prev => ({ zoom: Math.max(1, +(prev.zoom - 0.25).toFixed(2)) }))} style={{ width: 28, height: 28, background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 6, color: 'var(--t2)', fontSize: '16px', cursor: 'pointer', display: 'grid', placeItems: 'center', lineHeight: 1 }}>−</button>
+                        <span style={{ fontSize: '11px', color: 'var(--t3)', minWidth: 32, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>{Math.round(adjust.zoom * 100)}%</span>
+                        <button onClick={() => updateAdjust(prev => ({ zoom: Math.min(4, +(prev.zoom + 0.25).toFixed(2)) }))} style={{ width: 28, height: 28, background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 6, color: 'var(--t2)', fontSize: '16px', cursor: 'pointer', display: 'grid', placeItems: 'center', lineHeight: 1 }}>+</button>
                       </div>
                     </div>
-                    <div onWheel={handleWheel} style={{ position: 'relative', width: '100%', paddingBottom: `${aspectRatio * 100}%`, borderRadius: 'var(--r2)', overflow: 'hidden', background: 'var(--s3)', border: '1px solid var(--b1)', cursor: zoom > 1 ? 'move' : 'grab', userSelect: 'none', touchAction: 'none' }}>
+                    <div onWheel={handleWheel} style={{ position: 'relative', width: '100%', paddingBottom: `${aspectRatio * 100}%`, borderRadius: 'var(--r2)', overflow: 'hidden', background: 'var(--s3)', border: '1px solid var(--b1)', cursor: adjust.zoom > 1 ? 'move' : 'grab', userSelect: 'none', touchAction: 'none' }}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={photo.url} alt="" draggable={false} onMouseDown={handlePointerStart} onTouchStart={handlePointerStart} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${cropX}% ${cropY}%`, transform: `scale(${zoom})`, transformOrigin: `${cropX}% ${cropY}%`, userSelect: 'none', pointerEvents: 'auto' }} />
+                      <img src={photo.url} alt="" draggable={false} onMouseDown={handlePointerStart} onTouchStart={handlePointerStart} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${adjust.cropX}% ${adjust.cropY}%`, transform: `scale(${adjust.zoom})`, transformOrigin: `${adjust.cropX}% ${adjust.cropY}%`, userSelect: 'none', pointerEvents: 'auto' }} />
                       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', backgroundImage: 'linear-gradient(rgba(255,255,255,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.12) 1px, transparent 1px)', backgroundSize: '33.33% 33.33%' }} />
                       {selectedProduct.maskUrl && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={selectedProduct.maskUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'fill', pointerEvents: 'none', zIndex: 3 }} />
                       )}
-                      {(cropX !== 50 || cropY !== 50 || zoom !== 1) && (
-                        <button onClick={e => { e.stopPropagation(); setCropX(50); setCropY(50); setZoom(1) }} style={{ position: 'absolute', bottom: 8, right: 8, background: 'rgba(0,0,0,.6)', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: '10px', cursor: 'pointer', fontWeight: 600, letterSpacing: '.04em' }}>
+                      {(adjust.cropX !== 50 || adjust.cropY !== 50 || adjust.zoom !== 1) && (
+                        <button onClick={e => { e.stopPropagation(); updateAdjust({ cropX: 50, cropY: 50, zoom: 1 }) }} style={{ position: 'absolute', bottom: 8, right: 8, background: 'rgba(0,0,0,.6)', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: '10px', cursor: 'pointer', fontWeight: 600, letterSpacing: '.04em' }}>
                           Centra
                         </button>
                       )}
@@ -674,8 +723,8 @@ function OrderModal({ photos, onClose, onAdd }: OrderModalProps) {
                   </p>
                   <input
                     type="text"
-                    value={instaxText}
-                    onChange={e => setInstaxText(e.target.value)}
+                    value={adjust.instaxText}
+                    onChange={e => updateAdjust({ instaxText: e.target.value })}
                     maxLength={40}
                     placeholder="es. 14.02.2026 · Per sempre"
                     style={{ width: '100%', boxSizing: 'border-box', background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 8, padding: '9px 12px', fontSize: '13px', color: 'var(--tx)', outline: 'none', fontFamily: 'DM Sans, sans-serif' }}
