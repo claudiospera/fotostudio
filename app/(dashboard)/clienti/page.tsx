@@ -1,10 +1,11 @@
 'use client'
 
-import React, { useEffect, useState, useCallback, Suspense } from 'react'
+import React, { useEffect, useRef, useState, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Plus, Search, Pencil, Trash2, Phone, Mail, Calendar, MapPin, Download, Menu, Copy, Check as CheckIcon, RefreshCw } from 'lucide-react'
 import type { Cliente, CategoriaCliente, PacchettoCliente } from '@/lib/types'
 import { useUIStore } from '@/store/ui'
+import { ClienteTimeline } from '@/components/clienti/ClienteTimeline'
 
 // ── colori ed emoji per categoria ───────────────────────────────────────────
 
@@ -866,7 +867,7 @@ function ClienteCard({ cliente: c, onEdit, onDelete }: {
 
 type FormData = Omit<Cliente, 'id' | 'user_id' | 'created_at' | 'updated_at'>
 // Solo i campi stringa di extra (esclude acconti che è un array)
-type ExtraKey = keyof Omit<NonNullable<Cliente['extra']>, 'acconti'>
+type ExtraKey = keyof Omit<NonNullable<Cliente['extra']>, 'acconti' | 'timeline_items' | 'timeline_team'>
 
 const INP: React.CSSProperties = {
   width: '100%', background: 'var(--s3)', border: '1px solid rgba(255,255,255,0.08)',
@@ -926,6 +927,33 @@ function ClienteForm({ initial, initialDate, onSave, onClose }: {
         : [...f.pacchetti, { nome, prezzo }],
     }))
   }
+
+  // ── Timeline: autosave indipendente dal pulsante "Salva modifiche" ──────────
+  const [timelineSaveStatus, setTimelineSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const timelineTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const timelineFirstRun = useRef(true)
+
+  const setTimelineItems = (timeline_items: NonNullable<FormData['extra']>['timeline_items']) =>
+    setForm(f => ({ ...f, extra: { ...(f.extra ?? {}), timeline_items } }))
+  const setTimelineTeam = (timeline_team: NonNullable<FormData['extra']>['timeline_team']) =>
+    setForm(f => ({ ...f, extra: { ...(f.extra ?? {}), timeline_team } }))
+
+  useEffect(() => {
+    if (!initial?.id) return
+    if (timelineFirstRun.current) { timelineFirstRun.current = false; return }
+    if (timelineTimer.current) clearTimeout(timelineTimer.current)
+    setTimelineSaveStatus('saving')
+    timelineTimer.current = setTimeout(async () => {
+      const res = await fetch(`/api/clienti/${initial.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ extra: form.extra }),
+      })
+      setTimelineSaveStatus(res.ok ? 'saved' : 'idle')
+    }, 900)
+    return () => { if (timelineTimer.current) clearTimeout(timelineTimer.current) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.extra?.timeline_items, form.extra?.timeline_team])
 
   const col             = CAT_COLORS[form.categoria] ?? '#8ec9b0'
   const showIndirizzi   = MATRIMONIO_TYPES.includes(form.categoria)
@@ -1324,6 +1352,25 @@ function ClienteForm({ initial, initialDate, onSave, onClose }: {
                 </div>
               )
             })()}
+          </Section>
+
+          {/* ── 🗺️ TIMELINE ── */}
+          <Section title="🗺️ Timeline giornata">
+            {!initial?.id ? (
+              <p style={{ fontSize: 12, color: 'var(--t3)', fontStyle: 'italic' }}>
+                Salva il cliente per attivare la timeline della giornata.
+              </p>
+            ) : (
+              <ClienteTimeline
+                items={form.extra?.timeline_items ?? []}
+                team={form.extra?.timeline_team ?? []}
+                onChangeItems={setTimelineItems}
+                onChangeTeam={setTimelineTeam}
+                saveStatus={timelineSaveStatus}
+                nomeCliente={`${form.nome1}${form.nome2 ? ` e ${form.nome2}` : ''}`}
+                dataEvento={form.data_evento}
+              />
+            )}
           </Section>
 
           {/* ── 📝 NOTE ── */}

@@ -169,6 +169,15 @@ export interface PacchettoCliente {
   prezzo: number
 }
 
+export interface ClienteTimelineItem {
+  id: string
+  tipo: 'tappa' | 'nota'
+  ora?: string        // "HH:MM", solo tappa
+  titolo: string      // nome location (tappa) o testo della nota (nota)
+  indirizzo?: string  // solo tappa
+  note?: string       // solo tappa
+}
+
 export interface Cliente {
   id: string
   user_id: string
@@ -230,6 +239,9 @@ export interface Cliente {
     video_musica?: string; video_note?: string
     // Acconti multipli (source of truth — acconto nel DB è la somma)
     acconti?: { importo: number; data: string; nota?: string }[]
+    // Timeline della giornata (tappe + note), ordine = ordine di visualizzazione
+    timeline_items?: ClienteTimelineItem[]
+    timeline_team?: string[]
   }
   gallery_id?: string
   note?: string

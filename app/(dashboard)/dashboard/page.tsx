@@ -4,8 +4,15 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Topbar } from '@/components/layout/Topbar'
-import { ArrowRight, Search, Trash2, AlertCircle, TrendingUp } from 'lucide-react'
+import { ArrowRight, Search, Trash2, AlertCircle, TrendingUp, CalendarDays, MapPin, Users } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
+import type { Cliente } from '@/lib/types'
+
+const CAT_EMOJI_DASH: Record<string, string> = {
+  'Matrimonio': '💍', 'Promessa di Matrimonio': '💝', 'Battesimo': '🕊️',
+  'Comunione': '✝️', '1 Anno': '🎂', '18 Anni': '🥂',
+  'Anniversario': '💑', 'Shooting Fotografico': '📸', 'Altra Cerimonia': '🎊',
+}
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -196,11 +203,13 @@ export default function DashboardPage() {
   const [storage, setStorage]     = useState<StorageData | null>(null)
   const [orders, setOrders]       = useState<RecentOrder[]>([])
   const [galleries, setGalleries] = useState<GalleryItem[]>([])
+  const [clienti, setClienti]     = useState<Cliente[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [loadingStats, setLoadingStats]   = useState(true)
   const [loadingStorage, setLoadingStorage] = useState(true)
   const [loadingOrders, setLoadingOrders] = useState(true)
   const [loadingGalleries, setLoadingGalleries] = useState(true)
+  const [loadingClienti, setLoadingClienti] = useState(true)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [confirmId, setConfirmId]   = useState<string | null>(null)
 
@@ -219,6 +228,11 @@ export default function DashboardPage() {
       .then(r => r.ok ? r.json() : [])
       .then((d: GalleryItem[]) => setGalleries(d.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())))
       .finally(() => setLoadingGalleries(false))
+
+    fetch('/api/clienti')
+      .then(r => r.ok ? r.json() : [])
+      .then((d: Cliente[]) => setClienti(d))
+      .finally(() => setLoadingClienti(false))
   }, [])
 
   const fetchStorage = useCallback(() => {
@@ -251,6 +265,13 @@ export default function DashboardPage() {
   const total = galleries.length || 1
   const distItems = Object.entries(typeCounts).sort((a,b) => b[1]-a[1]).slice(0, 5)
   const distColors = ['#9b6dff','#40a0ff','#ff9f40','#ff6bb5','#50c878']
+
+  // Prossimi 5 eventi (clienti con data_evento futura o odierna)
+  const todayISO = new Date().toISOString().slice(0, 10)
+  const prossimiEventi = clienti
+    .filter(c => c.data_evento && c.data_evento.slice(0, 10) >= todayISO)
+    .sort((a, b) => (a.data_evento ?? '').localeCompare(b.data_evento ?? ''))
+    .slice(0, 5)
 
   return (
     <>
@@ -362,6 +383,61 @@ export default function DashboardPage() {
               <StackedBarChart />
             </div>
 
+          </div>
+
+          {/* ── Prossimi eventi ── */}
+          <div style={{ background: 'var(--s1)', borderRadius: 18, border: '1px solid var(--b1)', marginTop: 16, overflow: 'hidden' }}>
+            <div style={{ padding: '18px 22px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--tx)' }}>Prossimi eventi</p>
+              <Link href="/clienti" style={{ fontSize: 12, color: 'var(--ac)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 500 }}>
+                Vedi tutti <ArrowRight size={12} />
+              </Link>
+            </div>
+            {loadingClienti ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
+                <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--ac)', borderTopColor: 'transparent' }} />
+              </div>
+            ) : prossimiEventi.length === 0 ? (
+              <p style={{ textAlign: 'center', padding: '24px', color: 'var(--t3)', fontSize: 13 }}>Nessun evento in programma.</p>
+            ) : (
+              <div style={{ padding: '4px 22px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {prossimiEventi.map(c => {
+                  const tappe = (c.extra?.timeline_items ?? []).filter(i => i.tipo === 'tappa').length
+                  const team = c.extra?.timeline_team ?? []
+                  const dateStr = c.data_evento ? new Date(c.data_evento.slice(0, 10) + 'T00:00:00').toLocaleDateString('it-IT', { day: '2-digit', month: 'short' }) : '—'
+                  return (
+                    <Link
+                      key={c.id}
+                      href={`/clienti?apri=${c.id}`}
+                      style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 14px', background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 10, textDecoration: 'none' }}
+                    >
+                      <div style={{ width: 40, textAlign: 'center', flexShrink: 0 }}>
+                        <div style={{ fontSize: 18 }}>{CAT_EMOJI_DASH[c.categoria] ?? '📋'}</div>
+                        <div style={{ fontSize: 10, color: 'var(--t3)', fontWeight: 600 }}>{dateStr}</div>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--tx)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {c.nome1}{c.nome2 ? ` e ${c.nome2}` : ''}
+                        </div>
+                        {c.luogo_evento && (
+                          <div style={{ fontSize: 11, color: 'var(--t3)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <MapPin size={10} /> {c.luogo_evento}
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--t2)', flexShrink: 0 }}>
+                        <CalendarDays size={12} style={{ color: 'var(--t3)' }} />
+                        {tappe} {tappe === 1 ? 'tappa' : 'tappe'}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: team.length ? 'var(--t2)' : 'var(--t3)', flexShrink: 0, width: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <Users size={12} style={{ color: 'var(--t3)', flexShrink: 0 }} />
+                        {team.length ? team.join(', ') : 'Nessun team assegnato'}
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {/* ── Gallerie recenti ── */}
