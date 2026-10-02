@@ -197,11 +197,15 @@ export default function GalleryDetailPage() {
     created_at: string
     photos: { url: string; filename: string } | null
   }
+  interface FavoriteSession { session_id: string; label: string; count: number }
   const [favCounts, setFavCounts]     = useState<Record<string, number>>({})
   const [comments, setComments]       = useState<CommentWithPhoto[]>([])
   const [totalFav, setTotalFav]       = useState(0)
   const [loadingInt, setLoadingInt]   = useState(false)
   const [selectedFavs, setSelectedFavs] = useState<Set<string>>(new Set())
+  const [favoriteSessions, setFavoriteSessions] = useState<FavoriteSession[]>([])
+  const [favoritesBySession, setFavoritesBySession] = useState<Record<string, string[]>>({})
+  const [selectedVisitor, setSelectedVisitor] = useState<string>('all')
   const [downloading, setDownloading]   = useState(false)
   const [exportingSelection, setExportingSelection] = useState(false)
 
@@ -332,6 +336,8 @@ export default function GalleryDetailPage() {
           setFavCounts(data.favorites ?? {})
           setComments(data.comments ?? [])
           setTotalFav(data.total_favorites ?? 0)
+          setFavoriteSessions(data.favoriteSessions ?? [])
+          setFavoritesBySession(data.favoritesBySession ?? {})
         }
       })
       .finally(() => setLoadingInt(false))
@@ -1330,10 +1336,14 @@ export default function GalleryDetailPage() {
               <>
                 {/* ── Preferiti per foto ──────────────────────────────── */}
                 {Object.keys(favCounts).length > 0 && (() => {
+                  const visitorFavIds = selectedVisitor !== 'all' ? new Set(favoritesBySession[selectedVisitor] ?? []) : null
                   const favPhotos = photos
-                    .filter(p => favCounts[p.id])
+                    .filter(p => visitorFavIds ? visitorFavIds.has(p.id) : favCounts[p.id])
                     .sort((a, b) => (favCounts[b.id] ?? 0) - (favCounts[a.id] ?? 0))
                   const allSelected = favPhotos.every(p => selectedFavs.has(p.id))
+                  const headerCount = selectedVisitor === 'all'
+                    ? totalFav
+                    : favoriteSessions.find(s => s.session_id === selectedVisitor)?.count ?? 0
 
                   const togglePhoto = (photoId: string) => {
                     setSelectedFavs(prev => {
@@ -1375,7 +1385,10 @@ export default function GalleryDetailPage() {
                   const exportSelection = async () => {
                     setExportingSelection(true)
                     try {
-                      const res = await fetch(`/api/galleries/${id}/export-selection`)
+                      const qs = selectedVisitor !== 'all'
+                        ? `?session_id=${encodeURIComponent(selectedVisitor)}&label=${encodeURIComponent(favoriteSessions.find(s => s.session_id === selectedVisitor)?.label ?? '')}`
+                        : ''
+                      const res = await fetch(`/api/galleries/${id}/export-selection${qs}`)
                       if (!res.ok) {
                         const e = await res.json().catch(() => ({}))
                         alert(e.error ?? 'Errore durante l\'esportazione')
@@ -1399,8 +1412,24 @@ export default function GalleryDetailPage() {
                       {/* Header con controlli */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
                         <p style={{ fontSize: '11px', fontWeight: 600, color: 'var(--t3)', letterSpacing: '.08em', textTransform: 'uppercase', flex: 1, margin: 0 }}>
-                          Foto preferite ({totalFav} ♡ · {favPhotos.length} foto)
+                          Foto preferite ({headerCount} ♡ · {favPhotos.length} foto)
                         </p>
+                        {favoriteSessions.length > 1 && (
+                          <select
+                            value={selectedVisitor}
+                            onChange={e => { setSelectedVisitor(e.target.value); setSelectedFavs(new Set()) }}
+                            style={{
+                              fontSize: '11px', color: 'var(--t2)', background: 'var(--s2)',
+                              border: '1px solid var(--b1)', borderRadius: 6, padding: '5px 8px',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <option value="all">Tutti i visitatori</option>
+                            {favoriteSessions.map(s => (
+                              <option key={s.session_id} value={s.session_id}>{s.label} ({s.count})</option>
+                            ))}
+                          </select>
+                        )}
                         <button
                           onClick={toggleAll}
                           style={{ fontSize: '11px', color: 'var(--t2)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px', borderRadius: 4 }}
@@ -1425,7 +1454,7 @@ export default function GalleryDetailPage() {
                               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/>
                             </svg>
                           )}
-                          Esporta preferiti
+                          Esporta preferiti{selectedVisitor !== 'all' ? ` (${favoriteSessions.find(s => s.session_id === selectedVisitor)?.label ?? ''})` : ''}
                         </button>
                         {selectedFavs.size > 0 && (
                           <button
@@ -1492,7 +1521,7 @@ export default function GalleryDetailPage() {
                               {/* Badge cuori */}
                               <div style={{ position: 'absolute', bottom: 4, right: 4, background: 'rgba(217,112,112,.9)', borderRadius: 5, padding: '2px 6px', display: 'flex', alignItems: 'center', gap: 3 }}>
                                 <svg viewBox="0 0 24 24" width={9} height={9} fill="#fff" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                                <span style={{ fontSize: '10px', color: '#fff', fontWeight: 700 }}>{favCounts[photo.id]}</span>
+                                <span style={{ fontSize: '10px', color: '#fff', fontWeight: 700 }}>{visitorFavIds ? 1 : favCounts[photo.id]}</span>
                               </div>
                             </div>
                           )

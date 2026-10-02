@@ -148,6 +148,15 @@ CREATE TABLE IF NOT EXISTS photo_favorites (
   UNIQUE(photo_id, session_id)
 );
 
+-- Nome opzionale associato a un visitatore (session_id) della galleria pubblica
+CREATE TABLE IF NOT EXISTS gallery_visitor_names (
+  gallery_id  uuid REFERENCES galleries(id) ON DELETE CASCADE NOT NULL,
+  session_id  text NOT NULL,
+  name        text NOT NULL,
+  updated_at  timestamptz DEFAULT now(),
+  PRIMARY KEY (gallery_id, session_id)
+);
+
 -- Commenti foto
 CREATE TABLE IF NOT EXISTS photo_comments (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -164,6 +164,16 @@ function getSessionId(): string {
   return id
 }
 
+function hasVisitorNamePrompted(): boolean {
+  if (typeof window === 'undefined') return true
+  return localStorage.getItem('fs_visitor_name_prompted') === '1'
+}
+
+function markVisitorNamePrompted() {
+  if (typeof window === 'undefined') return
+  localStorage.setItem('fs_visitor_name_prompted', '1')
+}
+
 function downloadPhoto(photo: Photo) {
   const a = document.createElement('a')
   a.href = `/api/download?url=${encodeURIComponent(photo.url)}`
@@ -1334,6 +1344,59 @@ function CartDrawer({ cart, galleryId, onClose, onRemove, onUpdateQty, onClear, 
 
 // ── comment modal ──────────────────────────────────────────────────────────
 
+// ── VisitorNameModal ───────────────────────────────────────────────────────
+
+interface VisitorNameModalProps {
+  galleryId: string
+  onClose: () => void
+}
+
+function VisitorNameModal({ galleryId, onClose }: VisitorNameModalProps) {
+  const [name, setName] = useState('')
+  const [saving, setSaving] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    inputRef.current?.focus()
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!name.trim()) { onClose(); return }
+    setSaving(true)
+    await fetch('/api/public/visitor-name', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gallery_id: galleryId, session_id: getSessionId(), name: name.trim() }),
+    })
+    setSaving(false)
+    onClose()
+  }
+
+  return (
+    <div onClick={e => { if (e.target === e.currentTarget) onClose() }} style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,.75)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, animation: 'fadeIn .2s ease' }}>
+      <div style={{ background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 'var(--r)', width: '100%', maxWidth: 380, animation: 'slideUp .25s ease', overflow: 'hidden' }}>
+        <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--b1)' }}>
+          <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--tx)' }}>Come ti chiami?</p>
+          <p style={{ fontSize: '11px', color: 'var(--t3)', marginTop: 3 }}>Così il fotografo sa di chi sono questi preferiti. Facoltativo.</p>
+        </div>
+        <form onSubmit={submit} style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <input ref={inputRef} value={name} onChange={e => setName(e.target.value)} placeholder="Es. Raffaella" maxLength={100} style={{ width: '100%', background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 'var(--r2)', padding: '8px 10px', color: 'var(--tx)', fontSize: '13px', outline: 'none' }} />
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <button type="button" onClick={onClose} style={{ background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 'var(--r2)', padding: '7px 14px', fontSize: '12px', color: 'var(--t2)', cursor: 'pointer' }}>Non ora</button>
+            <button type="submit" disabled={saving} style={{ background: saving ? 'var(--s3)' : 'var(--ac)', color: saving ? 'var(--t3)' : '#111210', border: 'none', borderRadius: 'var(--r2)', padding: '7px 16px', fontSize: '12px', fontWeight: 500, cursor: saving ? 'not-allowed' : 'pointer' }}>
+              {saving ? 'Salvataggio…' : 'Salva'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 interface CommentModalProps {
   photo: Photo
   galleryId: string
@@ -1645,6 +1708,9 @@ export default function ClientePortalPage() {
   // istruzioni modal
   const [showIstruzioni, setShowIstruzioni] = useState(false)
 
+  // nome visitatore (facoltativo, per distinguere i preferiti di più persone)
+  const [showNamePrompt, setShowNamePrompt] = useState(false)
+
   const sessionId  = useRef<string>('')
   const galleryRef = useRef<PublicGallery | null>(null)
 
@@ -1678,8 +1744,18 @@ export default function ClientePortalPage() {
   // ── favorites ────────────────────────────────────────────────────────────
   const toggleFavorite = useCallback(async (photoId: string) => {
     if (!gallery) return
-    setFavorites(prev => { const n = new Set(prev); n.has(photoId) ? n.delete(photoId) : n.add(photoId); return n })
+    let willFavorite = false
+    setFavorites(prev => {
+      const n = new Set(prev)
+      willFavorite = !n.has(photoId)
+      willFavorite ? n.add(photoId) : n.delete(photoId)
+      return n
+    })
     await fetch('/api/public/favorites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ photo_id: photoId, gallery_id: gallery.id, session_id: sessionId.current }) })
+    if (willFavorite && !hasVisitorNamePrompted()) {
+      markVisitorNamePrompted()
+      setShowNamePrompt(true)
+    }
   }, [gallery])
 
   const handleCommentSaved = useCallback((photoId: string) => {
@@ -2257,6 +2333,9 @@ export default function ClientePortalPage() {
 
       {/* Comment modal */}
       {commentPhoto && <CommentModal photo={commentPhoto} galleryId={gallery.id} onClose={() => setCommentPhoto(null)} onSaved={handleCommentSaved} />}
+
+      {/* Visitor name modal */}
+      {showNamePrompt && <VisitorNameModal galleryId={gallery.id} onClose={() => setShowNamePrompt(false)} />}
 
       {/* Order modal */}
       {orderPhotos && <OrderModal photos={orderPhotos} onClose={() => { setOrderPhotos(null); if (selectMode) exitSelectMode() }} onAdd={addToCart} />}
