@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { sql } from '@/lib/db'
 import JSZip from 'jszip'
+import { Readable } from 'node:stream'
 
 // POST /api/galleries/download  { galleryId }
 export async function POST(req: NextRequest) {
@@ -44,14 +45,16 @@ export async function POST(req: NextRequest) {
     } catch { /* skip failed */ }
   }))
 
-  const zipBuffer = await zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE' })
   const safeName = gallery.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()
 
-  return new Response(zipBuffer, {
+  // Streaming: evita il limite di 4.5MB sul body di risposta delle funzioni Vercel,
+  // rilevante con selezioni grandi (decine/centinaia di foto a piena risoluzione).
+  const nodeStream = zip.generateNodeStream({ type: 'nodebuffer', streamFiles: true, compression: 'DEFLATE' })
+
+  return new Response(Readable.toWeb(nodeStream as unknown as Readable) as ReadableStream, {
     headers: {
       'Content-Type': 'application/zip',
       'Content-Disposition': `attachment; filename="${safeName}.zip"`,
-      'Content-Length': String(zipBuffer.byteLength),
       'Cache-Control': 'no-store, no-transform',
     },
   })

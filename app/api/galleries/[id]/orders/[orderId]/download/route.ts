@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { sql } from '@/lib/db'
 import JSZip from 'jszip'
+import { Readable } from 'node:stream'
 import { cropImage, buildInstaxCard, parseFormatRatio } from '@/lib/cropImage'
 import { PRODUCTS } from '@/lib/shop/products'
 
@@ -104,14 +105,14 @@ export async function GET(
     }
   }))
 
-  const zipBuffer = await zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE' })
   const safeName  = clientName.replace(/[^a-z0-9]/gi, '_').toLowerCase()
 
-  return new Response(zipBuffer, {
+  const nodeStream = zip.generateNodeStream({ type: 'nodebuffer', streamFiles: true, compression: 'DEFLATE' })
+
+  return new Response(Readable.toWeb(nodeStream as unknown as Readable) as ReadableStream, {
     headers: {
       'Content-Type': 'application/zip',
       'Content-Disposition': `attachment; filename="ordine_${safeName}.zip"`,
-      'Content-Length': String(zipBuffer.byteLength),
       'Cache-Control': 'no-store, no-transform',
     },
   })
