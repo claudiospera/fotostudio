@@ -111,6 +111,8 @@ export async function GET(
     headers: {
       'Content-Type': 'application/zip',
       'Content-Disposition': `attachment; filename="ordine_${safeName}.zip"`,
+      'Content-Length': String(zipBuffer.byteLength),
+      'Cache-Control': 'no-store, no-transform',
     },
   })
 }

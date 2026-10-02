@@ -51,6 +51,8 @@ export async function POST(req: NextRequest) {
     headers: {
       'Content-Type': 'application/zip',
       'Content-Disposition': `attachment; filename="${safeName}.zip"`,
+      'Content-Length': String(zipBuffer.byteLength),
+      'Cache-Control': 'no-store, no-transform',
     },
   })
 }
