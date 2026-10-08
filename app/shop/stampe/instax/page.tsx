@@ -686,14 +686,12 @@ export default function InstaxPage() {
   const [format,        setFormat]        = useState(FORMATS[0])
   const [frame,         setFrame]         = useState(FRAMES[0])
   const [photos,        setPhotos]        = useState<UploadedPhoto[]>([])
-  const [activeId,      setActiveId]      = useState<string | null>(null)
   const [isDragOver,    setIsDragOver]    = useState(false)
   const [addedFeedback, setAddedFeedback] = useState(false)
   const [addedOnce,     setAddedOnce]     = useState(false)
   const [showLeaveWarning, setShowLeaveWarning] = useState(false)
   const [isRendering,   setIsRendering]   = useState(false)
 
-  const activePhoto = photos.find(p => p.id === activeId) ?? null
   const totalPrints = photos.reduce((s, p) => s + p.copies, 0)
   const unitPrice   = getPriceForQty(totalPrints)
   const totalPrice  = totalPrints * unitPrice
@@ -734,7 +732,6 @@ export default function InstaxPage() {
       setFormat(FORMATS.find(f => f.id === draft.formatId) ?? FORMATS[0])
       setFrame(FRAMES.find(f => f.id === draft.frameId) ?? FRAMES[0])
       setPhotos(restored)
-      setActiveId(restored[0].id)
       setStep(3)
     } catch {
       sessionStorage.removeItem(DRAFT_KEY)
@@ -808,11 +805,7 @@ export default function InstaxPage() {
             labelFont: 'Pacifico, cursive',
             labelOffsetX: 0, labelOffsetY: 0,
           }
-          setPhotos(prev => {
-            const updated = [...prev, newPhoto]
-            if (prev.length === 0) setActiveId(newPhoto.id)
-            return updated
-          })
+          setPhotos(prev => [...prev, newPhoto])
           uploadToR2(id, file)
         }
         img.src = url
@@ -835,19 +828,13 @@ export default function InstaxPage() {
     setPhotos(prev => {
       const p = prev.find(x => x.id === id)
       if (p) URL.revokeObjectURL(p.url)
-      const next = prev.filter(x => x.id !== id)
-      if (activeId === id) setActiveId(next[0]?.id ?? null)
-      return next
+      return prev.filter(x => x.id !== id)
     })
   }
 
   function updatePhoto(id: string, patch: Partial<UploadedPhoto>) {
     setPhotos(prev => prev.map(p => p.id === id ? { ...p, ...patch } : p))
   }
-
-  const handleLabelOffsetChange = useCallback((x: number, y: number) => {
-    setPhotos(prev => prev.map(p => p.id === activeId ? { ...p, labelOffsetX: x, labelOffsetY: y } : p))
-  }, [activeId])
 
   const isUploading = photos.some(p => p.uploading)
   const hasUploadFailed = photos.some(p => p.uploadFailed)
@@ -1230,34 +1217,198 @@ export default function InstaxPage() {
                 </div>
               </div>
 
-              <div className="shop-thumb-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 16 }}>
-                {photos.map(p => {
-                  const isActive = activeId === p.id
-                  return (
-                    <div
-                      key={p.id}
-                      onClick={() => setActiveId(p.id)}
+              {/* Griglia foto: editor completo (cornice, drag foto+testo, zoom, copie) su ogni card */}
+              <div className="shop-thumb-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 24 }}>
+                {photos.map(p => (
+                  <div
+                    key={p.id}
+                    style={{
+                      background: '#fff', border: '1px solid #e8e8e8', borderRadius: 16, padding: 16,
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14,
+                    }}
+                  >
+                    {p.uploadFailed && (
+                      <button
+                        onClick={() => retryUpload(p)}
+                        style={{ width: '100%', fontSize: '11px', color: '#c0392b', background: '#fdecea', border: '1px solid #f5c6c6', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontWeight: 600 }}
+                      >
+                        ⚠️ Riprova caricamento
+                      </button>
+                    )}
+
+                    <InstaxCard
+                      photo={p} format={format} frame={frame}
+                      cardW={220} interactive
+                      onLabelOffsetChange={(x, y) => updatePhoto(p.id, { labelOffsetX: x, labelOffsetY: y })}
+                      onPhotoOffsetChange={(x, y) => updatePhoto(p.id, { offsetX: x, offsetY: y })}
+                    />
+
+                    {/* Stampa intera senza ritaglio */}
+                    <button
+                      onClick={() => updatePhoto(p.id, { fitMode: p.fitMode === 'contain' ? 'cover' : 'contain' })}
                       style={{
-                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
-                        cursor: 'pointer', padding: 12, borderRadius: 12,
-                        border: `2px solid ${isActive ? '#00c1de' : 'transparent'}`,
-                        background: isActive ? 'rgba(0,193,222,0.04)' : 'transparent',
+                        width: '100%', padding: '8px 14px', borderRadius: 10,
+                        border: `1.5px solid ${p.fitMode === 'contain' ? '#00c1de' : '#e0e0e0'}`,
+                        background: p.fitMode === 'contain' ? 'rgba(0,193,222,0.08)' : '#fff',
+                        color: p.fitMode === 'contain' ? '#00c1de' : '#666',
+                        cursor: 'pointer', fontSize: '12px', fontWeight: 600,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
                         transition: 'all .15s',
                       }}
                     >
-                      <InstaxCard photo={p} format={format} frame={frame} cardW={150} interactive={false} />
-                      {p.uploadFailed && (
+                      <Maximize2 size={13} />
+                      Stampa intera senza ritaglio
+                      {p.fitMode === 'contain' && <Check size={12} strokeWidth={3} />}
+                    </button>
+
+                    {/* Zoom slider (solo in modalità cover) */}
+                    {p.fitMode !== 'contain' && (
+                      <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <ZoomIn size={13} color="#888" />
+                        <input
+                          type="range" min={1} max={3} step={0.01} value={p.zoom}
+                          onChange={e => updatePhoto(p.id, { zoom: Number(e.target.value) })}
+                          style={{ flex: 1, accentColor: '#00c1de', cursor: 'pointer', height: 4 }}
+                        />
+                        <span style={{ fontSize: '11px', color: '#aaa', minWidth: 34, textAlign: 'right' }}>
+                          {Math.round(p.zoom * 100)}%
+                        </span>
+                      </div>
+                    )}
+
+                    {p.fitMode !== 'contain' && (
+                      <p style={{ fontSize: '11px', color: '#bbb', textAlign: 'center', margin: '-8px 0 0' }}>
+                        Trascina la foto per spostarla nella cornice
+                      </p>
+                    )}
+
+                    {/* ── Testo ─────────────────────────────────────── */}
+                    <div style={{ width: '100%', borderTop: '1px solid #f0f0f0', paddingTop: 14 }}>
+                      <p style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 10 }}>
+                        Testo nella cornice
+                      </p>
+
+                      {/* Riga controlli */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 10, flexWrap: 'wrap' }}>
+
+                        {/* Dimensione font */}
+                        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e0e0e0', borderRadius: 8, overflow: 'hidden' }}>
+                          <button
+                            onClick={() => updatePhoto(p.id, { labelSize: Math.max(8, p.labelSize - 1) })}
+                            style={{ width: 26, height: 28, border: 'none', background: '#f7f7f7', cursor: 'pointer', fontSize: '14px', color: '#555', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                          >
+                            <Minus size={10} />
+                          </button>
+                          <span style={{ width: 28, textAlign: 'center', fontSize: '12px', fontWeight: 600 }}>
+                            {p.labelSize}
+                          </span>
+                          <button
+                            onClick={() => updatePhoto(p.id, { labelSize: Math.min(40, p.labelSize + 1) })}
+                            style={{ width: 26, height: 28, border: 'none', background: '#f7f7f7', cursor: 'pointer', fontSize: '14px', color: '#555', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                          >
+                            <Plus size={10} />
+                          </button>
+                        </div>
+
+                        {/* Colore */}
+                        <div style={{ position: 'relative', flexShrink: 0, width: 30, height: 30 }}>
+                          <div style={{
+                            width: 30, height: 30, background: p.labelColor,
+                            border: '2px solid #e0e0e0', borderRadius: 6, pointerEvents: 'none',
+                          }} />
+                          <input
+                            type="color" value={p.labelColor}
+                            onChange={e => updatePhoto(p.id, { labelColor: e.target.value })}
+                            style={{
+                              position: 'absolute', inset: 0, opacity: 0,
+                              width: '100%', height: '100%',
+                              cursor: 'pointer', border: 'none', padding: 0,
+                            }}
+                          />
+                        </div>
+
+                        {/* Grassetto */}
                         <button
-                          onClick={e => { e.stopPropagation(); retryUpload(p) }}
-                          style={{ fontSize: '11px', color: '#c0392b', background: '#fdecea', border: '1px solid #f5c6c6', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontWeight: 600 }}
+                          onClick={() => updatePhoto(p.id, { labelBold: !p.labelBold })}
+                          style={txtBtn(p.labelBold)}
                         >
-                          ⚠️ Riprova caricamento
+                          <Bold size={13} />
                         </button>
+
+                        {/* Corsivo */}
+                        <button
+                          onClick={() => updatePhoto(p.id, { labelItalic: !p.labelItalic })}
+                          style={txtBtn(p.labelItalic)}
+                        >
+                          <Italic size={13} />
+                        </button>
+
+                        {/* Allineamento */}
+                        {([
+                          { v: 'left'   as const, lines: [[2,10],[2,7],[2,9]] },
+                          { v: 'center' as const, lines: [[3,10],[4,7],[3,9]] },
+                          { v: 'right'  as const, lines: [[4,10],[5,7],[3,9]] },
+                        ]).map(({ v, lines }) => (
+                          <button key={v} onClick={() => updatePhoto(p.id, { labelAlign: v })} style={txtBtn(p.labelAlign === v)}>
+                            <svg width="14" height="12" viewBox="0 0 14 12" fill="none">
+                              {lines.map(([x, w], i) => (
+                                <rect key={i} x={x} y={i * 4} width={w} height={2}
+                                  fill={p.labelAlign === v ? '#fff' : '#555'} rx={1} />
+                              ))}
+                            </svg>
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Font selector */}
+                      <select
+                        value={p.labelFont}
+                        onChange={e => updatePhoto(p.id, { labelFont: e.target.value })}
+                        style={{
+                          width: '100%', marginBottom: 8, padding: '7px 10px',
+                          border: '1.5px solid #e0e0e0', borderRadius: 8,
+                          fontSize: '13px', fontFamily: p.labelFont, color: '#333',
+                          background: '#fff', cursor: 'pointer', outline: 'none',
+                        }}
+                      >
+                        {LABEL_FONTS.map(f => (
+                          <option key={f.id} value={f.id} style={{ fontFamily: f.id }}>
+                            {f.label}
+                          </option>
+                        ))}
+                      </select>
+
+                      {/* Input testo */}
+                      <input
+                        type="text"
+                        placeholder="Scrivi qualcosa..."
+                        value={p.label}
+                        onChange={e => updatePhoto(p.id, { label: e.target.value, labelOffsetX: 0, labelOffsetY: 0 })}
+                        style={{
+                          width: '100%', padding: '8px 10px', boxSizing: 'border-box',
+                          border: '1.5px solid #e0e0e0', borderRadius: 8,
+                          fontSize: p.labelSize, fontFamily: p.labelFont,
+                          fontWeight: p.labelBold ? 700 : 400,
+                          fontStyle: p.labelItalic ? 'italic' : 'normal',
+                          color: p.labelColor, outline: 'none',
+                          textAlign: p.labelAlign,
+                        }}
+                      />
+
+                      {p.label && (
+                        <p style={{ fontSize: '11px', color: '#bbb', marginTop: 6, textAlign: 'center' }}>
+                          Trascina il testo nell&apos;anteprima per spostarlo
+                        </p>
                       )}
+                    </div>
+
+                    {/* Copie + elimina */}
+                    <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 10, borderTop: '1px solid #f0f0f0' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#555' }}>Copie di questa foto</span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e0e0e0', borderRadius: 8, overflow: 'hidden' }}>
                           <button
-                            onClick={e => { e.stopPropagation(); updatePhoto(p.id, { copies: Math.max(1, p.copies - 1) }) }}
+                            onClick={() => updatePhoto(p.id, { copies: Math.max(1, p.copies - 1) })}
                             style={{ width: 28, height: 28, border: 'none', background: '#f7f7f7', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                           >
                             <Minus size={11} color="#555" />
@@ -1266,205 +1417,27 @@ export default function InstaxPage() {
                             {p.copies}
                           </span>
                           <button
-                            onClick={e => { e.stopPropagation(); updatePhoto(p.id, { copies: p.copies + 1 }) }}
+                            onClick={() => updatePhoto(p.id, { copies: p.copies + 1 })}
                             style={{ width: 28, height: 28, border: 'none', background: '#f7f7f7', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                           >
                             <Plus size={11} color="#555" />
                           </button>
                         </div>
                         <button
-                          onClick={e => { e.stopPropagation(); removePhoto(p.id) }}
+                          onClick={() => removePhoto(p.id)}
                           style={{ width: 28, height: 28, border: 'none', background: '#fee', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                         >
                           <X size={12} color="#e55" />
                         </button>
                       </div>
                     </div>
-                  )
-                })}
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Destra: pannello editing + cart (sticky) */}
+            {/* Destra: riepilogo + CTA (sticky) */}
             <div className="shop-sticky shop-first-mobile" style={{ position: 'sticky', top: 88, display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-              {activePhoto ? (
-                <div style={{ background: '#fff', border: '1px solid #e8e8e8', borderRadius: 16, padding: 20, display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
-                  <p style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '.12em', alignSelf: 'flex-start' }}>
-                    Modifica foto selezionata
-                  </p>
-
-                  <InstaxCard
-                    photo={activePhoto} format={format} frame={frame}
-                    cardW={220} interactive
-                    onLabelOffsetChange={handleLabelOffsetChange}
-                    onPhotoOffsetChange={(x, y) => updatePhoto(activePhoto.id, { offsetX: x, offsetY: y })}
-                  />
-
-                  {/* Stampa intera senza ritaglio */}
-                  <button
-                    onClick={() => updatePhoto(activePhoto.id, { fitMode: activePhoto.fitMode === 'contain' ? 'cover' : 'contain' })}
-                    style={{
-                      width: '100%', padding: '8px 14px', borderRadius: 10,
-                      border: `1.5px solid ${activePhoto.fitMode === 'contain' ? '#00c1de' : '#e0e0e0'}`,
-                      background: activePhoto.fitMode === 'contain' ? 'rgba(0,193,222,0.08)' : '#fff',
-                      color: activePhoto.fitMode === 'contain' ? '#00c1de' : '#666',
-                      cursor: 'pointer', fontSize: '12px', fontWeight: 600,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-                      transition: 'all .15s',
-                    }}
-                  >
-                    <Maximize2 size={13} />
-                    Stampa intera senza ritaglio
-                    {activePhoto.fitMode === 'contain' && <Check size={12} strokeWidth={3} />}
-                  </button>
-
-                  {/* Zoom slider (solo in modalità cover) */}
-                  {activePhoto.fitMode !== 'contain' && (
-                    <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <ZoomIn size={13} color="#888" />
-                      <input
-                        type="range" min={1} max={3} step={0.01} value={activePhoto.zoom}
-                        onChange={e => updatePhoto(activePhoto.id, { zoom: Number(e.target.value) })}
-                        style={{ flex: 1, accentColor: '#00c1de', cursor: 'pointer', height: 4 }}
-                      />
-                      <span style={{ fontSize: '11px', color: '#aaa', minWidth: 34, textAlign: 'right' }}>
-                        {Math.round(activePhoto.zoom * 100)}%
-                      </span>
-                    </div>
-                  )}
-
-                  {activePhoto.fitMode !== 'contain' && (
-                    <p style={{ fontSize: '11px', color: '#bbb', textAlign: 'center', margin: '-8px 0 0' }}>
-                      Trascina la foto per spostarla nella cornice
-                    </p>
-                  )}
-
-                  {/* ── Testo ─────────────────────────────────────── */}
-                  <div style={{ width: '100%', borderTop: '1px solid #f0f0f0', paddingTop: 14 }}>
-                    <p style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 10 }}>
-                      Testo nella cornice
-                    </p>
-
-                    {/* Riga controlli */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 10, flexWrap: 'wrap' }}>
-
-                      {/* Dimensione font */}
-                      <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e0e0e0', borderRadius: 8, overflow: 'hidden' }}>
-                        <button
-                          onClick={() => updatePhoto(activePhoto.id, { labelSize: Math.max(8, activePhoto.labelSize - 1) })}
-                          style={{ width: 26, height: 28, border: 'none', background: '#f7f7f7', cursor: 'pointer', fontSize: '14px', color: '#555', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                        >
-                          <Minus size={10} />
-                        </button>
-                        <span style={{ width: 28, textAlign: 'center', fontSize: '12px', fontWeight: 600 }}>
-                          {activePhoto.labelSize}
-                        </span>
-                        <button
-                          onClick={() => updatePhoto(activePhoto.id, { labelSize: Math.min(40, activePhoto.labelSize + 1) })}
-                          style={{ width: 26, height: 28, border: 'none', background: '#f7f7f7', cursor: 'pointer', fontSize: '14px', color: '#555', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                        >
-                          <Plus size={10} />
-                        </button>
-                      </div>
-
-                      {/* Colore */}
-                      <div style={{ position: 'relative', flexShrink: 0, width: 30, height: 30 }}>
-                        <div style={{
-                          width: 30, height: 30, background: activePhoto.labelColor,
-                          border: '2px solid #e0e0e0', borderRadius: 6, pointerEvents: 'none',
-                        }} />
-                        <input
-                          type="color" value={activePhoto.labelColor}
-                          onChange={e => updatePhoto(activePhoto.id, { labelColor: e.target.value })}
-                          style={{
-                            position: 'absolute', inset: 0, opacity: 0,
-                            width: '100%', height: '100%',
-                            cursor: 'pointer', border: 'none', padding: 0,
-                          }}
-                        />
-                      </div>
-
-                      {/* Grassetto */}
-                      <button
-                        onClick={() => updatePhoto(activePhoto.id, { labelBold: !activePhoto.labelBold })}
-                        style={txtBtn(activePhoto.labelBold)}
-                      >
-                        <Bold size={13} />
-                      </button>
-
-                      {/* Corsivo */}
-                      <button
-                        onClick={() => updatePhoto(activePhoto.id, { labelItalic: !activePhoto.labelItalic })}
-                        style={txtBtn(activePhoto.labelItalic)}
-                      >
-                        <Italic size={13} />
-                      </button>
-
-                      {/* Allineamento */}
-                      {([
-                        { v: 'left'   as const, lines: [[2,10],[2,7],[2,9]] },
-                        { v: 'center' as const, lines: [[3,10],[4,7],[3,9]] },
-                        { v: 'right'  as const, lines: [[4,10],[5,7],[3,9]] },
-                      ]).map(({ v, lines }) => (
-                        <button key={v} onClick={() => updatePhoto(activePhoto.id, { labelAlign: v })} style={txtBtn(activePhoto.labelAlign === v)}>
-                          <svg width="14" height="12" viewBox="0 0 14 12" fill="none">
-                            {lines.map(([x, w], i) => (
-                              <rect key={i} x={x} y={i * 4} width={w} height={2}
-                                fill={activePhoto.labelAlign === v ? '#fff' : '#555'} rx={1} />
-                            ))}
-                          </svg>
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Font selector */}
-                    <select
-                      value={activePhoto.labelFont}
-                      onChange={e => updatePhoto(activePhoto.id, { labelFont: e.target.value })}
-                      style={{
-                        width: '100%', marginBottom: 8, padding: '7px 10px',
-                        border: '1.5px solid #e0e0e0', borderRadius: 8,
-                        fontSize: '13px', fontFamily: activePhoto.labelFont, color: '#333',
-                        background: '#fff', cursor: 'pointer', outline: 'none',
-                      }}
-                    >
-                      {LABEL_FONTS.map(f => (
-                        <option key={f.id} value={f.id} style={{ fontFamily: f.id }}>
-                          {f.label}
-                        </option>
-                      ))}
-                    </select>
-
-                    {/* Input testo */}
-                    <input
-                      type="text"
-                      placeholder="Scrivi qualcosa..."
-                      value={activePhoto.label}
-                      onChange={e => updatePhoto(activePhoto.id, { label: e.target.value, labelOffsetX: 0, labelOffsetY: 0 })}
-                      style={{
-                        width: '100%', padding: '8px 10px', boxSizing: 'border-box',
-                        border: '1.5px solid #e0e0e0', borderRadius: 8,
-                        fontSize: activePhoto.labelSize, fontFamily: activePhoto.labelFont,
-                        fontWeight: activePhoto.labelBold ? 700 : 400,
-                        fontStyle: activePhoto.labelItalic ? 'italic' : 'normal',
-                        color: activePhoto.labelColor, outline: 'none',
-                        textAlign: activePhoto.labelAlign,
-                      }}
-                    />
-
-                    {activePhoto.label && (
-                      <p style={{ fontSize: '11px', color: '#bbb', marginTop: 6, textAlign: 'center' }}>
-                        Trascina il testo nell&apos;anteprima per spostarlo
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div style={{ background: '#fff', border: '1px solid #e8e8e8', borderRadius: 16, padding: 20, textAlign: 'center', color: '#bbb', fontSize: '13px' }}>
-                  Seleziona una foto per modificarla
-                </div>
-              )}
 
               {/* Riepilogo + CTA */}
               <div style={{ background: '#fff', border: '1px solid #e8e8e8', borderRadius: 16, padding: '20px', display: 'flex', flexDirection: 'column', gap: 14 }}>

@@ -312,9 +312,9 @@ body {
     grid-template-columns: repeat(auto-fill, minmax(min(120px, calc(50% - 6px)), 1fr)) !important;
   }
 
-  /* Thumbnail griglia ordine configuratori */
+  /* Griglia foto ordine configuratori: una card completa (editor) per riga */
   .shop-thumb-grid {
-    grid-template-columns: repeat(auto-fill, minmax(min(140px, calc(50% - 6px)), 1fr)) !important;
+    grid-template-columns: 1fr !important;
   }
 
   /* Nascondi elementi superflui su mobile */

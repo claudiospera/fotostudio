@@ -285,14 +285,12 @@ export default function StampeClassichePage() {
   const [step,    setStep]    = useState<1 | 2 | 3>(1)
   const [variant, setVariant] = useState<Variant>(VARIANTS[0])
   const [photos,  setPhotos]  = useState<PhotoItem[]>([])
-  const [activeId, setActiveId] = useState<string | null>(null)
   const [isDragOver, setIsDragOver] = useState(false)
   const [added,       setAdded]       = useState(false)
   const [addedOnce,   setAddedOnce]   = useState(false)
   const [showLeaveWarning, setShowLeaveWarning] = useState(false)
   const [isRendering, setIsRendering] = useState(false)
 
-  const activePhoto = photos.find(p => p.id === activeId) ?? null
   const totalPrints = photos.reduce((s, p) => s + p.copies, 0)
   // Calcola copie totali per variante per applicare lo scaglione corretto
   const copiesPerVariantPreview: Record<string, number> = photos.reduce((acc, p) => {
@@ -306,7 +304,6 @@ export default function StampeClassichePage() {
   }, 0)
 
   const PREVIEW_BIG = 260
-  const THUMB_MAX   = 120
 
   useEffect(() => { return () => photos.forEach(p => URL.revokeObjectURL(p.url)) }, []) // eslint-disable-line
 
@@ -329,7 +326,6 @@ export default function StampeClassichePage() {
       }))
       setVariant(VARIANTS.find(v => v.id === draft.variantId) ?? VARIANTS[0])
       setPhotos(restored)
-      setActiveId(restored[0].id)
       setStep(3)
     } catch {
       sessionStorage.removeItem(DRAFT_KEY)
@@ -397,11 +393,7 @@ export default function StampeClassichePage() {
           slotOrientation: nW >= nH ? 'landscape' : 'portrait',
           uploading: true, file,
         }
-        setPhotos(prev => {
-          const next = [...prev, p]
-          if (prev.length === 0) setActiveId(p.id)
-          return next
-        })
+        setPhotos(prev => [...prev, p])
         uploadToR2(id, file)
       }
       img.src = url
@@ -428,9 +420,7 @@ export default function StampeClassichePage() {
     setPhotos(prev => {
       const p = prev.find(x => x.id === id)
       if (p) URL.revokeObjectURL(p.url)
-      const next = prev.filter(x => x.id !== id)
-      if (activeId === id) setActiveId(next[0]?.id ?? null)
-      return next
+      return prev.filter(x => x.id !== id)
     })
   }
 
@@ -698,7 +688,7 @@ export default function StampeClassichePage() {
                 <ChevronLeft size={16} /> Indietro
               </button>
               <button
-                onClick={() => { if (photos.length > 0) { setActiveId(photos[0].id); setStep(3) } }}
+                onClick={() => { if (photos.length > 0) setStep(3) }}
                 disabled={photos.length === 0}
                 style={{ background: photos.length > 0 ? '#00c1de' : '#d0d0d0', color: '#fff', border: 'none', borderRadius: 12, padding: '14px 32px', fontFamily: 'Poppins, sans-serif', fontWeight: 700, fontSize: '15px', cursor: photos.length > 0 ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: 8 }}
               >
@@ -731,110 +721,130 @@ export default function StampeClassichePage() {
                 </div>
               </div>
 
-              {/* Griglia thumbnails */}
-              <div className="shop-thumb-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 12 }}>
+              {/* Griglia foto: editor completo (formato, orientamento, drag, zoom, copie) su ogni card */}
+              <div className="shop-thumb-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
                 {photos.map(p => {
-                  const isActive = activeId === p.id
                   const pv = VARIANTS.find(v => v.id === p.variantId) ?? VARIANTS[0]
                   const isSquare = pv.wCm === pv.hCm
-                  const { w: tW, h: tH } = getSlotDims(pv, THUMB_MAX, p.slotOrientation)
+                  const { w: sW, h: sH } = getSlotDims(pv, PREVIEW_BIG, p.slotOrientation)
                   return (
                     <div
                       key={p.id}
-                      onClick={() => setActiveId(p.id)}
                       style={{
-                        cursor: 'pointer', padding: 10, borderRadius: 12,
-                        border: `2px solid ${isActive ? '#00c1de' : 'transparent'}`,
-                        background: isActive ? 'rgba(0,193,222,0.04)' : '#fff',
-                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
-                        transition: 'all .15s',
+                        background: '#fff', border: '1px solid #e8e8e8', borderRadius: 16, padding: 16,
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
                       }}
                     >
-                      {/* Thumbnail proporzionata al formato scelto per questa foto */}
-                      <div style={{ position: 'relative' }}>
-                        <div style={{ borderRadius: 4, overflow: 'hidden', boxShadow: '2px 3px 10px rgba(0,0,0,0.12)' }}>
-                          <PhotoSlot
-                            photo={{ ...p, offsetX: p.offsetX * (THUMB_MAX / PREVIEW_BIG), offsetY: p.offsetY * (THUMB_MAX / PREVIEW_BIG) }}
-                            slotW={tW} slotH={tH}
-                          />
-                        </div>
-                        {p.copies > 1 && !p.uploading && (
-                          <div style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: '#00c1de', color: '#fff', fontSize: '10px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            {p.copies}
-                          </div>
-                        )}
-                        {p.uploading && (
-                          <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.7)', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700, color: '#00c1de' }}>
-                            ↑
-                          </div>
-                        )}
+                      {/* Formato + elimina */}
+                      <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <select
+                          value={p.variantId}
+                          onChange={e => updatePhoto(p.id, { variantId: e.target.value, zoom: 1, offsetX: 0, offsetY: 0 })}
+                          style={{ flex: 1, fontSize: '12px', fontWeight: 700, color: '#00c1de', border: '1.5px solid #00c1de', borderRadius: 8, padding: '6px 8px', background: '#fff', cursor: 'pointer' }}
+                        >
+                          {VARIANTS.map(v => (
+                            <option key={v.id} value={v.id}>{v.label}</option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={() => removePhoto(p.id)}
+                          style={{ width: 32, height: 32, flexShrink: 0, border: 'none', background: '#fee', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        >
+                          <X size={13} color="#e55" />
+                        </button>
                       </div>
 
                       {p.uploadFailed && (
                         <button
-                          onClick={e => { e.stopPropagation(); retryUpload(p) }}
-                          style={{ fontSize: '11px', color: '#c0392b', background: '#fdecea', border: '1px solid #f5c6c6', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontWeight: 600 }}
+                          onClick={() => retryUpload(p)}
+                          style={{ width: '100%', fontSize: '11px', color: '#c0392b', background: '#fdecea', border: '1px solid #f5c6c6', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontWeight: 600 }}
                         >
                           ⚠️ Riprova caricamento
                         </button>
                       )}
 
-                      {/* Selettore formato per questa foto */}
-                      <select
-                        value={p.variantId}
-                        onClick={e => e.stopPropagation()}
-                        onChange={e => { e.stopPropagation(); updatePhoto(p.id, { variantId: e.target.value, zoom: 1, offsetX: 0, offsetY: 0 }) }}
-                        style={{ width: '100%', fontSize: '11px', fontWeight: 600, color: '#0a0a0a', border: '1px solid #e0e0e0', borderRadius: 7, padding: '4px 6px', background: '#fff', cursor: 'pointer' }}
-                      >
-                        {VARIANTS.map(v => (
-                          <option key={v.id} value={v.id}>{v.label}</option>
-                        ))}
-                      </select>
-
                       {/* Toggle orientamento */}
                       {!isSquare && (
-                        <div onClick={e => e.stopPropagation()} style={{ display: 'flex', width: '100%', border: '1px solid #e0e0e0', borderRadius: 7, overflow: 'hidden' }}>
+                        <div style={{ display: 'flex', width: '100%', border: '1.5px solid #e0e0e0', borderRadius: 9, overflow: 'hidden' }}>
                           {(['portrait', 'landscape'] as const).map(ori => (
                             <button
                               key={ori}
-                              onClick={e => { e.stopPropagation(); updatePhoto(p.id, { slotOrientation: ori, zoom: 1, offsetX: 0, offsetY: 0 }) }}
+                              onClick={() => updatePhoto(p.id, { slotOrientation: ori, zoom: 1, offsetX: 0, offsetY: 0 })}
                               style={{
-                                flex: 1, border: 'none', padding: '4px 0', cursor: 'pointer', fontSize: '14px',
+                                flex: 1, border: 'none', padding: '8px 0', cursor: 'pointer', fontSize: '13px', fontWeight: 600,
                                 background: p.slotOrientation === ori ? '#00c1de' : '#f7f7f7',
                                 color: p.slotOrientation === ori ? '#fff' : '#888',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
                                 transition: 'all .15s',
                               }}
-                              title={ori === 'portrait' ? 'Verticale' : 'Orizzontale'}
                             >
-                              {ori === 'portrait' ? '↕' : '↔'}
+                              <span style={{ fontSize: '16px' }}>{ori === 'portrait' ? '↕' : '↔'}</span>
+                              {ori === 'portrait' ? 'Verticale' : 'Orizzontale'}
                             </button>
                           ))}
                         </div>
                       )}
 
-                      {/* Copie counter */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e0e0e0', borderRadius: 8, overflow: 'hidden' }}>
-                          <button
-                            onClick={e => { e.stopPropagation(); updatePhoto(p.id, { copies: Math.max(1, p.copies - 1) }) }}
-                            style={{ width: 26, height: 26, border: 'none', background: '#f7f7f7', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                          >
-                            <Minus size={10} color="#555" />
+                      {/* Foto interattiva: trascina per centrare */}
+                      <div style={{ position: 'relative', boxShadow: '4px 6px 24px rgba(0,0,0,0.14)', borderRadius: 4 }}>
+                        <PhotoSlot
+                          photo={p}
+                          slotW={sW} slotH={sH}
+                          interactive
+                          onOffsetChange={(x, y) => updatePhoto(p.id, { offsetX: x, offsetY: y })}
+                        />
+                        {p.uploading && (
+                          <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, color: '#00c1de' }}>
+                            ↑
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Zoom */}
+                      <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <ZoomIn size={13} color="#888" />
+                        <input
+                          type="range" min={1} max={3} step={0.01}
+                          value={p.zoom}
+                          onChange={e => updatePhoto(p.id, { zoom: Number(e.target.value) })}
+                          style={{ flex: 1, accentColor: '#00c1de', cursor: 'pointer', height: 4, touchAction: 'none' }}
+                        />
+                        <span style={{ fontSize: '11px', color: '#aaa', minWidth: 34, textAlign: 'right' }}>
+                          {Math.round(p.zoom * 100)}%
+                        </span>
+                      </div>
+
+                      {/* Stampa intera toggle */}
+                      <button
+                        onClick={() => updatePhoto(p.id, { fitMode: p.fitMode === 'contain' ? 'cover' : 'contain', zoom: 1, offsetX: 0, offsetY: 0 })}
+                        style={{
+                          width: '100%', padding: '8px 12px', borderRadius: 9, cursor: 'pointer', fontSize: '12px', fontWeight: 600,
+                          border: `1.5px solid ${p.fitMode === 'contain' ? '#00c1de' : '#e0e0e0'}`,
+                          background: p.fitMode === 'contain' ? 'rgba(0,193,222,0.08)' : '#fff',
+                          color: p.fitMode === 'contain' ? '#00c1de' : '#666',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all .15s',
+                        }}
+                      >
+                        Stampa intera senza ritaglio
+                        {p.fitMode === 'contain' && <Check size={12} strokeWidth={3} />}
+                      </button>
+
+                      <p style={{ fontSize: '11px', color: '#bbb', textAlign: 'center', margin: '-4px 0 0' }}>
+                        Trascina la foto per centrare il soggetto
+                      </p>
+
+                      {/* Copie per questa foto */}
+                      <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 10, borderTop: '1px solid #f0f0f0' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#555' }}>Copie di questa foto</span>
+                        <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #e0e0e0', borderRadius: 10, overflow: 'hidden' }}>
+                          <button onClick={() => updatePhoto(p.id, { copies: Math.max(1, p.copies - 1) })} style={{ width: 32, height: 32, border: 'none', background: '#f7f7f7', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Minus size={11} color="#555" />
                           </button>
-                          <span style={{ width: 26, textAlign: 'center', fontSize: '12px', fontWeight: 700 }}>{p.copies}</span>
-                          <button
-                            onClick={e => { e.stopPropagation(); updatePhoto(p.id, { copies: p.copies + 1 }) }}
-                            style={{ width: 26, height: 26, border: 'none', background: '#f7f7f7', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                          >
-                            <Plus size={10} color="#555" />
+                          <span style={{ width: 36, textAlign: 'center', fontSize: '14px', fontWeight: 700 }}>{p.copies}</span>
+                          <button onClick={() => updatePhoto(p.id, { copies: p.copies + 1 })} style={{ width: 32, height: 32, border: 'none', background: '#f7f7f7', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Plus size={11} color="#555" />
                           </button>
                         </div>
-                        <button
-                          onClick={e => { e.stopPropagation(); removePhoto(p.id) }}
-                          style={{ width: 26, height: 26, border: 'none', background: '#fee', borderRadius: 7, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                        >
-                          <X size={11} color="#e55" />
-                        </button>
                       </div>
                     </div>
                   )
@@ -842,113 +852,8 @@ export default function StampeClassichePage() {
               </div>
             </div>
 
-            {/* Destra: pannello modifica + riepilogo */}
+            {/* Destra: riepilogo + CTA */}
             <div className="shop-sticky shop-first-mobile" style={{ position: 'sticky', top: 88, display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-              {activePhoto ? (() => {
-                const apv = VARIANTS.find(v => v.id === activePhoto.variantId) ?? VARIANTS[0]
-                const apvIsSquare = apv.wCm === apv.hCm
-                const { w: sW, h: sH } = getSlotDims(apv, PREVIEW_BIG, activePhoto.slotOrientation)
-                return (
-                <div style={{ background: '#fff', border: '1px solid #e8e8e8', borderRadius: 16, padding: 20, display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center' }}>
-                  <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <p style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '.12em' }}>
-                      Modifica foto
-                    </p>
-                    <select
-                      value={activePhoto.variantId}
-                      onChange={e => updatePhoto(activePhoto.id, { variantId: e.target.value, zoom: 1, offsetX: 0, offsetY: 0 })}
-                      style={{ fontSize: '12px', fontWeight: 700, color: '#00c1de', border: '1.5px solid #00c1de', borderRadius: 8, padding: '4px 8px', background: '#fff', cursor: 'pointer' }}
-                    >
-                      {VARIANTS.map(v => (
-                        <option key={v.id} value={v.id}>{v.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Toggle orientamento nel pannello */}
-                  {!apvIsSquare && (
-                    <div style={{ display: 'flex', width: '100%', border: '1.5px solid #e0e0e0', borderRadius: 9, overflow: 'hidden' }}>
-                      {(['portrait', 'landscape'] as const).map(ori => (
-                        <button
-                          key={ori}
-                          onClick={() => updatePhoto(activePhoto.id, { slotOrientation: ori, zoom: 1, offsetX: 0, offsetY: 0 })}
-                          style={{
-                            flex: 1, border: 'none', padding: '8px 0', cursor: 'pointer', fontSize: '13px', fontWeight: 600,
-                            background: activePhoto.slotOrientation === ori ? '#00c1de' : '#f7f7f7',
-                            color: activePhoto.slotOrientation === ori ? '#fff' : '#888',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                            transition: 'all .15s',
-                          }}
-                        >
-                          <span style={{ fontSize: '16px' }}>{ori === 'portrait' ? '↕' : '↔'}</span>
-                          {ori === 'portrait' ? 'Verticale' : 'Orizzontale'}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  <div style={{ boxShadow: '4px 6px 24px rgba(0,0,0,0.14)', borderRadius: 4 }}>
-                    <PhotoSlot
-                      photo={activePhoto}
-                      slotW={sW} slotH={sH}
-                      interactive
-                      onOffsetChange={(x, y) => updatePhoto(activePhoto.id, { offsetX: x, offsetY: y })}
-                    />
-                  </div>
-
-                  {/* Zoom */}
-                  <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <ZoomIn size={13} color="#888" />
-                    <input
-                      type="range" min={1} max={3} step={0.01}
-                      value={activePhoto.zoom}
-                      onChange={e => updatePhoto(activePhoto.id, { zoom: Number(e.target.value) })}
-                      style={{ flex: 1, accentColor: '#00c1de', cursor: 'pointer', height: 4, touchAction: 'none' }}
-                    />
-                    <span style={{ fontSize: '11px', color: '#aaa', minWidth: 34, textAlign: 'right' }}>
-                      {Math.round(activePhoto.zoom * 100)}%
-                    </span>
-                  </div>
-
-                  {/* Stampa intera toggle */}
-                  <button
-                    onClick={() => updatePhoto(activePhoto.id, { fitMode: activePhoto.fitMode === 'contain' ? 'cover' : 'contain', zoom: 1, offsetX: 0, offsetY: 0 })}
-                    style={{
-                      width: '100%', padding: '8px 12px', borderRadius: 9, cursor: 'pointer', fontSize: '12px', fontWeight: 600,
-                      border: `1.5px solid ${activePhoto.fitMode === 'contain' ? '#00c1de' : '#e0e0e0'}`,
-                      background: activePhoto.fitMode === 'contain' ? 'rgba(0,193,222,0.08)' : '#fff',
-                      color: activePhoto.fitMode === 'contain' ? '#00c1de' : '#666',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all .15s',
-                    }}
-                  >
-                    Stampa intera senza ritaglio
-                    {activePhoto.fitMode === 'contain' && <Check size={12} strokeWidth={3} />}
-                  </button>
-
-                  <p style={{ fontSize: '11px', color: '#bbb', textAlign: 'center', margin: '-4px 0 0' }}>
-                    Trascina la foto per centrare il soggetto
-                  </p>
-
-                  {/* Copie per questa foto */}
-                  <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 4, borderTop: '1px solid #f0f0f0' }}>
-                    <span style={{ fontSize: '12px', fontWeight: 600, color: '#555' }}>Copie di questa foto</span>
-                    <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #e0e0e0', borderRadius: 10, overflow: 'hidden' }}>
-                      <button onClick={() => updatePhoto(activePhoto.id, { copies: Math.max(1, activePhoto.copies - 1) })} style={{ width: 32, height: 32, border: 'none', background: '#f7f7f7', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Minus size={11} color="#555" />
-                      </button>
-                      <span style={{ width: 36, textAlign: 'center', fontSize: '14px', fontWeight: 700 }}>{activePhoto.copies}</span>
-                      <button onClick={() => updatePhoto(activePhoto.id, { copies: activePhoto.copies + 1 })} style={{ width: 32, height: 32, border: 'none', background: '#f7f7f7', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Plus size={11} color="#555" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )})() : (
-                <div style={{ background: '#fff', border: '1px solid #e8e8e8', borderRadius: 16, padding: 20, textAlign: 'center', color: '#bbb', fontSize: '13px' }}>
-                  Clicca una foto per modificarla
-                </div>
-              )}
 
               {/* Riepilogo + CTA */}
               <div style={{ background: '#fff', border: '1px solid #e8e8e8', borderRadius: 16, padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
