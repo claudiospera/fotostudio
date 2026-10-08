@@ -5,7 +5,10 @@ import type { Product, PriceBreak, ProductVariant } from './types'
 
 // Scaglioni riutilizzabili ─────────────────────────────────────────────────
 
-const breaks10x15: PriceBreak[] = [
+// Promo 10x15: fino al 30/10/2026 lo scaglione da 100 foto scende a 0,20€/foto
+const PROMO_10X15_END = new Date('2026-10-30T23:59:59+01:00')
+
+const breaks10x15Base: PriceBreak[] = [
   { minQty: 1,   price: 200 },
   { minQty: 2,   price: 150 },
   { minQty: 6,   price:  90 },
@@ -18,6 +21,21 @@ const breaks10x15: PriceBreak[] = [
   { minQty: 200, price:  25 },
   { minQty: 500, price:  20 },
 ]
+
+const breaks10x15Promo: PriceBreak[] = [
+  { minQty: 1,   price: 200 },
+  { minQty: 2,   price: 150 },
+  { minQty: 6,   price:  90 },
+  { minQty: 11,  price:  80 },
+  { minQty: 21,  price:  70 },
+  { minQty: 31,  price:  60 },
+  { minQty: 51,  price:  50 },
+  { minQty: 71,  price:  35 },
+  { minQty: 91,  price:  30 },
+  { minQty: 100, price:  20 },
+]
+
+const breaks10x15: PriceBreak[] = new Date() <= PROMO_10X15_END ? breaks10x15Promo : breaks10x15Base
 
 const breaks13x18: PriceBreak[] = [
   { minQty: 1,   price: 250 },

@@ -20,8 +20,14 @@ interface Variant {
   priceBreaks: { minQty: number; price: number }[]
 }
 
+// Promo 10x15: fino al 30/10/2026 lo scaglione da 100 foto scende a 0,20€/foto
+const PROMO_10X15_END = new Date('2026-10-30T23:59:59+01:00')
+const breaks10x15 = new Date() <= PROMO_10X15_END
+  ? [{ minQty:1,price:200},{minQty:2,price:150},{minQty:6,price:90},{minQty:11,price:80},{minQty:21,price:70},{minQty:31,price:60},{minQty:51,price:50},{minQty:71,price:35},{minQty:91,price:30},{minQty:100,price:20}]
+  : [{ minQty:1,price:200},{minQty:2,price:150},{minQty:6,price:90},{minQty:11,price:80},{minQty:21,price:70},{minQty:31,price:60},{minQty:51,price:50},{minQty:71,price:35},{minQty:91,price:30},{minQty:200,price:25},{minQty:500,price:20}]
+
 const VARIANTS: Variant[] = [
-  { id: 'sc-10x15', label: '10×15 cm', wCm: 10, hCm: 15, price: 200, priceBreaks: [{ minQty:1,price:200},{minQty:2,price:150},{minQty:6,price:90},{minQty:11,price:80},{minQty:21,price:70},{minQty:31,price:60},{minQty:51,price:50},{minQty:71,price:35},{minQty:91,price:30},{minQty:200,price:25},{minQty:500,price:20}] },
+  { id: 'sc-10x15', label: '10×15 cm', wCm: 10, hCm: 15, price: 200, priceBreaks: breaks10x15 },
   { id: 'sc-13x18', label: '13×18 cm', wCm: 13, hCm: 18, price: 250, priceBreaks: [{ minQty:1,price:250},{minQty:2,price:200},{minQty:6,price:150},{minQty:11,price:120},{minQty:21,price:110},{minQty:31,price:90},{minQty:51,price:80},{minQty:71,price:70},{minQty:91,price:50},{minQty:200,price:40},{minQty:500,price:30}] },
   { id: 'sc-13x19', label: '13×19 cm', wCm: 13, hCm: 19, price: 250, priceBreaks: [{ minQty:1,price:250},{minQty:2,price:200},{minQty:6,price:150},{minQty:11,price:120},{minQty:21,price:110},{minQty:31,price:90},{minQty:51,price:80},{minQty:71,price:70},{minQty:91,price:50},{minQty:200,price:40},{minQty:500,price:30}] },
   { id: 'sc-15x15', label: '15×15 cm', wCm: 15, hCm: 15, price: 250, priceBreaks: [{ minQty:1,price:250},{minQty:2,price:200},{minQty:6,price:150},{minQty:11,price:120},{minQty:21,price:110},{minQty:31,price:90},{minQty:51,price:80},{minQty:71,price:70},{minQty:91,price:50},{minQty:200,price:40},{minQty:500,price:30}] },
