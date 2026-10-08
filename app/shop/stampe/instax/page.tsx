@@ -6,7 +6,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import Link from 'next/link'
-import { Check, ChevronLeft, ChevronRight, Minus, Plus, ShoppingCart, Upload, X, ZoomIn, Maximize2, Bold, Italic } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, Eye, Minus, Plus, ShoppingCart, Upload, X, ZoomIn, Maximize2, Bold, Italic } from 'lucide-react'
 import { useCart } from '@/components/shop/CartProvider'
 import { normalizeImageOrientation } from '@/lib/shop/normalize-image'
 
@@ -1215,6 +1215,11 @@ export default function InstaxPage() {
                     Cambia grafica
                   </button>
                 </div>
+              </div>
+
+              <div style={{ background: '#e8f9fc', border: '1px solid #b8ecf5', borderRadius: 10, padding: '10px 14px', fontSize: '12px', color: '#0a7a8f', lineHeight: 1.5, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                <Eye size={14} style={{ flexShrink: 0, marginTop: 1 }} />
+                <span><strong>Controlla l&apos;inquadratura</strong> di ogni foto prima di confermare: trascina e zooma per evitare che parti importanti vengano tagliate in stampa.</span>
               </div>
 
               {/* Griglia foto: editor completo (cornice, drag foto+testo, zoom, copie) su ogni card */}
