@@ -449,6 +449,25 @@ function ShopOrderDetail({
               </div>
             )}
 
+            <div style={{ background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 'var(--r2)', padding: '12px 14px' }}>
+              <p style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--t3)', marginBottom: 8 }}>Riepilogo</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                {Object.values(
+                  order.items.reduce<Record<string, { label: string; quantity: number }>>((acc, item) => {
+                    const label = `${item.productName} — ${item.variantLabel}`
+                    if (!acc[label]) acc[label] = { label, quantity: 0 }
+                    acc[label].quantity += item.quantity
+                    return acc
+                  }, {})
+                ).map((group) => (
+                  <div key={group.label} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: '12px' }}>
+                    <span style={{ color: 'var(--tx)' }}>{group.label}</span>
+                    <span style={{ color: 'var(--t2)', fontWeight: 600, flexShrink: 0 }}>×{group.quantity}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--acd)', border: '1px solid rgba(142,201,176,.2)', borderRadius: 'var(--r2)', padding: '12px 14px' }}>
               <span style={{ fontSize: '13px', color: 'var(--t2)', fontWeight: 500 }}>Totale ordine</span>
               <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '22px', color: 'var(--ac)' }}>{fmtCents(order.total)}</span>
