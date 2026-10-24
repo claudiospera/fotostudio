@@ -9,7 +9,7 @@ import { useUIStore } from '@/store/ui'
 import { useClerk } from '@clerk/nextjs'
 import {
   LayoutGrid, Images, FileText, Upload, ShoppingCart, LogOut, Plus, Users, BarChart2,
-  CalendarCheck, ChevronDown, CalendarDays, ClipboardList, ShoppingBag,
+  CalendarCheck, ChevronDown, CalendarDays, ClipboardList, ShoppingBag, GalleryVerticalEnd,
 } from 'lucide-react'
 
 // ─── CRM / Gestionale ────────────────────────────────────────────────────────
@@ -188,6 +188,7 @@ export const Sidebar = () => {
               Shop online
             </p>
             <NavLink href="/ordini"      label="Ordini stampe"  icon={ShoppingCart} badge={newShopOrders} />
+            <NavLink href="/shop/admin/calendari" label="Modelli calendario" icon={GalleryVerticalEnd} />
             <NavLink href="/shop/admin" label="Vai allo shop"  icon={ShoppingBag}  />
           </div>
 
