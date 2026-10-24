@@ -13,6 +13,7 @@ import {
 } from 'react'
 import { useUser } from '@clerk/nextjs'
 import type { Cart, CartItem } from '@/lib/shop/types'
+import { getCalendarLineTotal, getLineTotal } from '@/lib/shop/calendar-pricing'
 
 const STORAGE_KEY = 'fotostudio_cart'
 
@@ -157,9 +158,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (qty <= 0) { removeItem(productId, variantId); return }
       persist((prev) => ({
         ...prev,
-        items: prev.items.map((i) =>
-          i.productId === productId && i.variantId === variantId ? { ...i, quantity: qty } : i
-        ),
+        items: prev.items.map((i) => {
+          if (i.productId !== productId || i.variantId !== variantId) return i
+          // le righe calendario hanno un prezzo a scaglione (non price × quantity):
+          // il totale riga va ricalcolato ogni volta che cambia la quantità.
+          const lineTotal = i.kind === 'calendar' && i.calendarFormat
+            ? getCalendarLineTotal(i.calendarFormat, qty)
+            : i.lineTotal
+          return { ...i, quantity: qty, lineTotal }
+        }),
       }))
     },
     [persist, removeItem]
@@ -178,7 +185,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [user?.id])
 
   const applyCoupon = useCallback(async (code: string): Promise<{ ok: boolean; error?: string }> => {
-    const subtotal = cart.items.reduce((sum, i) => sum + i.price * i.quantity, 0)
+    const subtotal = cart.items.reduce((sum, i) => sum + getLineTotal(i), 0)
     try {
       const res = await fetch('/api/shop/validate-coupon', {
         method: 'POST',
@@ -186,7 +193,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({
           code,
           total: subtotal,
-          items: cart.items.map(i => ({ productId: i.productId, price: i.price, quantity: i.quantity })),
+          items: cart.items.map(i => ({ productId: i.productId, price: i.price, quantity: i.quantity, lineTotal: i.lineTotal })),
         }),
       })
       const data = await res.json()
@@ -201,7 +208,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const removeCoupon = useCallback(() => setCoupon(null), [])
 
   const itemCount = cart.items.reduce((sum, i) => sum + i.quantity, 0)
-  const total = cart.items.reduce((sum, i) => sum + i.price * i.quantity, 0)
+  const total = cart.items.reduce((sum, i) => sum + getLineTotal(i), 0)
   const finalTotal = Math.max(0, total - (coupon?.discount ?? 0))
 
   return (

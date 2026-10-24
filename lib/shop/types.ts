@@ -95,6 +95,14 @@ export interface CartItem {
   instaxText?: string        // for instax: bottom text label
   instaxLabelColor?: string  // for instax: text color (hex)
   instaxLabelFont?: string   // for instax: CSS font-family string
+  // calendari 2027 — riga a scaglione (1ª copia prezzo pieno, successive scontate)
+  kind?: 'calendar'
+  modelCode?: string    // es. "C2830"
+  calendarFormat?: string // es. "foglio_30x45" — serve a ricalcolare lineTotal quando cambia quantity
+  photoKeys?: string[]  // chiavi R2 delle foto cliente (tmp finché l'ordine non è confermato)
+  photoUrls?: string[]  // URL pubblici delle stesse foto, solo per mostrare le miniature nel carrello/admin
+  note?: string
+  lineTotal?: number    // totale riga già calcolato — bypassa price*quantity (vedi getLineTotal)
 }
 
 export interface Cart {

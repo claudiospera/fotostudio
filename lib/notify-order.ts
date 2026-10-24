@@ -121,8 +121,8 @@ async function sendEmail(order: OrderNotification) {
           </p>
 
           <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
-          <a href="${process.env.NEXT_PUBLIC_APP_URL}/shop/admin/ordini" style="font-size: 13px; color: #888;">
-            Vai agli ordini →
+          <a href="${process.env.NEXT_PUBLIC_APP_URL}/ordini?order=${order.orderId}" style="font-size: 13px; color: #888;">
+            Vai all'ordine →
           </a>
         </div>
       `,

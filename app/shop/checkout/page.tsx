@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useCart } from '@/components/shop/CartProvider'
+import { getLineTotal } from '@/lib/shop/calendar-pricing'
 
 function formatPrice(cents: number) {
   return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(cents / 100)
@@ -251,7 +252,7 @@ export default function CheckoutPage() {
                   <p style={{ fontSize: 11, color: 'var(--n-t2)', margin: '2px 0 0' }}>{item.variantLabel} × {item.quantity}</p>
                 </div>
                 <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--n-tx)', flexShrink: 0 }}>
-                  {formatPrice(item.price * item.quantity)}
+                  {formatPrice(getLineTotal(item))}
                 </span>
               </div>
             ))}

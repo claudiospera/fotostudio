@@ -1,6 +1,8 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { getLineTotal } from '@/lib/shop/calendar-pricing'
 
 // ── types ──────────────────────────────────────────────────────────────────
 
@@ -56,6 +58,12 @@ interface ShopOrderItem {
   instaxText?: string | null
   instaxLabelColor?: string | null
   instaxLabelFont?: string | null
+  // calendari 2027
+  kind?: 'calendar'
+  modelCode?: string
+  photoUrls?: string[]
+  note?: string
+  lineTotal?: number
 }
 
 interface ShopOrder {
@@ -390,7 +398,23 @@ function ShopOrderDetail({
                 )}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {order.items.map((item, i) => (
+                {order.items.map((item, i) => item.kind === 'calendar' ? (
+                  <div key={i} style={{ background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 'var(--r2)', padding: '10px 12px', display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: 3, flexShrink: 0 }}>
+                      {(item.photoUrls ?? []).map((url, pi) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img key={pi} src={url} alt="" style={{ width: 32, height: 32, borderRadius: 5, objectFit: 'cover', border: '1px solid var(--b1)' }} />
+                      ))}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: '12px', color: 'var(--tx)', fontWeight: 500 }}>
+                        Calendario 2027 — {item.modelCode} <span style={{ color: 'var(--t3)' }}>×{item.quantity}</span>
+                      </p>
+                      {item.note && <p style={{ fontSize: '11px', color: 'var(--t3)', margin: '2px 0 0', fontStyle: 'italic' }}>📝 {item.note}</p>}
+                    </div>
+                    <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '13px', color: 'var(--tx)', flexShrink: 0 }}>{fmtCents(getLineTotal(item))}</span>
+                  </div>
+                ) : (
                   <div key={i} style={{ background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 'var(--r2)', padding: '10px 12px', display: 'flex', gap: 10, alignItems: 'center' }}>
                     {item.image?.startsWith('https://') ? (
                       item.productId === 'stampe-instax' ? (
@@ -436,7 +460,7 @@ function ShopOrderDetail({
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontSize: '12px', color: 'var(--tx)', fontWeight: 500 }}>{item.productName} — {item.variantLabel} <span style={{ color: 'var(--t3)' }}>×{item.quantity}</span></p>
                     </div>
-                    <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '13px', color: 'var(--tx)', flexShrink: 0 }}>{fmtCents(item.price * item.quantity)}</span>
+                    <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '13px', color: 'var(--tx)', flexShrink: 0 }}>{fmtCents(getLineTotal(item))}</span>
                   </div>
                 ))}
               </div>
@@ -553,6 +577,15 @@ function ShopOrderDetail({
 // ── main page ──────────────────────────────────────────────────────────────
 
 export default function OrdiniPage() {
+  return (
+    <Suspense>
+      <OrdiniPageInner />
+    </Suspense>
+  )
+}
+
+function OrdiniPageInner() {
+  const searchParams = useSearchParams()
   const [tab, setTab] = useState<'gallerie' | 'shop'>('gallerie')
 
   // Gallery portal orders
@@ -593,6 +626,14 @@ export default function OrdiniPage() {
       .finally(() => setShopLoading(false))
   }, [])
 
+  // Apertura automatica di un ordine da link esterno (es. notifica email nuovo ordine)
+  useEffect(() => {
+    const orderId = searchParams.get('order')
+    if (!orderId || shopOrders.length === 0) return
+    const order = shopOrders.find(o => o.id === orderId)
+    if (order) { setTab('shop'); setSelectedShopOrder(order) }
+  }, [searchParams, shopOrders])
+
   const handleGalleryStatusChange = useCallback((id: string, status: GalleryOrder['status']) => {
     setGalleryOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o))
     setSelectedGalleryOrder(prev => prev?.id === id ? { ...prev, status } : prev)
@@ -612,6 +653,14 @@ export default function OrdiniPage() {
   const nuoviGalleria = galleryOrders.filter(o => o.status === 'nuovo').length
   const nuoviShop     = shopOrders.filter(o => o.status === 'pending').length
   const totaleNuovi   = nuoviGalleria + nuoviShop
+
+  // Riepilogo produzione calendari: stampe 30×45 e kit astine+gancio da preparare
+  // per gli ordini non ancora pronti (pending = "Ricevuto", confirmed = "In lavorazione").
+  const calendarProductionQty = shopOrders
+    .filter(o => o.status === 'pending' || o.status === 'confirmed')
+    .flatMap(o => o.items)
+    .filter(i => i.kind === 'calendar')
+    .reduce((sum, i) => sum + i.quantity, 0)
 
   const filteredGallery = galleryFilter === 'tutti' ? galleryOrders : galleryOrders.filter(o => o.status === galleryFilter)
   const filteredShop    = shopFilter    === 'tutti' ? shopOrders    : shopOrders.filter(o => o.status === shopFilter)
@@ -759,6 +808,15 @@ export default function OrdiniPage() {
       {/* ── TAB SHOP ── */}
       {tab === 'shop' && (
         <>
+          {calendarProductionQty > 0 && (
+            <div style={{ margin: '14px 28px 0', background: 'var(--acd)', border: '1px solid rgba(142,201,176,.25)', borderRadius: 'var(--r2)', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: '18px' }}>📅</span>
+              <p style={{ fontSize: '13px', color: 'var(--tx)', margin: 0 }}>
+                <strong>Riepilogo produzione calendari</strong> — {calendarProductionQty} {calendarProductionQty === 1 ? 'stampa 30×45' : 'stampe 30×45'} e {calendarProductionQty === 1 ? 'kit astine+gancio' : 'kit astine+gancio'} da preparare (ordini in attesa o in lavorazione)
+              </p>
+            </div>
+          )}
+
           <div style={{ padding: '14px 28px 12px', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {SHOP_FILTERS.map(f => (
               <button

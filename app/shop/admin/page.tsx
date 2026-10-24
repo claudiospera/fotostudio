@@ -4,7 +4,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, ShoppingBag, ExternalLink, Tag } from 'lucide-react'
+import { ArrowLeft, ShoppingBag, ExternalLink, Tag, CalendarDays } from 'lucide-react'
 
 export default async function ShopAdminPage() {
   const { userId } = await auth()
@@ -134,6 +134,19 @@ export default async function ShopAdminPage() {
           >
             <Tag size={14} />
             Codici sconto
+          </Link>
+          <Link
+            href="/shop/admin/calendari"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              background: '#fff', color: '#0a0a0a',
+              border: '1px solid #e8e8e8',
+              borderRadius: 10, padding: '11px 22px',
+              fontSize: '13px', fontWeight: 600, textDecoration: 'none',
+            }}
+          >
+            <CalendarDays size={14} />
+            Modelli calendario
           </Link>
           <Link
             href="/shop"

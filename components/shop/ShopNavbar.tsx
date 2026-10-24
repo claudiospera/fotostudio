@@ -64,6 +64,22 @@ export function ShopNavbar() {
           >
             ✦ Composizioni
           </Link>
+          <Link
+            href="/shop/calendari"
+            style={{
+              fontSize: '13px',
+              fontWeight: 500,
+              color: 'var(--n-t2)',
+              textDecoration: 'none',
+              padding: '6px 14px',
+              borderRadius: 'var(--n-r2)',
+              transition: 'all .15s',
+              whiteSpace: 'nowrap',
+            }}
+            className="shop-nav-link"
+          >
+            Calendari 2027
+          </Link>
           {Object.values(CATEGORY_META).map((cat) => (
             <Link
               key={cat.slug}

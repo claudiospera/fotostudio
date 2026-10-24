@@ -4,12 +4,21 @@ import { sql } from '@/lib/db'
 import Stripe from 'stripe'
 import { notifyNewOrder } from '@/lib/notify-order'
 import { PRODUCTS, getPriceForQuantity, resolveVariant } from '@/lib/shop/products'
+import { getCalendarLineTotal, getLineTotal } from '@/lib/shop/calendar-pricing'
+import { moveInR2 } from '@/lib/r2'
+import type { CartItem } from '@/lib/shop/types'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
 // POST — crea un ordine, ritorna { orderId } oppure { stripeUrl }
 export async function POST(req: NextRequest) {
-  const { customer, items, paymentMethod, couponCode, cancelUrl } = await req.json()
+  const { customer, items, paymentMethod, couponCode, cancelUrl } = await req.json() as {
+    customer: { name: string; email: string; phone: string; notes?: string }
+    items: CartItem[]
+    paymentMethod: 'online' | 'studio'
+    couponCode?: string | null
+    cancelUrl?: string
+  }
 
   if (!customer?.name || !customer?.email || !customer?.phone) {
     return NextResponse.json({ error: 'Dati cliente mancanti' }, { status: 400 })
@@ -17,6 +26,9 @@ export async function POST(req: NextRequest) {
   if (!Array.isArray(items) || items.length === 0) {
     return NextResponse.json({ error: 'Carrello vuoto' }, { status: 400 })
   }
+
+  const calendarItems = items.filter(i => i.kind === 'calendar')
+  const regularItems = items.filter(i => i.kind !== 'calendar')
 
   // Verifica server-side che i prezzi inviati dal client non siano inferiori al minimo
   // legittimo per prodotto/variante/quantità — impedisce di manomettere il totale.
@@ -28,7 +40,7 @@ export async function POST(req: NextRequest) {
   // variante BASE su tutto l'ordine, perché un ordine può avere più righe della
   // stessa variante (es. foto diverse stampate nello stesso formato) che insieme
   // raggiungono uno scaglione più conveniente.
-  const resolved = items.map((item: { productId: string; variantId: string; quantity: number; price: number }) => {
+  const resolved = regularItems.map((item) => {
     const product = PRODUCTS.find((p) => p.id === item.productId)
     const variant = product ? resolveVariant(product, item.variantId) : undefined
     return { item, product, variant }
@@ -53,8 +65,35 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Subtotale ricalcolato dai prezzi appena validati (mai dal `total` inviato dal client)
-  const subtotal = items.reduce((sum: number, i: { price: number; quantity: number }) => sum + i.price * i.quantity, 0)
+  // Validazione righe calendario: modello attivo, numero foto corretto, lineTotal
+  // non inferiore allo scaglione legittimo (1ª copia prezzo pieno, successive scontate).
+  if (calendarItems.length > 0) {
+    const codes = Array.from(new Set(calendarItems.map(i => i.modelCode).filter(Boolean))) as string[]
+    const modelRows = codes.length > 0
+      ? await sql`SELECT code, format, photo_slots, active FROM calendar_models WHERE code = ANY(${codes})`
+      : []
+    const modelByCode = new Map(modelRows.map(m => [m.code as string, m]))
+
+    for (const item of calendarItems) {
+      const model = item.modelCode ? modelByCode.get(item.modelCode) : undefined
+      if (!model || !model.active) {
+        return NextResponse.json({ error: 'Modello calendario non disponibile' }, { status: 400 })
+      }
+      if (!Number.isInteger(item.quantity) || item.quantity < 1) {
+        return NextResponse.json({ error: 'Quantità non valida' }, { status: 400 })
+      }
+      if (!Array.isArray(item.photoKeys) || item.photoKeys.length !== model.photo_slots) {
+        return NextResponse.json({ error: 'Numero di foto non valido per questo calendario' }, { status: 400 })
+      }
+      const minLineTotal = getCalendarLineTotal(model.format, item.quantity)
+      if (typeof item.lineTotal !== 'number' || item.lineTotal < minLineTotal) {
+        return NextResponse.json({ error: 'Prezzo calendario non valido' }, { status: 400 })
+      }
+    }
+  }
+
+  // Subtotale ricalcolato dai prezzi/lineTotal appena validati (mai dal `total` inviato dal client)
+  const subtotal = items.reduce((sum, i) => sum + getLineTotal(i), 0)
 
   // Verifica server-side del coupon (se presente) e riserva l'utilizzo in un'unica
   // UPDATE atomica: SELECT+UPDATE separati permetterebbero a due richieste concorrenti
@@ -101,9 +140,29 @@ export async function POST(req: NextRequest) {
   `
   const orderId = rows[0].id
 
+  // Sposta le foto calendario da calendari/tmp/ a calendari/ordini/<id>/ ora che
+  // l'ordine è confermato, e riscrive items con i nuovi URL/key.
+  let finalItems = items
+  if (calendarItems.length > 0) {
+    finalItems = await Promise.all(items.map(async (item) => {
+      if (item.kind !== 'calendar' || !item.photoKeys) return item
+      const movedKeys: string[] = []
+      const movedUrls: string[] = []
+      for (const key of item.photoKeys) {
+        const filename = key.split('/').pop()
+        const toKey = `calendari/ordini/${orderId}/${filename}`
+        const url = await moveInR2(key, toKey)
+        movedKeys.push(toKey)
+        movedUrls.push(url)
+      }
+      return { ...item, photoKeys: movedKeys, photoUrls: movedUrls }
+    }))
+    await sql`UPDATE shop_orders SET items = ${JSON.stringify(finalItems)} WHERE id = ${orderId}`
+  }
+
   // Pagamento allo studio → conferma diretta + notifica immediata
   if (paymentMethod === 'studio') {
-    await notifyNewOrder({ orderId, customerName: customer.name, customerEmail: customer.email, customerPhone: customer.phone, items, total: safeTotal, paymentMethod, couponCode: couponCode ?? undefined, discount: verifiedDiscount || undefined })
+    await notifyNewOrder({ orderId, customerName: customer.name, customerEmail: customer.email, customerPhone: customer.phone, items: finalItems, total: safeTotal, paymentMethod, couponCode: couponCode ?? undefined, discount: verifiedDiscount || undefined })
     return NextResponse.json({ orderId })
   }
 
@@ -119,18 +178,20 @@ export async function POST(req: NextRequest) {
     ? cancelUrl
     : `${APP_URL}/shop/carrello`
 
-  const lineItems = items.map((item: {
-    productName: string; variantLabel: string; image: string; price: number; quantity: number
-  }) => ({
+  // Le righe calendario hanno un prezzo a scaglione (1ª copia prezzo pieno,
+  // successive scontate): su Stripe diventano un'unica riga con quantity:1 e
+  // unit_amount = lineTotal, perché price × quantity non è un multiplo esatto
+  // per quantità dispari (es. 3 copie = 2600, non divisibile per 3).
+  const lineItems = finalItems.map((item) => ({
     price_data: {
       currency: 'eur',
-      unit_amount: item.price,
+      unit_amount: item.kind === 'calendar' ? getLineTotal(item) : item.price,
       product_data: {
         name: `${item.productName} — ${item.variantLabel}`,
         images: item.image?.startsWith('https://') ? [item.image] : [],
       },
     },
-    quantity: item.quantity,
+    quantity: item.kind === 'calendar' ? 1 : item.quantity,
   }))
 
   const session = await stripe.checkout.sessions.create({

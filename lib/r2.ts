@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand, PutBucketCorsCommand } from '@aws-sdk/client-s3'
+import { S3Client, PutObjectCommand, DeleteObjectCommand, PutBucketCorsCommand, CopyObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 // Cloudflare R2 è S3-compatibile — usa l'endpoint specifico dell'account
@@ -71,4 +71,40 @@ export async function getPresignedUploadUrl(
 
 export async function deleteFromR2(key: string): Promise<void> {
   await r2.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }))
+}
+
+/**
+ * Sposta un oggetto all'interno dello stesso bucket (copy + delete — R2/S3 non
+ * ha un vero "move"). Usato per spostare le foto calendario da calendari/tmp/
+ * a calendari/ordini/<id>/ quando un ordine viene confermato.
+ */
+export async function moveInR2(fromKey: string, toKey: string): Promise<string> {
+  await r2.send(new CopyObjectCommand({
+    Bucket: bucket,
+    CopySource: `${bucket}/${fromKey}`,
+    Key: toKey,
+  }))
+  await r2.send(new DeleteObjectCommand({ Bucket: bucket, Key: fromKey }))
+  return `${publicUrl}/${toKey}`
+}
+
+/**
+ * Elenca le chiavi sotto un prefisso con la relativa data di ultima modifica.
+ * Usato dal cron di pulizia per calendari/tmp/.
+ */
+export async function listR2Keys(prefix: string): Promise<{ key: string; lastModified?: Date }[]> {
+  const out: { key: string; lastModified?: Date }[] = []
+  let continuationToken: string | undefined
+  do {
+    const res = await r2.send(new ListObjectsV2Command({
+      Bucket: bucket,
+      Prefix: prefix,
+      ContinuationToken: continuationToken,
+    }))
+    for (const obj of res.Contents ?? []) {
+      if (obj.Key) out.push({ key: obj.Key, lastModified: obj.LastModified })
+    }
+    continuationToken = res.IsTruncated ? res.NextContinuationToken : undefined
+  } while (continuationToken)
+  return out
 }

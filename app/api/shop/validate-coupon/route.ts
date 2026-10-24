@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sql } from '@/lib/db'
+import { getLineTotal } from '@/lib/shop/calendar-pricing'
 
 interface CartItemInput {
   productId: string
   price: number
   quantity: number
+  lineTotal?: number
 }
 
 export async function POST(req: NextRequest) {
@@ -47,7 +49,7 @@ export async function POST(req: NextRequest) {
         { status: 404 }
       )
     }
-    taxableTotal = matchingItems.reduce((sum, i) => sum + i.price * i.quantity, 0)
+    taxableTotal = matchingItems.reduce((sum, i) => sum + getLineTotal(i), 0)
     hasMatchingItems = matchingItems.length > 0
   }
 

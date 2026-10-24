@@ -63,7 +63,7 @@ function resolveFontFamily(cssFontFamily?: string | null): string {
  * Sharp on Vercel supports HEIC via libvips when heif is available,
  * but decoding is not guaranteed — this ensures a safe JPEG baseline.
  */
-async function normalizeToJpeg(imageBuffer: ArrayBuffer | Buffer): Promise<Buffer> {
+export async function normalizeToJpeg(imageBuffer: ArrayBuffer | Buffer): Promise<Buffer> {
   const buf = Buffer.isBuffer(imageBuffer) ? imageBuffer : Buffer.from(imageBuffer)
   const meta = await sharp(buf).metadata()
   if (['heif', 'heic', 'avif'].includes(meta.format as string)) {

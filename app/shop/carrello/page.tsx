@@ -8,6 +8,7 @@ import { useState } from 'react'
 import Image from 'next/image'
 import { Trash2 } from 'lucide-react'
 import { useCart } from '@/components/shop/CartProvider'
+import { getLineTotal, formatCalendarPriceBreakdown } from '@/lib/shop/calendar-pricing'
 
 function formatPrice(cents: number): string {
   return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(cents / 100)
@@ -97,6 +98,31 @@ export default function CartPage() {
                 {item.productName}
               </p>
               <p style={{ fontSize: '12px', color: 'var(--n-t2)' }}>{item.variantLabel}</p>
+
+              {item.kind === 'calendar' && (
+                <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {item.photoUrls && item.photoUrls.length > 0 && (
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      {item.photoUrls.map((url, pi) => (
+                        <div key={pi} style={{ position: 'relative', width: 28, height: 28, borderRadius: 6, overflow: 'hidden', border: '1px solid var(--n-border)', flexShrink: 0 }}>
+                          <Image src={url} alt={`Foto ${pi + 1}`} fill style={{ objectFit: 'cover' }} />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {item.calendarFormat && (
+                    <p style={{ fontSize: '11px', color: 'var(--n-t3)', margin: 0 }}>
+                      {formatCalendarPriceBreakdown(item.calendarFormat, item.quantity)}
+                    </p>
+                  )}
+                  <Link
+                    href={`/shop/calendari/${item.modelCode}?edit=${i}`}
+                    style={{ fontSize: '11px', fontWeight: 600, color: 'var(--n-ac-dark)', textDecoration: 'none' }}
+                  >
+                    Cambia foto →
+                  </Link>
+                </div>
+              )}
             </div>
 
             {/* Quantità */}
@@ -114,7 +140,7 @@ export default function CartPage() {
 
             {/* Prezzo */}
             <p className="cart-price">
-              {formatPrice(item.price * item.quantity)}
+              {formatPrice(getLineTotal(item))}
             </p>
 
             {/* Rimuovi */}

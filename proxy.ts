@@ -17,6 +17,10 @@ const isPublicRoute = createRouteMatcher([
   '/api/shop/validate-coupon',
   '/api/shop/stripe-webhook',
   '/api/shop/presign-photo',
+  '/api/shop/calendari/models',
+  '/api/shop/calendari/models/(.*)',
+  '/api/shop/calendari/normalize-photo',
+  '/api/cron/cleanup-calendar-tmp',
   '/api/composizioni/preventivo',
   // Sito pubblico
   '/servizi(.*)',
@@ -43,6 +47,8 @@ const isPublicRoute = createRouteMatcher([
   '/shop/stampe(.*)',
   '/shop/decorazioni(.*)',
   '/shop/gadget(.*)',
+  '/shop/calendari',
+  '/shop/calendari/(.*)',
 ])
 
 export default clerkMiddleware(async (auth, request) => {

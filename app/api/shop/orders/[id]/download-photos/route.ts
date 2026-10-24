@@ -21,6 +21,12 @@ interface OrderItem {
   instaxText?: string
   instaxLabelColor?: string
   instaxLabelFont?: string
+  // calendari 2027
+  kind?: 'calendar'
+  modelCode?: string
+  photoUrls?: string[]
+  note?: string
+  quantity?: number
 }
 
 // GET /api/shop/orders/[id]/download-photos — ZIP di tutte le foto dell'ordine
@@ -39,12 +45,33 @@ export async function GET(
   const items: OrderItem[] = rows[0].items
   const customerName: string = rows[0].customer_name ?? 'cliente'
 
-  const photoItems = items.filter(item => item.image?.startsWith('https://'))
-  if (photoItems.length === 0) {
+  const photoItems = items.filter(item => item.kind !== 'calendar' && item.image?.startsWith('https://'))
+  const calendarItems = items.filter(item => item.kind === 'calendar' && item.photoUrls && item.photoUrls.length > 0)
+  if (photoItems.length === 0 && calendarItems.length === 0) {
     return NextResponse.json({ error: 'Nessuna foto disponibile per questo ordine' }, { status: 404 })
   }
 
   const zip = new JSZip()
+
+  // Calendari: foto rinominate <modello>_ordine<id>_foto<N>.jpg + un .txt riepilogo
+  await Promise.all(calendarItems.map(async (item) => {
+    const urls = item.photoUrls ?? []
+    await Promise.all(urls.map(async (url, pi) => {
+      try {
+        const res = await fetch(url)
+        if (!res.ok) return
+        const buffer = await res.arrayBuffer()
+        const ext = url.split('.').pop()?.split('?')[0]?.toLowerCase() || 'jpg'
+        zip.file(`${item.modelCode ?? 'calendario'}_ordine${id}_foto${pi + 1}.${ext}`, buffer)
+      } catch { /* skip */ }
+    }))
+  }))
+  if (calendarItems.length > 0) {
+    const lines = calendarItems.map(item =>
+      `Modello: ${item.modelCode ?? '—'}\nQuantità: ${item.quantity ?? 1}\nNote: ${item.note?.trim() || '—'}\n`
+    )
+    zip.file(`ordine_${id}_calendari.txt`, lines.join('\n'))
+  }
 
   await Promise.all(photoItems.map(async (item, i) => {
     try {

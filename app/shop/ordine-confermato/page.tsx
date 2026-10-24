@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { useCart } from '@/components/shop/CartProvider'
+import { getLineTotal } from '@/lib/shop/calendar-pricing'
 
 function formatPrice(cents: number) {
   return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(cents / 100)
@@ -16,7 +17,7 @@ interface OrderSummary {
   total: number
   discount: number
   coupon_code: string | null
-  items: { productName: string; variantLabel: string; quantity: number; price: number }[]
+  items: { productName: string; variantLabel: string; quantity: number; price: number; lineTotal?: number }[]
   payment_method: string
   payment_status: string
 }
@@ -94,7 +95,7 @@ function OrdineConfermatoInner() {
                   </span>
                 </div>
                 <span style={{ fontWeight: 600, color: 'var(--n-tx)', flexShrink: 0, marginLeft: 12 }}>
-                  {formatPrice(item.price * item.quantity)}
+                  {formatPrice(getLineTotal(item))}
                 </span>
               </div>
             ))}
