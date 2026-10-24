@@ -3,23 +3,13 @@
 import { getFeaturedProducts, PRODUCTS } from '@/lib/shop/products'
 import { ProductCard } from '@/components/shop/ProductCard'
 import { CalendarsTeaserCard } from '@/components/shop/CalendarsTeaserCard'
-import { sql } from '@/lib/db'
 
-const publicUrl = process.env.CLOUDFLARE_R2_PUBLIC_URL!.trim()
+// Copertina fissa scelta da Claudio (foto di famiglia, non un modello a caso dal catalogo).
+// Su R2 (non in /public — le immagini vanno su CDN/storage, non committate su git).
+const CALENDAR_COVER_IMAGE = 'https://pub-53356d483eb74822990977c0e5c21f6c.r2.dev/calendari/copertina-shop.jpg'
 
-async function getCalendarTeaserImage(): Promise<string | null> {
-  const rows = await sql`
-    SELECT thumb_key FROM calendar_models
-    WHERE active = true
-    ORDER BY sort_order ASC, code ASC
-    LIMIT 1
-  `
-  return rows[0] ? `${publicUrl}/${rows[0].thumb_key}` : null
-}
-
-export default async function ShopHomePage() {
+export default function ShopHomePage() {
   const featured = getFeaturedProducts()
-  const calendarImage = await getCalendarTeaserImage()
 
   return (
     <div style={{ fontFamily: 'Montserrat, sans-serif' }}>
@@ -77,31 +67,29 @@ export default async function ShopHomePage() {
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 clamp(24px, 5vw, 60px)' }}>
 
         {/* ── IN EVIDENZA ── */}
-        {(featured.length > 0 || calendarImage) && (
-          <section style={{ paddingBottom: 'clamp(48px, 6vw, 80px)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
-              <h2 style={{
-                fontFamily: 'Poppins, sans-serif', fontWeight: 700,
-                fontSize: 'clamp(20px, 2.5vw, 28px)', color: 'var(--n-tx)',
-                letterSpacing: '-0.02em', margin: 0,
-              }}>
-                In evidenza
-              </h2>
-              <span style={{
-                background: 'var(--n-ac-dim)', color: 'var(--n-ac)',
-                borderRadius: 100, padding: '3px 10px', fontSize: '11px', fontWeight: 700,
-              }}>
-                Scelti per te
-              </span>
-            </div>
-            <div className="shop-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
-              {calendarImage && <CalendarsTeaserCard imageUrl={calendarImage} />}
-              {featured.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          </section>
-        )}
+        <section style={{ paddingBottom: 'clamp(48px, 6vw, 80px)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
+            <h2 style={{
+              fontFamily: 'Poppins, sans-serif', fontWeight: 700,
+              fontSize: 'clamp(20px, 2.5vw, 28px)', color: 'var(--n-tx)',
+              letterSpacing: '-0.02em', margin: 0,
+            }}>
+              In evidenza
+            </h2>
+            <span style={{
+              background: 'var(--n-ac-dim)', color: 'var(--n-ac)',
+              borderRadius: 100, padding: '3px 10px', fontSize: '11px', fontWeight: 700,
+            }}>
+              Scelti per te
+            </span>
+          </div>
+          <div className="shop-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
+            <CalendarsTeaserCard imageUrl={CALENDAR_COVER_IMAGE} />
+            {featured.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </section>
 
         {/* ── TUTTI I PRODOTTI ── */}
         <section id="prodotti" style={{ paddingBottom: 'clamp(56px, 8vw, 100px)' }}>
