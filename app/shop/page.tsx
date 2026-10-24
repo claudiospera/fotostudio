@@ -2,10 +2,24 @@
 
 import { getFeaturedProducts, PRODUCTS } from '@/lib/shop/products'
 import { ProductCard } from '@/components/shop/ProductCard'
+import { CalendarsTeaserCard } from '@/components/shop/CalendarsTeaserCard'
+import { sql } from '@/lib/db'
 
+const publicUrl = process.env.CLOUDFLARE_R2_PUBLIC_URL!.trim()
 
-export default function ShopHomePage() {
+async function getCalendarTeaserImage(): Promise<string | null> {
+  const rows = await sql`
+    SELECT thumb_key FROM calendar_models
+    WHERE active = true
+    ORDER BY sort_order ASC, code ASC
+    LIMIT 1
+  `
+  return rows[0] ? `${publicUrl}/${rows[0].thumb_key}` : null
+}
+
+export default async function ShopHomePage() {
   const featured = getFeaturedProducts()
+  const calendarImage = await getCalendarTeaserImage()
 
   return (
     <div style={{ fontFamily: 'Montserrat, sans-serif' }}>
@@ -63,7 +77,7 @@ export default function ShopHomePage() {
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 clamp(24px, 5vw, 60px)' }}>
 
         {/* ── IN EVIDENZA ── */}
-        {featured.length > 0 && (
+        {(featured.length > 0 || calendarImage) && (
           <section style={{ paddingBottom: 'clamp(48px, 6vw, 80px)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
               <h2 style={{
@@ -81,6 +95,7 @@ export default function ShopHomePage() {
               </span>
             </div>
             <div className="shop-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
+              {calendarImage && <CalendarsTeaserCard imageUrl={calendarImage} />}
               {featured.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}

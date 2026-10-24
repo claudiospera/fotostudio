@@ -2,15 +2,23 @@
 
 // components/shop/ShopNavbar.tsx
 
+import { useState } from 'react'
 import Link from 'next/link'
-import { ShoppingCart, User } from 'lucide-react'
+import { ShoppingCart, User, Menu, X } from 'lucide-react'
 import { useUser } from '@clerk/nextjs'
 import { useCart } from './CartProvider'
 import { CATEGORY_META } from '@/lib/shop/types'
 
+const NAV_LINKS = [
+  { href: '/shop/composizioni', label: '✦ Composizioni' },
+  { href: '/shop/calendari', label: 'Calendari 2027' },
+  ...Object.values(CATEGORY_META).map(cat => ({ href: `/shop/${cat.slug}`, label: cat.label })),
+]
+
 export function ShopNavbar() {
   const { itemCount } = useCart()
   const { user, isLoaded } = useUser()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
     <header style={{
@@ -20,7 +28,7 @@ export function ShopNavbar() {
       top: 0,
       zIndex: 50,
     }}>
-      <div style={{
+      <div className="shop-navbar-inner" style={{
         maxWidth: 1200,
         margin: '0 auto',
         padding: '0 24px',
@@ -130,6 +138,24 @@ export function ShopNavbar() {
           )
         )}
 
+        {/* Hamburger mobile */}
+        <button
+          className="shop-mobile-menu-btn"
+          onClick={() => setMobileMenuOpen(v => !v)}
+          aria-label="Menu categorie"
+          style={{
+            display: 'none',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 36, height: 36,
+            background: 'var(--n-surface)', border: '1px solid var(--n-border)',
+            borderRadius: 'var(--n-r2)', cursor: 'pointer', flexShrink: 0,
+            color: 'var(--n-tx)',
+          }}
+        >
+          {mobileMenuOpen ? <X size={17} /> : <Menu size={17} />}
+        </button>
+
         {/* Carrello */}
         <Link href="/shop/carrello" style={{
           position: 'relative',
@@ -156,6 +182,37 @@ export function ShopNavbar() {
         </Link>
       </div>
 
+      {/* Menu categorie mobile (a tendina) */}
+      {mobileMenuOpen && (
+        <nav className="shop-mobile-menu" style={{
+          borderTop: '1px solid var(--n-border)',
+          background: '#fff',
+          padding: '8px 16px 16px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+        }}>
+          {NAV_LINKS.map(link => (
+            <Link
+              key={link.href}
+              href={link.href}
+              onClick={() => setMobileMenuOpen(false)}
+              style={{
+                fontSize: '14px',
+                fontWeight: 600,
+                color: 'var(--n-tx)',
+                textDecoration: 'none',
+                padding: '12px 10px',
+                borderRadius: 'var(--n-r2)',
+                borderBottom: '1px solid var(--n-surface)',
+              }}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+      )}
+
       <style>{`
         .shop-nav-link:hover {
           color: var(--n-tx) !important;
@@ -170,6 +227,12 @@ export function ShopNavbar() {
           .shop-cart-label { display: none !important; }
           .shop-brand-name { font-size: 13px !important; }
           .shop-auth-label { display: none !important; }
+          .shop-mobile-menu-btn { display: flex !important; }
+          .shop-home-link { display: none !important; }
+          .shop-navbar-inner { padding: 0 12px !important; gap: 8px !important; }
+        }
+        @media (min-width: 601px) {
+          .shop-mobile-menu { display: none !important; }
         }
       `}</style>
     </header>
