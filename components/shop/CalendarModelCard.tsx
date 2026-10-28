@@ -9,6 +9,7 @@ export interface CalendarModelSummary {
   code: string
   title: string
   category: string
+  photoSlots: number
   thumbUrl: string
 }
 
@@ -41,11 +42,16 @@ export function CalendarModelCard({ model }: { model: CalendarModelSummary }) {
           <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--n-tx)', fontFamily: 'Poppins, sans-serif' }}>
             {model.code}
           </span>
-          {model.category && (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ fontSize: '10px', fontWeight: 600, color: 'var(--n-t2)', background: 'var(--n-surface)', borderRadius: 6, padding: '2px 7px' }}>
-              {model.category}
+              {model.photoSlots === 1 ? '1 foto' : `${model.photoSlots} foto`}
             </span>
-          )}
+            {model.category && (
+              <span style={{ fontSize: '10px', fontWeight: 600, color: 'var(--n-t2)', background: 'var(--n-surface)', borderRadius: 6, padding: '2px 7px' }}>
+                {model.category}
+              </span>
+            )}
+          </span>
         </div>
       </div>
 

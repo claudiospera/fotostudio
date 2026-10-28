@@ -13,6 +13,7 @@ interface ModelsResponse {
 export default function CalendariCatalogoPage() {
   const [data, setData] = useState<ModelsResponse | null>(null)
   const [category, setCategory] = useState<string>('')
+  const [photoSlots, setPhotoSlots] = useState<number | ''>('')
   const [search, setSearch] = useState('')
 
   useEffect(() => {
@@ -28,15 +29,22 @@ export default function CalendariCatalogoPage() {
     return Array.from(set).sort()
   }, [data])
 
+  const photoSlotOptions = useMemo(() => {
+    if (!data) return []
+    const set = new Set(data.items.map(m => m.photoSlots))
+    return Array.from(set).sort((a, b) => a - b)
+  }, [data])
+
   const filtered = useMemo(() => {
     if (!data) return []
     const q = search.trim().toLowerCase()
     return data.items.filter(m => {
       if (category && m.category !== category) return false
+      if (photoSlots !== '' && m.photoSlots !== photoSlots) return false
       if (q && !m.code.toLowerCase().includes(q)) return false
       return true
     })
-  }, [data, category, search])
+  }, [data, category, photoSlots, search])
 
   const bannerDateLabel = data?.settings.bannerDate
     ? new Date(data.settings.bannerDate).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -130,6 +138,39 @@ export default function CalendariCatalogoPage() {
             </div>
           )}
         </div>
+
+        {photoSlotOptions.length > 1 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10, alignItems: 'center' }}>
+            <span style={{ fontSize: '12px', color: 'var(--n-t3)', fontWeight: 600 }}>N° foto:</span>
+            <button
+              onClick={() => setPhotoSlots('')}
+              style={{
+                padding: '8px 14px', borderRadius: 'var(--n-r2)', fontSize: '12px', fontWeight: 600,
+                border: photoSlots === '' ? '1px solid var(--n-ac)' : '1px solid var(--n-border)',
+                background: photoSlots === '' ? 'var(--n-ac-dim)' : '#fff',
+                color: photoSlots === '' ? 'var(--n-ac-dark)' : 'var(--n-t2)',
+                cursor: 'pointer',
+              }}
+            >
+              Tutte
+            </button>
+            {photoSlotOptions.map(n => (
+              <button
+                key={n}
+                onClick={() => setPhotoSlots(n)}
+                style={{
+                  padding: '8px 14px', borderRadius: 'var(--n-r2)', fontSize: '12px', fontWeight: 600,
+                  border: photoSlots === n ? '1px solid var(--n-ac)' : '1px solid var(--n-border)',
+                  background: photoSlots === n ? 'var(--n-ac-dim)' : '#fff',
+                  color: photoSlots === n ? 'var(--n-ac-dark)' : 'var(--n-t2)',
+                  cursor: 'pointer',
+                }}
+              >
+                {n === 1 ? '1 foto' : `${n} foto`}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Griglia modelli */}
