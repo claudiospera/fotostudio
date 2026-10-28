@@ -57,7 +57,6 @@ export default function CalendarModelPage() {
   const [rightsChecked, setRightsChecked] = useState(false)
   const [quantity, setQuantity] = useState(1)
   const [added, setAdded] = useState(false)
-  const [activeThumb, setActiveThumb] = useState<'main' | 'detail'>('main')
 
   useEffect(() => {
     fetch(`/api/shop/calendari/models/${params.code}`)
@@ -204,8 +203,6 @@ export default function CalendarModelPage() {
     return <div style={{ padding: '80px 24px', textAlign: 'center', color: 'var(--n-t3)' }}>Caricamento…</div>
   }
 
-  const mainImage = activeThumb === 'main' ? model.imageUrl : model.imageUrl
-
   return (
     <div style={{ fontFamily: 'Montserrat, sans-serif', maxWidth: 1100, margin: '0 auto', padding: 'clamp(20px, 4vw, 40px) clamp(20px, 5vw, 40px) 80px' }}>
 
@@ -223,37 +220,14 @@ export default function CalendarModelPage() {
         {/* Galleria */}
         <div>
           <div style={{ position: 'relative', borderRadius: 'var(--n-r)', overflow: 'hidden', border: '1px solid var(--n-border)', aspectRatio: '30 / 45', background: 'var(--n-surface)' }}>
-            <Image src={mainImage} alt={model.code} fill style={{ objectFit: 'cover' }} sizes="(max-width: 900px) 100vw, 480px" priority />
-            <div style={{
-              position: 'absolute', bottom: 0, left: 0, right: 0,
-              background: 'var(--n-ac)', color: '#fff',
-              fontSize: '12px', fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase',
-              textAlign: 'center', padding: '8px 0',
-            }}>
-              Carta fotografica
-            </div>
+            <Image src={model.imageUrl} alt={model.code} fill style={{ objectFit: 'cover' }} sizes="(max-width: 900px) 100vw, 480px" priority />
           </div>
-          <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
-            <button
-              onClick={() => setActiveThumb('main')}
-              style={{
-                width: 64, height: 64, borderRadius: 8, overflow: 'hidden', position: 'relative',
-                border: activeThumb === 'main' ? '2px solid var(--n-ac)' : '1px solid var(--n-border)',
-                padding: 0, cursor: 'pointer', background: 'none',
-              }}
-            >
-              <Image src={model.thumbUrl} alt="Anteprima" fill style={{ objectFit: 'cover' }} />
-            </button>
-            <button
-              onClick={() => setActiveThumb('detail')}
-              style={{
-                width: 64, height: 64, borderRadius: 8, overflow: 'hidden', position: 'relative',
-                border: activeThumb === 'detail' ? '2px solid var(--n-ac)' : '1px solid var(--n-border)',
-                padding: 0, cursor: 'pointer', background: 'none',
-              }}
-            >
-              <Image src={model.imageUrl} alt="Dettaglio" fill style={{ objectFit: 'cover', objectPosition: 'center 20%', transform: 'scale(1.8)' }} />
-            </button>
+          <div style={{
+            marginTop: 10, background: 'var(--n-ac)', color: '#fff', borderRadius: 'var(--n-r2)',
+            fontSize: '12px', fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase',
+            textAlign: 'center', padding: '8px 0',
+          }}>
+            Carta fotografica
           </div>
         </div>
 
