@@ -20,8 +20,8 @@ interface Variant {
   priceBreaks: { minQty: number; price: number }[]
 }
 
-// Promo 10x15: fino al 30/10/2026 lo scaglione da 100 foto scende a 0,20€/foto
-const PROMO_10X15_END = new Date('2026-10-30T23:59:59+01:00')
+// Promo 10x15: fino al 10/11/2026 lo scaglione da 100 foto scende a 0,20€/foto
+const PROMO_10X15_END = new Date('2026-11-10T23:59:59+01:00')
 const breaks10x15 = new Date() <= PROMO_10X15_END
   ? [{ minQty:1,price:200},{minQty:2,price:150},{minQty:6,price:90},{minQty:11,price:80},{minQty:21,price:70},{minQty:31,price:60},{minQty:51,price:50},{minQty:71,price:35},{minQty:91,price:30},{minQty:100,price:20}]
   : [{ minQty:1,price:200},{minQty:2,price:150},{minQty:6,price:90},{minQty:11,price:80},{minQty:21,price:70},{minQty:31,price:60},{minQty:51,price:50},{minQty:71,price:35},{minQty:91,price:30},{minQty:200,price:25},{minQty:500,price:20}]
