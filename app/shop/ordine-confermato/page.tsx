@@ -11,6 +11,16 @@ function formatPrice(cents: number) {
   return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(cents / 100)
 }
 
+interface ShippingAddress {
+  recipientName: string
+  address: string
+  zip: string
+  city: string
+  province: string
+  phone: string
+  intercomNote?: string
+}
+
 interface OrderSummary {
   id: string
   customer_name: string
@@ -20,6 +30,9 @@ interface OrderSummary {
   items: { productName: string; variantLabel: string; quantity: number; price: number; lineTotal?: number }[]
   payment_method: string
   payment_status: string
+  delivery_method: 'pickup' | 'shipping'
+  shipping_cost: number
+  shipping_address: ShippingAddress | null
 }
 
 function OrdineConfermatoInner() {
@@ -43,7 +56,7 @@ function OrdineConfermatoInner() {
       .catch(() => {})
   }, [orderId])
 
-  const subtotal = order ? order.total + (order.discount ?? 0) : 0
+  const subtotal = order ? order.total + (order.discount ?? 0) - (order.shipping_cost ?? 0) : 0
 
   return (
     <div style={{
@@ -119,15 +132,43 @@ function OrdineConfermatoInner() {
                 </div>
               </>
             )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+              <span style={{ color: 'var(--n-t2)' }}>Spedizione</span>
+              <span style={{ color: 'var(--n-t2)' }}>
+                {order.delivery_method === 'pickup' ? 'Gratis (ritiro)' : order.shipping_cost > 0 ? formatPrice(order.shipping_cost) : 'Gratis'}
+              </span>
+            </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, fontWeight: 800, fontFamily: 'Poppins, sans-serif', marginTop: 4 }}>
               <span style={{ color: 'var(--n-tx)' }}>Totale pagato</span>
               <span style={{ color: 'var(--n-ac)' }}>{formatPrice(order.total)}</span>
             </div>
           </div>
+
+          {order.delivery_method === 'shipping' && order.shipping_address && (
+            <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--n-border)' }}>
+              <p style={{ fontWeight: 700, fontSize: 13, color: 'var(--n-tx)', margin: '0 0 6px' }}>📦 Spedizione a</p>
+              <p style={{ fontSize: 13, color: 'var(--n-t2)', margin: 0, lineHeight: 1.6 }}>
+                {order.shipping_address.recipientName}<br />
+                {order.shipping_address.address}, {order.shipping_address.zip} {order.shipping_address.city} ({order.shipping_address.province})<br />
+                {order.shipping_address.phone}
+              </p>
+            </div>
+          )}
         </div>
       )}
 
-      {!paid && (
+      {order && order.delivery_method === 'shipping' ? (
+        <div style={{
+          background: 'var(--n-surface)', border: '1px solid var(--n-border)',
+          borderRadius: 'var(--n-r)', padding: '20px 24px', marginBottom: 36, textAlign: 'left',
+        }}>
+          <p style={{ fontWeight: 700, fontSize: 14, color: 'var(--n-tx)', margin: '0 0 8px' }}>📦 Come funziona la spedizione</p>
+          <ul style={{ margin: 0, padding: '0 0 0 18px', fontSize: 13, color: 'var(--n-t2)', lineHeight: 1.8 }}>
+            <li>Il tuo ordine sarà spedito tramite corriere espresso con tracking</li>
+            <li>Ti avviseremo via email non appena l&apos;ordine viene spedito</li>
+          </ul>
+        </div>
+      ) : !paid && (
         <div style={{
           background: 'var(--n-surface)', border: '1px solid var(--n-border)',
           borderRadius: 'var(--n-r)', padding: '20px 24px', marginBottom: 36, textAlign: 'left',

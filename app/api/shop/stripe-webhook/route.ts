@@ -46,6 +46,9 @@ export async function POST(req: NextRequest) {
           paymentMethod: 'stripe',
           couponCode: order.coupon_code ?? undefined,
           discount: order.discount || undefined,
+          deliveryMethod: order.delivery_method,
+          shippingCost: order.shipping_cost,
+          shippingAddress: order.shipping_address ?? undefined,
         })
       }
     }

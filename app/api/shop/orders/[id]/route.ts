@@ -9,7 +9,8 @@ export async function GET(
 ) {
   const { id } = await params
   const rows = await sql`
-    SELECT id, customer_name, total, discount, coupon_code, items, payment_method, payment_status
+    SELECT id, customer_name, total, discount, coupon_code, items, payment_method, payment_status,
+           delivery_method, shipping_cost, shipping_address
     FROM shop_orders
     WHERE id = ${id}
   `
@@ -25,18 +26,23 @@ export async function PATCH(
   if (!userId) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
   const { id } = await params
-  const { status } = await req.json()
+  const { status, trackingNumber } = await req.json() as { status?: string; trackingNumber?: string }
 
-  const validStatuses = ['pending', 'confirmed', 'ready', 'delivered', 'cancelled']
-  if (!validStatuses.includes(status)) {
+  const validStatuses = ['pending', 'confirmed', 'ready', 'shipped', 'delivered', 'cancelled']
+  if (status !== undefined && !validStatuses.includes(status)) {
     return NextResponse.json({ error: 'Stato non valido' }, { status: 400 })
   }
+  if (status === undefined && trackingNumber === undefined) {
+    return NextResponse.json({ error: 'Nessun campo da aggiornare' }, { status: 400 })
+  }
 
-  await sql`
-    UPDATE shop_orders
-    SET status = ${status}, updated_at = now()
-    WHERE id = ${id}
-  `
+  if (status !== undefined && trackingNumber !== undefined) {
+    await sql`UPDATE shop_orders SET status = ${status}, tracking_number = ${trackingNumber}, updated_at = now() WHERE id = ${id}`
+  } else if (status !== undefined) {
+    await sql`UPDATE shop_orders SET status = ${status}, updated_at = now() WHERE id = ${id}`
+  } else {
+    await sql`UPDATE shop_orders SET tracking_number = ${trackingNumber}, updated_at = now() WHERE id = ${id}`
+  }
 
   return NextResponse.json({ ok: true })
 }

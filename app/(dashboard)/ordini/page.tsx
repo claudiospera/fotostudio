@@ -66,9 +66,19 @@ interface ShopOrderItem {
   lineTotal?: number
 }
 
+interface ShippingAddress {
+  recipientName: string
+  address: string
+  zip: string
+  city: string
+  province: string
+  phone: string
+  intercomNote?: string
+}
+
 interface ShopOrder {
   id: string
-  status: 'pending' | 'confirmed' | 'ready' | 'delivered' | 'cancelled'
+  status: 'pending' | 'confirmed' | 'ready' | 'shipped' | 'delivered' | 'cancelled'
   payment_method: 'online' | 'studio'
   payment_status: 'unpaid' | 'paid'
   customer_name: string
@@ -78,6 +88,10 @@ interface ShopOrder {
   items: ShopOrderItem[]
   total: number
   created_at: string
+  delivery_method: 'pickup' | 'shipping'
+  shipping_cost: number
+  shipping_address: ShippingAddress | null
+  tracking_number: string | null
 }
 
 const INSTAX_FRAME_BG: Record<string, string> = {
@@ -119,6 +133,7 @@ const SHOP_STATUS: Record<string, { label: string; color: string; bg: string }> 
   pending:   { label: 'In attesa',      color: '#c9a05a', bg: 'rgba(201,160,90,.12)'  },
   confirmed: { label: 'Confermato',     color: '#7ec8e3', bg: 'rgba(126,200,227,.12)' },
   ready:     { label: 'Pronto',         color: '#8ec9b0', bg: 'rgba(142,201,176,.12)' },
+  shipped:   { label: 'Spedito',        color: '#7ec8e3', bg: 'rgba(126,200,227,.12)' },
   delivered: { label: 'Consegnato',     color: '#8ec9b0', bg: 'rgba(142,201,176,.12)' },
   cancelled: { label: 'Annullato',      color: '#d97070', bg: 'rgba(217,112,112,.12)' },
 }
@@ -311,6 +326,8 @@ function ShopOrderDetail({
   const [updating, setUpdating] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [trackingNumber, setTrackingNumber] = useState(order.tracking_number ?? '')
+  const [savingTracking, setSavingTracking] = useState(false)
 
   const updateStatus = async (status: ShopOrder['status']) => {
     setUpdating(true)
@@ -321,6 +338,16 @@ function ShopOrderDetail({
     })
     setUpdating(false)
     onStatusChange(order.id, status)
+  }
+
+  const saveTracking = async () => {
+    setSavingTracking(true)
+    await fetch(`/api/shop/orders/${order.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ trackingNumber }),
+    })
+    setSavingTracking(false)
   }
 
   const deleteOrder = async () => {
@@ -338,7 +365,7 @@ function ShopOrderDetail({
   }, [onClose])
 
   const st = SHOP_STATUS[order.status] ?? SHOP_STATUS.pending
-  const SHOP_STATUS_KEYS: ShopOrder['status'][] = ['pending', 'confirmed', 'ready', 'delivered', 'cancelled']
+  const SHOP_STATUS_KEYS: ShopOrder['status'][] = ['pending', 'confirmed', 'ready', 'shipped', 'delivered', 'cancelled']
   const waPhone = (() => {
     const digits = order.customer_phone.replace(/\D/g, '')
     // If already has Italian country code (39XXXXXXXXXX), use as-is; otherwise prepend 39
@@ -385,6 +412,42 @@ function ShopOrderDetail({
               <span style={{ fontSize: '13px', color: 'var(--tx)', fontWeight: 500, display: 'block' }}>{order.customer_name}</span>
               <a href={`mailto:${order.customer_email}`} style={{ fontSize: '12px', color: 'var(--ac)', textDecoration: 'none', display: 'block', marginTop: 3 }}>{order.customer_email}</a>
               {order.customer_phone && <span style={{ fontSize: '12px', color: 'var(--t2)', display: 'block', marginTop: 3 }}>{order.customer_phone}</span>}
+            </div>
+
+            <div style={{ background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 'var(--r2)', padding: '12px 14px' }}>
+              <p style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--t3)', marginBottom: 8 }}>
+                Consegna {order.delivery_method === 'shipping' ? '· 📦 Spedizione' : '· 📍 Ritiro in studio'}
+              </p>
+              {order.delivery_method === 'shipping' && (
+                <>
+                  <p style={{ fontSize: '12px', color: 'var(--tx)', margin: 0 }}>
+                    Costo spedizione: {order.shipping_cost > 0 ? fmtCents(order.shipping_cost) : 'Gratuita'}
+                  </p>
+                  {order.shipping_address && (
+                    <p style={{ fontSize: '12px', color: 'var(--t2)', margin: '6px 0 0', lineHeight: 1.6 }}>
+                      {order.shipping_address.recipientName}<br />
+                      {order.shipping_address.address}, {order.shipping_address.zip} {order.shipping_address.city} ({order.shipping_address.province})<br />
+                      {order.shipping_address.phone}
+                      {order.shipping_address.intercomNote && <><br />Citofono: {order.shipping_address.intercomNote}</>}
+                    </p>
+                  )}
+                  <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+                    <input
+                      value={trackingNumber}
+                      onChange={e => setTrackingNumber(e.target.value)}
+                      placeholder="Numero di tracking"
+                      style={{ flex: 1, fontSize: '12px', padding: '7px 10px', borderRadius: 'var(--r2)', border: '1px solid var(--b2)', background: 'var(--s1)', color: 'var(--tx)' }}
+                    />
+                    <button
+                      onClick={saveTracking}
+                      disabled={savingTracking || trackingNumber === (order.tracking_number ?? '')}
+                      style={{ fontSize: '12px', fontWeight: 600, padding: '7px 12px', borderRadius: 'var(--r2)', border: 'none', background: 'var(--ac)', color: '#111', cursor: savingTracking ? 'default' : 'pointer', opacity: savingTracking || trackingNumber === (order.tracking_number ?? '') ? .6 : 1 }}
+                    >
+                      {savingTracking ? '…' : 'Salva'}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
 
             <div>
@@ -600,7 +663,7 @@ function OrdiniPageInner() {
   const [shopLoading, setShopLoading] = useState(true)
   const [shopError, setShopError] = useState<string | null>(null)
   const [selectedShopOrder, setSelectedShopOrder] = useState<ShopOrder | null>(null)
-  const [shopFilter, setShopFilter] = useState<'tutti' | ShopOrder['status']>('tutti')
+  const [shopFilter, setShopFilter] = useState<'tutti' | ShopOrder['status'] | 'da_spedire'>('tutti')
 
   useEffect(() => {
     fetch('/api/orders')
@@ -662,14 +725,18 @@ function OrdiniPageInner() {
     .filter(i => i.kind === 'calendar')
     .reduce((sum, i) => sum + i.quantity, 0)
 
+  const daSpedire = shopOrders.filter(o => o.delivery_method === 'shipping' && !['shipped', 'delivered', 'cancelled'].includes(o.status))
+
   const filteredGallery = galleryFilter === 'tutti' ? galleryOrders : galleryOrders.filter(o => o.status === galleryFilter)
-  const filteredShop    = shopFilter    === 'tutti' ? shopOrders    : shopOrders.filter(o => o.status === shopFilter)
+  const filteredShop    = shopFilter === 'tutti' ? shopOrders
+    : shopFilter === 'da_spedire' ? daSpedire
+    : shopOrders.filter(o => o.status === shopFilter)
 
   const GALLERY_FILTERS: { key: 'tutti' | GalleryOrder['status']; label: string }[] = [
     { key: 'tutti', label: 'Tutti' }, { key: 'nuovo', label: 'Nuovi' }, { key: 'visto', label: 'Visti' }, { key: 'completato', label: 'Completati' },
   ]
-  const SHOP_FILTERS: { key: 'tutti' | ShopOrder['status']; label: string }[] = [
-    { key: 'tutti', label: 'Tutti' }, { key: 'pending', label: 'In attesa' }, { key: 'confirmed', label: 'Confermati' }, { key: 'ready', label: 'Pronti' }, { key: 'delivered', label: 'Consegnati' }, { key: 'cancelled', label: 'Annullati' },
+  const SHOP_FILTERS: { key: 'tutti' | ShopOrder['status'] | 'da_spedire'; label: string }[] = [
+    { key: 'tutti', label: 'Tutti' }, { key: 'da_spedire', label: 'Da spedire' }, { key: 'pending', label: 'In attesa' }, { key: 'confirmed', label: 'Confermati' }, { key: 'ready', label: 'Pronti' }, { key: 'shipped', label: 'Spediti' }, { key: 'delivered', label: 'Consegnati' }, { key: 'cancelled', label: 'Annullati' },
   ]
 
   return (
@@ -826,6 +893,7 @@ function OrdiniPageInner() {
               >
                 {f.label}
                 {f.key === 'pending' && nuoviShop > 0 && <span style={{ background: 'var(--red)', color: '#fff', fontSize: '9px', fontWeight: 700, borderRadius: 10, padding: '1px 5px' }}>{nuoviShop}</span>}
+                {f.key === 'da_spedire' && daSpedire.length > 0 && <span style={{ background: 'var(--ac)', color: '#111', fontSize: '9px', fontWeight: 700, borderRadius: 10, padding: '1px 5px' }}>{daSpedire.length}</span>}
               </button>
             ))}
           </div>
@@ -871,6 +939,8 @@ function OrdiniPageInner() {
                       </div>
                       <span style={{ fontSize: '11px', color: order.payment_status === 'paid' ? '#8ec9b0' : '#c9a05a', fontWeight: 600 }}>
                         {order.payment_method === 'online' ? '💳' : '🏠'} {order.payment_status === 'paid' ? 'Pagato' : 'Non pag.'}
+                        <br />
+                        <span style={{ color: 'var(--t3)', fontWeight: 500 }}>{order.delivery_method === 'shipping' ? '📦 Spedizione' : '📍 Ritiro'}</span>
                       </span>
                       <span style={{ fontSize: '11px', color: 'var(--t3)' }}>{formatDateShort(order.created_at)}</span>
                       <span style={{ fontSize: '13px', fontFamily: 'Syne, sans-serif', fontWeight: 700, color: 'var(--tx)', textAlign: 'right' }}>{fmtCents(order.total)}</span>

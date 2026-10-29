@@ -5,19 +5,38 @@ import Stripe from 'stripe'
 import { notifyNewOrder } from '@/lib/notify-order'
 import { PRODUCTS, getPriceForQuantity, resolveVariant } from '@/lib/shop/products'
 import { getCalendarLineTotal, getLineTotal } from '@/lib/shop/calendar-pricing'
+import { getShippingCost } from '@/lib/shop/shipping'
 import { moveInR2 } from '@/lib/r2'
-import type { CartItem } from '@/lib/shop/types'
+import type { CartItem, DeliveryMethod, ShippingAddress } from '@/lib/shop/types'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
+const ITALIAN_ZIP = /^\d{5}$/
+const ITALIAN_PROVINCE = /^[A-Za-z]{2}$/
+
+function isValidShippingAddress(addr: unknown): addr is ShippingAddress {
+  if (!addr || typeof addr !== 'object') return false
+  const a = addr as Partial<ShippingAddress>
+  return (
+    !!a.recipientName?.trim() &&
+    !!a.address?.trim() &&
+    !!a.zip && ITALIAN_ZIP.test(a.zip) &&
+    !!a.city?.trim() &&
+    !!a.province && ITALIAN_PROVINCE.test(a.province) &&
+    !!a.phone?.trim()
+  )
+}
+
 // POST — crea un ordine, ritorna { orderId } oppure { stripeUrl }
 export async function POST(req: NextRequest) {
-  const { customer, items, paymentMethod, couponCode, cancelUrl } = await req.json() as {
+  const { customer, items, paymentMethod, couponCode, cancelUrl, deliveryMethod, shippingAddress } = await req.json() as {
     customer: { name: string; email: string; phone: string; notes?: string }
     items: CartItem[]
     paymentMethod: 'online' | 'studio'
     couponCode?: string | null
     cancelUrl?: string
+    deliveryMethod?: DeliveryMethod
+    shippingAddress?: ShippingAddress
   }
 
   if (!customer?.name || !customer?.email || !customer?.phone) {
@@ -25,6 +44,16 @@ export async function POST(req: NextRequest) {
   }
   if (!Array.isArray(items) || items.length === 0) {
     return NextResponse.json({ error: 'Carrello vuoto' }, { status: 400 })
+  }
+
+  const safeDeliveryMethod: DeliveryMethod = deliveryMethod === 'shipping' ? 'shipping' : 'pickup'
+
+  if (safeDeliveryMethod === 'shipping' && !isValidShippingAddress(shippingAddress)) {
+    return NextResponse.json({ error: 'Indirizzo di spedizione non valido' }, { status: 400 })
+  }
+  // Il pagamento in studio è disponibile solo con il ritiro in studio.
+  if (safeDeliveryMethod === 'shipping' && paymentMethod === 'studio') {
+    return NextResponse.json({ error: 'Il pagamento in studio è disponibile solo con il ritiro' }, { status: 400 })
   }
 
   const calendarItems = items.filter(i => i.kind === 'calendar')
@@ -117,12 +146,15 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const safeTotal = Math.max(0, subtotal - verifiedDiscount)
+  const subtotalAfterDiscount = Math.max(0, subtotal - verifiedDiscount)
+  // Costo di spedizione ricalcolato lato server sul subtotale DOPO lo sconto — mai dal client.
+  const shippingCost = getShippingCost(subtotalAfterDiscount, safeDeliveryMethod)
+  const safeTotal = subtotalAfterDiscount + shippingCost
 
   // Salva l'ordine nel DB
   const rows = await sql`
     INSERT INTO shop_orders
-      (status, payment_method, payment_status, customer_name, customer_email, customer_phone, notes, items, total, coupon_code, discount)
+      (status, payment_method, payment_status, customer_name, customer_email, customer_phone, notes, items, total, coupon_code, discount, delivery_method, shipping_cost, shipping_address)
     VALUES (
       'pending',
       ${paymentMethod},
@@ -134,7 +166,10 @@ export async function POST(req: NextRequest) {
       ${JSON.stringify(items)},
       ${safeTotal},
       ${couponCode ?? null},
-      ${verifiedDiscount}
+      ${verifiedDiscount},
+      ${safeDeliveryMethod},
+      ${shippingCost},
+      ${safeDeliveryMethod === 'shipping' ? JSON.stringify(shippingAddress) : null}
     )
     RETURNING id
   `
@@ -162,7 +197,11 @@ export async function POST(req: NextRequest) {
 
   // Pagamento allo studio → conferma diretta + notifica immediata
   if (paymentMethod === 'studio') {
-    await notifyNewOrder({ orderId, customerName: customer.name, customerEmail: customer.email, customerPhone: customer.phone, items: finalItems, total: safeTotal, paymentMethod, couponCode: couponCode ?? undefined, discount: verifiedDiscount || undefined })
+    await notifyNewOrder({
+      orderId, customerName: customer.name, customerEmail: customer.email, customerPhone: customer.phone,
+      items: finalItems, total: safeTotal, paymentMethod, couponCode: couponCode ?? undefined, discount: verifiedDiscount || undefined,
+      deliveryMethod: safeDeliveryMethod, shippingCost, shippingAddress: safeDeliveryMethod === 'shipping' ? shippingAddress : undefined,
+    })
     return NextResponse.json({ orderId })
   }
 
@@ -194,9 +233,36 @@ export async function POST(req: NextRequest) {
     quantity: item.kind === 'calendar' ? 1 : item.quantity,
   }))
 
+  // Spedizione come riga separata, così la somma delle righe Stripe corrisponde a shop_orders.total.
+  if (shippingCost > 0) {
+    lineItems.push({
+      price_data: {
+        currency: 'eur',
+        unit_amount: shippingCost,
+        product_data: { name: 'Spedizione a domicilio', images: [] },
+      },
+      quantity: 1,
+    })
+  }
+
+  // Lo sconto coupon va espresso a Stripe come discount a parte: le righe sopra sono
+  // sempre a prezzo pieno, quindi senza questo il totale Stripe non corrisponderebbe
+  // a shop_orders.total (che ha già il sconto sottratto).
+  let discounts: { coupon: string }[] | undefined
+  if (verifiedDiscount > 0) {
+    const coupon = await stripe.coupons.create({
+      amount_off: verifiedDiscount,
+      currency: 'eur',
+      duration: 'once',
+      name: couponCode ? `Sconto ${couponCode}` : 'Sconto',
+    })
+    discounts = [{ coupon: coupon.id }]
+  }
+
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
     line_items: lineItems,
+    discounts,
     customer_email: customer.email,
     metadata: { orderId },
     success_url: `${APP_URL}/shop/ordine-confermato?orderId=${orderId}&paid=1`,

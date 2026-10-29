@@ -6,10 +6,20 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useCart } from '@/components/shop/CartProvider'
 import { getLineTotal } from '@/lib/shop/calendar-pricing'
+import { SHIPPING_FEE, FREE_SHIPPING_THRESHOLD, getShippingCost } from '@/lib/shop/shipping'
+import type { DeliveryMethod, ShippingAddress } from '@/lib/shop/types'
 
 function formatPrice(cents: number) {
   return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(cents / 100)
 }
+
+const ITALIAN_ZIP = /^\d{5}$/
+const ITALIAN_PROVINCE = /^[A-Za-z]{2}$/
+
+const PAYMENT_OPTIONS: { value: 'online' | 'studio'; label: string; sublabel: string; icon: string }[] = [
+  { value: 'online', label: 'Paga ora online', sublabel: 'Carta di credito / debito tramite Stripe', icon: '💳' },
+  { value: 'studio', label: 'Paga al ritiro in studio', sublabel: 'Contanti o POS al momento del ritiro', icon: '🏠' },
+]
 
 export default function CheckoutPage() {
   const { cart, total, finalTotal, coupon, clearCart } = useCart()
@@ -19,9 +29,18 @@ export default function CheckoutPage() {
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [notes, setNotes] = useState('')
+  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('pickup')
+  const [address, setAddress] = useState<ShippingAddress>({
+    recipientName: '', address: '', zip: '', city: '', province: '', phone: '', intercomNote: '',
+  })
+  const [addressErrors, setAddressErrors] = useState<Partial<Record<keyof ShippingAddress, string>>>({})
   const [paymentMethod, setPaymentMethod] = useState<'online' | 'studio'>('online')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  const shippingCost = getShippingCost(finalTotal, deliveryMethod)
+  const grandTotal = finalTotal + shippingCost
+  const missingForFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD - finalTotal)
 
   if (cart.items.length === 0) {
     return (
@@ -37,10 +56,33 @@ export default function CheckoutPage() {
     )
   }
 
+  function selectDelivery(method: DeliveryMethod) {
+    setDeliveryMethod(method)
+    if (method === 'shipping' && paymentMethod === 'studio') {
+      setPaymentMethod('online')
+    }
+  }
+
+  function validateAddress(): boolean {
+    const errors: Partial<Record<keyof ShippingAddress, string>> = {}
+    if (!address.recipientName.trim()) errors.recipientName = 'Campo obbligatorio'
+    if (!address.address.trim()) errors.address = 'Campo obbligatorio'
+    if (!ITALIAN_ZIP.test(address.zip.trim())) errors.zip = 'CAP non valido (5 cifre)'
+    if (!address.city.trim()) errors.city = 'Campo obbligatorio'
+    if (!ITALIAN_PROVINCE.test(address.province.trim())) errors.province = 'Sigla provincia non valida (2 lettere)'
+    if (!address.phone.trim()) errors.phone = 'Campo obbligatorio'
+    setAddressErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!name.trim() || !email.trim() || !phone.trim()) {
       setError('Compila tutti i campi obbligatori.')
+      return
+    }
+    if (deliveryMethod === 'shipping' && !validateAddress()) {
+      setError('Controlla i dati dell\'indirizzo di spedizione.')
       return
     }
     setLoading(true)
@@ -52,10 +94,14 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           customer: { name, email, phone, notes },
           items: cart.items,
-          total: finalTotal,
+          total: grandTotal,
           paymentMethod,
           couponCode: coupon?.code ?? null,
           discount: coupon?.discount ?? 0,
+          deliveryMethod,
+          shippingAddress: deliveryMethod === 'shipping'
+            ? { ...address, zip: address.zip.trim(), province: address.province.trim().toUpperCase() }
+            : undefined,
         }),
       })
       const data = await res.json()
@@ -84,11 +130,15 @@ export default function CheckoutPage() {
     outline: 'none', boxSizing: 'border-box' as const,
   }
 
+  const errorInputStyle = { ...inputStyle, border: '1px solid #e53e3e' }
+
   const labelStyle = {
     fontSize: 12, fontWeight: 700, color: 'var(--n-t2)',
     letterSpacing: '.06em', textTransform: 'uppercase' as const,
     display: 'block', marginBottom: 6,
   }
+
+  const fieldErrorStyle = { fontSize: 11, color: '#e53e3e', marginTop: 4 }
 
   return (
     <div style={{ fontFamily: 'Montserrat, sans-serif', maxWidth: 880, margin: '0 auto', padding: 'clamp(32px,5vw,64px) clamp(20px,4vw,40px)' }}>
@@ -146,25 +196,124 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* Ritiro */}
+          {/* Consegna */}
           <div style={{ background: 'var(--n-surface)', border: '1px solid var(--n-border)', borderRadius: 'var(--n-r)', padding: 24 }}>
-            <h2 style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700, fontSize: 16, marginBottom: 8, color: 'var(--n-tx)' }}>
-              Ritiro
+            <h2 style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700, fontSize: 16, marginBottom: 16, color: 'var(--n-tx)' }}>
+              Consegna
             </h2>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 12,
-              padding: '14px 16px',
-              background: 'var(--n-acd)', border: '1px solid var(--n-ac)',
-              borderRadius: 'var(--n-r2)',
-            }}>
-              <span style={{ fontSize: 22 }}>📍</span>
-              <div>
-                <p style={{ fontWeight: 700, fontSize: 14, color: 'var(--n-tx)', margin: 0 }}>Ritiro in studio</p>
-                <p style={{ fontSize: 12, color: 'var(--n-t2)', margin: '2px 0 0' }}>
-                  Riceverai una mail di conferma per il ritiro. Nessuna spedizione.
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: deliveryMethod === 'shipping' ? 20 : 0 }}>
+              {([
+                { value: 'pickup', label: 'Ritiro in studio', sublabel: 'Gratuito. Ti contatteremo per organizzare il ritiro.', icon: '📍' },
+                { value: 'shipping', label: 'Spedizione a domicilio', sublabel: `Corriere espresso — ${formatPrice(SHIPPING_FEE)}, gratuita sopra ${formatPrice(FREE_SHIPPING_THRESHOLD)}`, icon: '📦' },
+              ] as const).map(opt => (
+                <label
+                  key={opt.value}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    padding: '14px 16px', borderRadius: 'var(--n-r2)', cursor: 'pointer',
+                    border: deliveryMethod === opt.value ? '2px solid var(--n-ac)' : '1px solid var(--n-border)',
+                    background: deliveryMethod === opt.value ? 'var(--n-acd)' : '#fff',
+                    transition: 'all .15s',
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="delivery"
+                    value={opt.value}
+                    checked={deliveryMethod === opt.value}
+                    onChange={() => selectDelivery(opt.value)}
+                    style={{ accentColor: 'var(--n-ac)' }}
+                  />
+                  <span style={{ fontSize: 20 }}>{opt.icon}</span>
+                  <div>
+                    <p style={{ fontWeight: 700, fontSize: 14, color: 'var(--n-tx)', margin: 0 }}>{opt.label}</p>
+                    <p style={{ fontSize: 12, color: 'var(--n-t2)', margin: '2px 0 0' }}>{opt.sublabel}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            {deliveryMethod === 'shipping' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 20, borderTop: '1px solid var(--n-border)' }}>
+                <div>
+                  <label style={labelStyle}>Nome destinatario *</label>
+                  <input
+                    style={addressErrors.recipientName ? errorInputStyle : inputStyle}
+                    value={address.recipientName}
+                    onChange={e => setAddress(a => ({ ...a, recipientName: e.target.value }))}
+                    placeholder="Es. Mario Rossi"
+                  />
+                  {addressErrors.recipientName && <p style={fieldErrorStyle}>{addressErrors.recipientName}</p>}
+                </div>
+                <div>
+                  <label style={labelStyle}>Indirizzo *</label>
+                  <input
+                    style={addressErrors.address ? errorInputStyle : inputStyle}
+                    value={address.address}
+                    onChange={e => setAddress(a => ({ ...a, address: e.target.value }))}
+                    placeholder="Via, numero civico"
+                  />
+                  {addressErrors.address && <p style={fieldErrorStyle}>{addressErrors.address}</p>}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={labelStyle}>CAP *</label>
+                    <input
+                      style={addressErrors.zip ? errorInputStyle : inputStyle}
+                      value={address.zip}
+                      onChange={e => setAddress(a => ({ ...a, zip: e.target.value }))}
+                      placeholder="83036"
+                      maxLength={5}
+                    />
+                    {addressErrors.zip && <p style={fieldErrorStyle}>{addressErrors.zip}</p>}
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Città *</label>
+                    <input
+                      style={addressErrors.city ? errorInputStyle : inputStyle}
+                      value={address.city}
+                      onChange={e => setAddress(a => ({ ...a, city: e.target.value }))}
+                      placeholder="Napoli"
+                    />
+                    {addressErrors.city && <p style={fieldErrorStyle}>{addressErrors.city}</p>}
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Prov. *</label>
+                    <input
+                      style={addressErrors.province ? errorInputStyle : inputStyle}
+                      value={address.province}
+                      onChange={e => setAddress(a => ({ ...a, province: e.target.value.toUpperCase() }))}
+                      placeholder="NA"
+                      maxLength={2}
+                    />
+                    {addressErrors.province && <p style={fieldErrorStyle}>{addressErrors.province}</p>}
+                  </div>
+                </div>
+                <div>
+                  <label style={labelStyle}>Telefono per il corriere *</label>
+                  <input
+                    style={addressErrors.phone ? errorInputStyle : inputStyle}
+                    type="tel"
+                    value={address.phone}
+                    onChange={e => setAddress(a => ({ ...a, phone: e.target.value }))}
+                    placeholder="+39 333 000 0000"
+                  />
+                  {addressErrors.phone && <p style={fieldErrorStyle}>{addressErrors.phone}</p>}
+                </div>
+                <div>
+                  <label style={labelStyle}>Note citofono (opzionale)</label>
+                  <input
+                    style={inputStyle}
+                    value={address.intercomNote}
+                    onChange={e => setAddress(a => ({ ...a, intercomNote: e.target.value }))}
+                    placeholder="Es. Cognome sul citofono, piano, ecc."
+                  />
+                </div>
+                <p style={{ fontSize: 11, color: 'var(--n-t3)', margin: 0 }}>
+                  Spediamo solo in Italia.
                 </p>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Pagamento */}
@@ -173,10 +322,7 @@ export default function CheckoutPage() {
               Metodo di pagamento
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {([
-                { value: 'online', label: 'Paga ora online', sublabel: 'Carta di credito / debito tramite Stripe', icon: '💳' },
-                { value: 'studio', label: 'Paga al ritiro in studio', sublabel: 'Contanti o POS al momento del ritiro', icon: '🏠' },
-              ] as const).map(opt => (
+              {(PAYMENT_OPTIONS.filter(opt => opt.value === 'online' || deliveryMethod === 'pickup')).map(opt => (
                 <label
                   key={opt.value}
                   style={{
@@ -203,6 +349,11 @@ export default function CheckoutPage() {
                 </label>
               ))}
             </div>
+            {deliveryMethod === 'shipping' && (
+              <p style={{ fontSize: 11, color: 'var(--n-t3)', marginTop: 10 }}>
+                Con la spedizione a domicilio è disponibile solo il pagamento online.
+              </p>
+            )}
           </div>
 
           {error && (
@@ -259,10 +410,6 @@ export default function CheckoutPage() {
           </div>
 
           <div style={{ borderTop: '1px solid var(--n-border)', paddingTop: 16 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <span style={{ fontSize: 13, color: 'var(--n-t2)' }}>Spedizione</span>
-              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--n-ac)' }}>Gratis (ritiro)</span>
-            </div>
             {coupon && (
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -275,9 +422,20 @@ export default function CheckoutPage() {
                 </div>
               </>
             )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <span style={{ fontSize: 13, color: 'var(--n-t2)' }}>Spedizione</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--n-ac)' }}>
+                {deliveryMethod === 'pickup' ? 'Gratis (ritiro)' : shippingCost > 0 ? formatPrice(shippingCost) : 'Gratis'}
+              </span>
+            </div>
+            {deliveryMethod === 'shipping' && shippingCost > 0 && (
+              <p style={{ fontSize: 11, color: 'var(--n-t3)', margin: '0 0 6px' }}>
+                Ti mancano {formatPrice(missingForFreeShipping)} per la spedizione gratuita.
+              </p>
+            )}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, paddingTop: 12, borderTop: '2px solid var(--n-tx)' }}>
               <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--n-tx)' }}>Totale</span>
-              <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--n-ac)' }}>{formatPrice(finalTotal)}</span>
+              <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--n-ac)' }}>{formatPrice(grandTotal)}</span>
             </div>
           </div>
 

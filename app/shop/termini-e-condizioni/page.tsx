@@ -2,10 +2,15 @@
 
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { SHIPPING_FEE, FREE_SHIPPING_THRESHOLD } from '@/lib/shop/shipping'
 
 export const metadata: Metadata = {
   title: 'Termini e Condizioni — Storie da Raccontare',
   description: 'Condizioni generali di vendita del negozio online Storie da Raccontare.',
+}
+
+function euro(cents: number) {
+  return (cents / 100).toFixed(2).replace('.', ',') + ' €'
 }
 
 export default function TerminiPage() {
@@ -53,8 +58,11 @@ export default function TerminiPage() {
           <Section title="3. Prezzi">
             <p>
               Tutti i prezzi sono espressi in euro e sono <strong>IVA inclusa</strong> ove applicabile.
-              Le spese di spedizione non sono incluse nel prezzo del prodotto e vengono calcolate
-              al momento del checkout in base alla destinazione e al peso.
+              Le spese di spedizione non sono incluse nel prezzo del prodotto: il <strong>ritiro in
+              studio è gratuito</strong>, mentre la <strong>spedizione a domicilio</strong> tramite
+              corriere ha un costo fisso di <strong>{euro(SHIPPING_FEE)}</strong> ed è{' '}
+              <strong>gratuita per ordini superiori a {euro(FREE_SHIPPING_THRESHOLD)}</strong>
+              (calcolati sul subtotale dopo eventuali sconti).
             </p>
             <p>
               Ci riserviamo il diritto di modificare i prezzi in qualsiasi momento. Il prezzo
@@ -107,8 +115,11 @@ export default function TerminiPage() {
               La spedizione avviene tramite corriere espresso con tracking.
             </p>
             <p>
-              Il rischio di perdita o danneggiamento passa al cliente al momento della consegna
-              al corriere (art. 63 Codice del Consumo).
+              Il rischio di perdita o danneggiamento dei prodotti passa al cliente nel momento
+              in cui il cliente, o un terzo da lui designato e diverso dal corriere, acquisisce
+              il possesso fisico dei beni (art. 63 Codice del Consumo). Se invece è il cliente a
+              scegliere, al momento del checkout, un corriere diverso da quelli da noi proposti,
+              il rischio passa al cliente già al momento della consegna del prodotto a tale corriere.
             </p>
           </Section>
 

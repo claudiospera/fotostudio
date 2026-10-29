@@ -23,9 +23,19 @@ interface OrderItem {
   variantId?: string
 }
 
+interface ShippingAddress {
+  recipientName: string
+  address: string
+  zip: string
+  city: string
+  province: string
+  phone: string
+  intercomNote?: string
+}
+
 interface ShopOrder {
   id: string
-  status: 'pending' | 'confirmed' | 'ready' | 'delivered' | 'cancelled'
+  status: 'pending' | 'confirmed' | 'ready' | 'shipped' | 'delivered' | 'cancelled'
   payment_method: 'online' | 'studio'
   payment_status: 'unpaid' | 'paid'
   customer_name: string
@@ -35,6 +45,10 @@ interface ShopOrder {
   items: OrderItem[]
   total: number
   created_at: string
+  delivery_method: 'pickup' | 'shipping'
+  shipping_cost: number
+  shipping_address: ShippingAddress | null
+  tracking_number: string | null
 }
 
 const INSTAX_FRAME_BG: Record<string, string> = {
@@ -61,6 +75,7 @@ const STATUS_LABEL: Record<ShopOrder['status'], string> = {
   pending:   'In attesa',
   confirmed: 'Confermato',
   ready:     'Pronto al ritiro',
+  shipped:   'Spedito',
   delivered: 'Consegnato',
   cancelled: 'Annullato',
 }
@@ -69,6 +84,7 @@ const STATUS_COLOR: Record<ShopOrder['status'], { bg: string; color: string }> =
   pending:   { bg: '#fff8e1', color: '#b45309' },
   confirmed: { bg: '#e0f2fe', color: '#0369a1' },
   ready:     { bg: '#d1fae5', color: '#065f46' },
+  shipped:   { bg: '#ede9fe', color: '#6d28d9' },
   delivered: { bg: '#f0fdf4', color: '#166534' },
   cancelled: { bg: '#fee2e2', color: '#991b1b' },
 }
@@ -79,6 +95,8 @@ export default function AdminOrdiniPage() {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [updating, setUpdating] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [trackingDrafts, setTrackingDrafts] = useState<Record<string, string>>({})
+  const [savingTracking, setSavingTracking] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/api/shop/orders')
@@ -105,6 +123,18 @@ export default function AdminOrdiniPage() {
     })
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o))
     setUpdating(null)
+  }
+
+  async function saveTracking(orderId: string) {
+    const trackingNumber = trackingDrafts[orderId] ?? ''
+    setSavingTracking(orderId)
+    await fetch(`/api/shop/orders/${orderId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ trackingNumber }),
+    })
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, tracking_number: trackingNumber } : o))
+    setSavingTracking(null)
   }
 
   const pending = orders.filter(o => o.status === 'pending').length
@@ -177,6 +207,14 @@ export default function AdminOrdiniPage() {
                     }}>
                       {STATUS_LABEL[order.status]}
                     </span>
+                    {order.delivery_method === 'shipping' && (
+                      <span style={{
+                        padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
+                        background: '#ede9fe', color: '#6d28d9', flexShrink: 0, whiteSpace: 'nowrap',
+                      }}>
+                        📦 Spedizione
+                      </span>
+                    )}
                     <div style={{ minWidth: 0 }}>
                       <p style={{ fontWeight: 700, fontSize: 14, color: '#111', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {order.customer_name}
@@ -318,6 +356,48 @@ export default function AdminOrdiniPage() {
                       {/* Gestione stato */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
+                        {/* Consegna */}
+                        <div>
+                          <p style={{ fontSize: 11, fontWeight: 700, color: '#999', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 10 }}>
+                            Consegna {order.delivery_method === 'shipping' ? '· 📦 Spedizione' : '· 📍 Ritiro in studio'}
+                          </p>
+                          {order.delivery_method === 'shipping' && (
+                            <div style={{ background: '#f5f5ff', border: '1px solid #e0e0f5', borderRadius: 8, padding: '10px 12px' }}>
+                              <p style={{ fontSize: 12, color: '#333', margin: 0 }}>
+                                Costo spedizione: {order.shipping_cost > 0 ? formatPrice(order.shipping_cost) : 'Gratuita'}
+                              </p>
+                              {order.shipping_address && (
+                                <p style={{ fontSize: 12, color: '#555', margin: '6px 0 0', lineHeight: 1.6 }}>
+                                  {order.shipping_address.recipientName}<br />
+                                  {order.shipping_address.address}, {order.shipping_address.zip} {order.shipping_address.city} ({order.shipping_address.province})<br />
+                                  {order.shipping_address.phone}
+                                  {order.shipping_address.intercomNote && <><br />Citofono: {order.shipping_address.intercomNote}</>}
+                                </p>
+                              )}
+                              <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+                                <input
+                                  value={trackingDrafts[order.id] ?? order.tracking_number ?? ''}
+                                  onChange={e => setTrackingDrafts(prev => ({ ...prev, [order.id]: e.target.value }))}
+                                  placeholder="Numero di tracking"
+                                  style={{ flex: 1, fontSize: 12, padding: '7px 10px', borderRadius: 8, border: '1px solid #e0e0e0', background: '#fff' }}
+                                />
+                                <button
+                                  onClick={() => saveTracking(order.id)}
+                                  disabled={savingTracking === order.id || (trackingDrafts[order.id] ?? order.tracking_number ?? '') === (order.tracking_number ?? '')}
+                                  style={{
+                                    fontSize: 12, fontWeight: 600, padding: '7px 12px', borderRadius: 8, border: 'none',
+                                    background: '#6366f1', color: '#fff',
+                                    cursor: savingTracking === order.id ? 'default' : 'pointer',
+                                    opacity: savingTracking === order.id || (trackingDrafts[order.id] ?? order.tracking_number ?? '') === (order.tracking_number ?? '') ? .6 : 1,
+                                  }}
+                                >
+                                  {savingTracking === order.id ? '…' : 'Salva'}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
                         {/* Notifiche cliente */}
                         <div>
                           <p style={{ fontSize: 11, fontWeight: 700, color: '#999', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 10 }}>
@@ -368,7 +448,7 @@ export default function AdminOrdiniPage() {
                             Aggiorna stato
                           </p>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                            {(['pending', 'confirmed', 'ready', 'delivered', 'cancelled'] as const).map(s => {
+                            {(['pending', 'confirmed', 'ready', 'shipped', 'delivered', 'cancelled'] as const).map(s => {
                               const c = STATUS_COLOR[s]
                               const isActive = order.status === s
                               return (

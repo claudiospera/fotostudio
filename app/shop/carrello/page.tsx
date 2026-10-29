@@ -9,6 +9,7 @@ import Image from 'next/image'
 import { Trash2 } from 'lucide-react'
 import { useCart } from '@/components/shop/CartProvider'
 import { getLineTotal, formatCalendarPriceBreakdown } from '@/lib/shop/calendar-pricing'
+import { SHIPPING_FEE, FREE_SHIPPING_THRESHOLD } from '@/lib/shop/shipping'
 
 function formatPrice(cents: number): string {
   return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(cents / 100)
@@ -256,7 +257,7 @@ export default function CartPage() {
           <span style={{ fontSize: '22px', fontWeight: 800, fontFamily: 'Poppins, sans-serif', color: 'var(--n-ac)' }}>{formatPrice(finalTotal)}</span>
         </div>
         <p style={{ fontSize: '11px', color: 'var(--n-t3)', marginBottom: 28 }}>
-          Ritiro in studio · nessuna spedizione
+          Ritiro in studio gratuito o spedizione {formatPrice(SHIPPING_FEE)} (gratis sopra {formatPrice(FREE_SHIPPING_THRESHOLD)})
         </p>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <button

@@ -1,8 +1,9 @@
 // lib/shop/types.ts
 
 export type ProductStatus = 'available' | 'sold_out' | 'discontinued'
-export type OrderStatus = 'pending' | 'confirmed' | 'ready' | 'delivered' | 'cancelled'
+export type OrderStatus = 'pending' | 'confirmed' | 'ready' | 'shipped' | 'delivered' | 'cancelled'
 export type PaymentMethod = 'online' | 'studio'
+export type DeliveryMethod = 'pickup' | 'shipping'
 export type ProductCategory = 'stampe' | 'decorazioni' | 'gadget'
 
 // Scaglione di prezzo per quantità (stampe con listino a volume)
@@ -126,6 +127,16 @@ export interface CustomerInfo {
   notes?: string
 }
 
+export interface ShippingAddress {
+  recipientName: string
+  address: string
+  zip: string          // CAP italiano, 5 cifre
+  city: string
+  province: string      // sigla provincia, 2 lettere
+  phone: string
+  intercomNote?: string // note per il citofono
+}
+
 export interface Order {
   id: string
   status: OrderStatus
@@ -133,7 +144,11 @@ export interface Order {
   payment_status: 'unpaid' | 'paid'
   customer: CustomerInfo
   items: OrderItem[]
-  total: number       // in centesimi
+  delivery_method: DeliveryMethod
+  shipping_cost: number           // in centesimi
+  shipping_address?: ShippingAddress | null
+  tracking_number?: string | null
+  total: number       // in centesimi — subtotale - sconto + shipping_cost
   stripe_session_id?: string
   createdAt: string
   updatedAt: string

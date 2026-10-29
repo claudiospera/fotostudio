@@ -1,6 +1,16 @@
 // lib/notify-order.ts
 // Invia notifica Telegram + email a Claudio quando arriva un nuovo ordine shop
 
+interface ShippingAddress {
+  recipientName: string
+  address: string
+  zip: string
+  city: string
+  province: string
+  phone: string
+  intercomNote?: string
+}
+
 interface OrderNotification {
   orderId: string
   customerName: string
@@ -11,6 +21,13 @@ interface OrderNotification {
   paymentMethod: string
   couponCode?: string
   discount?: number
+  deliveryMethod?: 'pickup' | 'shipping'
+  shippingCost?: number
+  shippingAddress?: ShippingAddress
+}
+
+function formatAddress(a: ShippingAddress): string {
+  return `${a.recipientName} — ${a.address}, ${a.zip} ${a.city} (${a.province.toUpperCase()}) — ${a.phone}${a.intercomNote ? ` — Citofono: ${a.intercomNote}` : ''}`
 }
 
 function formatItems(items: OrderNotification['items']): string {
@@ -47,6 +64,9 @@ async function sendTelegram(order: OrderNotification) {
   const subtotalLine = order.couponCode && order.discount
     ? `\n🧾 Subtotale: ${(subtotal / 100).toFixed(2)}€`
     : ''
+  const deliveryLine = order.deliveryMethod === 'shipping'
+    ? `\n📦 Spedizione a domicilio (${((order.shippingCost ?? 0) / 100).toFixed(2)}€)${order.shippingAddress ? `\n🏡 ${formatAddress(order.shippingAddress)}` : ''}`
+    : `\n📍 Ritiro in studio`
 
   const text = [
     `🛒 *Nuovo ordine #${order.orderId}*`,
@@ -59,6 +79,7 @@ async function sendTelegram(order: OrderNotification) {
     `${subtotalLine}${discountLine}`,
     `💰 *Totale: ${(order.total / 100).toFixed(2)}€*`,
     `${payLabel}`,
+    `${deliveryLine}`,
   ].join('\n')
 
   await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -76,6 +97,8 @@ async function sendEmail(order: OrderNotification) {
   if (!apiKey) return
 
   const payLabel = order.paymentMethod === 'studio' ? 'Pagamento in studio' : 'Pagamento online (Stripe)'
+  const deliveryLabel = order.deliveryMethod === 'shipping' ? 'Spedizione a domicilio' : 'Ritiro in studio'
+  const a = order.shippingAddress
 
   await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -97,6 +120,8 @@ async function sendEmail(order: OrderNotification) {
             <tr><td style="padding: 6px 0; color:#888; font-size:13px;">Email</td><td style="font-size:14px;">${order.customerEmail}</td></tr>
             <tr><td style="padding: 6px 0; color:#888; font-size:13px;">Telefono</td><td style="font-size:14px;">${order.customerPhone}</td></tr>
             <tr><td style="padding: 6px 0; color:#888; font-size:13px;">Pagamento</td><td style="font-size:14px;">${payLabel}</td></tr>
+            <tr><td style="padding: 6px 0; color:#888; font-size:13px;">Consegna</td><td style="font-size:14px;">${deliveryLabel}${order.deliveryMethod === 'shipping' ? ` (${((order.shippingCost ?? 0) / 100).toFixed(2)}€)` : ''}</td></tr>
+            ${a ? `<tr><td style="padding: 6px 0; color:#888; font-size:13px; vertical-align:top;">Indirizzo</td><td style="font-size:14px;">${a.recipientName}<br>${a.address}, ${a.zip} ${a.city} (${a.province.toUpperCase()})<br>${a.phone}${a.intercomNote ? `<br>Citofono: ${a.intercomNote}` : ''}</td></tr>` : ''}
           </table>
 
           <h3 style="font-size: 15px; margin-bottom: 8px;">Prodotti</h3>
