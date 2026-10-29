@@ -10,29 +10,25 @@
 **FotoStudio** è un CRM per fotografi professionisti, ispirato a [upyourshoot.com](https://upyourshoot.com).
 Permette al fotografo di gestire gallerie clienti, preventivi, upload foto e condivisioni — tutto da un'unica dashboard.
 
-**Stato attuale:** prototipo funzionante in HTML/CSS/JS vanilla con localStorage.
-**Obiettivo:** migrare a Next.js + Supabase per avere un prodotto reale, deployabile e scalabile.
+**Stato attuale:** prodotto in produzione su Next.js (App Router) + TypeScript.
+**Migrazione da Supabase completata il 2026-04-23** → ora Neon (Postgres) + Clerk + Cloudflare R2.
 
 ---
 
 ## 🏗 Stack tecnologico
 
-### Attuale (prototipo)
-- HTML5 + CSS custom properties
-- JavaScript vanilla (ES2022)
-- localStorage per la persistenza
-- Font: `Syne` (titoli) + `DM Sans` (corpo) — da Google Fonts
-
-### Target (produzione)
 ```
 Frontend       Next.js 14+ (App Router) + TypeScript
 Styling        Tailwind CSS + shadcn/ui
-Database       Supabase (PostgreSQL)
-Storage        Supabase Storage (foto) + Cloudflare R2 (backup)
-Auth           Supabase Auth (fotografo + portale clienti)
+Database       Neon (PostgreSQL serverless) — schema in neon/schema.sql, client in lib/db.ts
+Storage        Cloudflare R2 (S3-compatibile) — upload diretto via presigned URL, client in lib/r2.ts
+Auth           Clerk (@clerk/nextjs) — fotografo + portale clienti
 Email          Resend (credenziali, notifiche, link upload)
 Deploy         Vercel
+Font           Syne (titoli) + DM Sans (corpo) — Google Fonts
 ```
+
+> Le cartelle `supabase/` (migrations, seed.sql) sono residui della vecchia architettura, tenute solo come riferimento storico — non più la fonte di verità per lo schema. Lo schema attivo è `neon/schema.sql`.
 
 ---
 
@@ -134,10 +130,8 @@ fotostudio/
 │       ├── DropZone.tsx
 │       └── KpiCard.tsx
 ├── lib/
-│   ├── supabase/
-│   │   ├── client.ts            ← createBrowserClient
-│   │   ├── server.ts            ← createServerClient
-│   │   └── middleware.ts
+│   ├── db.ts                    ← client Neon: import { sql } from '@/lib/db'
+│   ├── r2.ts                    ← client Cloudflare R2 (S3Client, presigned URL)
 │   ├── types.ts                 ← tutti i tipi TypeScript
 │   ├── utils.ts                 ← uid(), formatDate(), slugify()
 │   └── constants.ts             ← SERVICE_TYPES, STATUS_OPTIONS, ecc.
@@ -147,23 +141,24 @@ fotostudio/
 │   └── useUploadLinks.ts
 ├── store/
 │   └── ui.ts                    ← Zustand per stato UI (modal aperti, tab attivi)
-└── supabase/
-    ├── migrations/
-    │   └── 001_initial_schema.sql
-    └── seed.sql
+├── proxy.ts                     ← clerkMiddleware()
+└── neon/
+    └── schema.sql                ← schema attivo del database
 ```
 
 ---
 
-## 🗄 Schema database (Supabase)
+## 🗄 Schema database (Neon)
+
+> Fonte di verità: `neon/schema.sql`. Lo schema sotto è indicativo — verifica sempre il file prima di affidarti a dettagli di colonne/tipi.
 
 ```sql
--- Utenti (gestito da Supabase Auth)
--- auth.users → id, email, created_at
+-- Utenti gestiti da Clerk (non auth.users di Supabase)
+-- profiles.id è il Clerk userId → text, non uuid
 
 -- Profilo fotografo
 CREATE TABLE profiles (
-  id          uuid PRIMARY KEY REFERENCES auth.users(id),
+  id          text PRIMARY KEY,   -- Clerk userId
   name        text,
   studio_name text,
   plan        text DEFAULT 'free',  -- 'free' | 'pro' | 'professional'
@@ -173,7 +168,7 @@ CREATE TABLE profiles (
 -- Gallerie
 CREATE TABLE galleries (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id     uuid REFERENCES profiles(id) ON DELETE CASCADE,
+  user_id     text REFERENCES profiles(id) ON DELETE CASCADE,  -- Clerk userId
   name        text NOT NULL,
   subtitle    text,
   type        text,               -- 'Matrimonio' | 'Ritratto' | ecc.
@@ -226,7 +221,7 @@ CREATE TABLE timeline_items (
 -- Preventivi
 CREATE TABLE preventivi (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id     uuid REFERENCES profiles(id) ON DELETE CASCADE,
+  user_id     text REFERENCES profiles(id) ON DELETE CASCADE,  -- Clerk userId
   gallery_id  uuid REFERENCES galleries(id) ON DELETE SET NULL,
   cliente     text NOT NULL,
   email       text,
@@ -242,7 +237,7 @@ CREATE TABLE preventivi (
 -- Link upload clienti
 CREATE TABLE upload_links (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id     uuid REFERENCES profiles(id) ON DELETE CASCADE,
+  user_id     text REFERENCES profiles(id) ON DELETE CASCADE,  -- Clerk userId
   gallery_id  uuid REFERENCES galleries(id) ON DELETE SET NULL,
   nome        text NOT NULL,
   slug        text UNIQUE NOT NULL,
@@ -402,35 +397,33 @@ export const GalleryCard = ({ gallery, onClick, onDelete }: GalleryCardProps) =>
 export default function GalleryCard() { ... }
 ```
 
-### Chiamate Supabase
+### Query al database (Neon)
 ```typescript
-// ✅ Sempre gestire l'errore
-const { data, error } = await supabase
-  .from('galleries')
-  .select('*')
-  .eq('user_id', userId)
-  .order('created_at', { ascending: false })
+// ✅ Template literal sql`` da @/lib/db — niente ORM, SQL diretto
+import { sql } from '@/lib/db'
 
-if (error) throw new Error(`Errore fetch gallerie: ${error.message}`)
+const galleries = await sql`
+  SELECT * FROM galleries
+  WHERE user_id = ${userId}
+  ORDER BY created_at DESC
+`
 
-// ✅ Usare il tipo ritornato
-const { data: gallery } = await supabase
-  .from('galleries')
-  .select('*, photos(*), clients:gallery_clients(*)')
-  .eq('id', id)
-  .single<Gallery>()
+// ✅ Tipizzare il risultato esplicitamente (sql`` ritorna any[])
+const [gallery] = await sql<Gallery[]>`
+  SELECT * FROM galleries WHERE id = ${id}
+`
 ```
 
 ### API Routes (Next.js)
 ```typescript
 // app/api/galleries/route.ts
-import { createServerClient } from '@/lib/supabase/server'
+import { auth } from '@clerk/nextjs/server'
+import { sql } from '@/lib/db'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
-  const supabase = createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
+  const { userId } = await auth()
+  if (!userId) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
   // ...
 }
 ```
@@ -443,13 +436,9 @@ export async function GET() {
 # Sviluppo
 npm run dev              # avvia Next.js su localhost:3000
 
-# Database
-npx supabase start       # avvia Supabase locale (Docker)
-npx supabase db push     # applica le migrations
-npx supabase db reset    # reset DB + seed
-
-# Tipi Supabase (rigenera dopo modifiche schema)
-npx supabase gen types typescript --local > lib/supabase/database.types.ts
+# Database (Neon)
+# Modifiche di schema: editare neon/schema.sql e applicarle manualmente
+# (es. via Neon SQL editor o psql $DATABASE_URL) — non c'è una CLI di migration dedicata
 
 # Build e deploy
 npm run build            # build produzione
@@ -468,11 +457,11 @@ vercel deploy --prod     # deploy su produzione
 | Filtri e ricerca gallerie | ✅ Funzionante | Server-side filtering |
 | Dettaglio galleria | ✅ Funzionante | Route dinamica |
 | Tab Cover con preview | ✅ Funzionante | Salvataggio su DB |
-| Tab Foto / Upload | ✅ base64 locale | Supabase Storage |
+| Tab Foto / Upload | ✅ Migrato | Cloudflare R2 (presigned URL) |
 | Tab Impostazioni galleria | ✅ Toggle UI | Persistenza jsonb |
 | Tab Flusso di lavoro | ✅ Funzionante | Timeline su DB |
 | Tab Condivisioni / Clienti | ✅ Funzionante | Auth clienti reale |
-| Preventivi CRUD | ✅ Funzionante | Tabella Supabase |
+| Preventivi CRUD | ✅ Funzionante | Tabella Neon |
 | Portale Upload Link | ✅ Funzionante | Upload reale |
 | Lightbox foto | ✅ Funzionante | Mantenere |
 | Toast notifiche | ✅ Funzionante | Sostituire con sonner |
@@ -483,9 +472,9 @@ vercel deploy --prod     # deploy su produzione
 
 | Feature | Priorità | Note |
 |---------|----------|------|
-| Autenticazione fotografo | 🔴 Alta | Supabase Auth, email/password |
+| Autenticazione fotografo | ✅ Fatto | Clerk (`@clerk/nextjs`), vedi `proxy.ts` |
 | Portale clienti (`/cliente/[token]`) | 🔴 Alta | Accesso con link privato |
-| Upload foto reale | 🔴 Alta | Supabase Storage, progress bar |
+| Upload foto reale | ✅ Fatto | Cloudflare R2, upload diretto via presigned URL (`lib/r2.ts`) |
 | Email automatiche | 🟡 Media | Resend — credenziali, notifiche |
 | Statistiche con grafici | 🟡 Media | Recharts — visite, download, preferiti |
 | Sezione Appuntamenti | 🟡 Media | Calendario (react-big-calendar) |
@@ -502,13 +491,13 @@ vercel deploy --prod     # deploy su produzione
 
 2. **Ogni componente deve avere i suoi tipi** — nessun `any`, nessuna prop senza tipo esplicito.
 
-3. **Supabase client lato server nelle API routes, browser client nei componenti** — non mixare mai i due.
+3. **Query al DB solo tramite `sql` da `@/lib/db`** (Neon, template literal) — non introdurre ORM o ricreare client Supabase.
 
-4. **Le foto NON vanno mai in base64 nel database** — devono andare in Supabase Storage. Il DB salva solo l'URL.
+4. **Le foto NON vanno mai in base64 nel database** — devono andare su Cloudflare R2 (upload diretto via presigned URL, `lib/r2.ts`). Il DB salva solo l'URL pubblico.
 
 5. **Tutte le stringhe UI in italiano** — nomi di campi, messaggi di errore, label, placeholder.
 
-6. **Proteggere sempre le API routes con auth check** — ogni route deve verificare `supabase.auth.getUser()` prima di fare qualsiasi query.
+6. **Proteggere sempre le API routes con auth check** — ogni route deve verificare `auth()` di Clerk (`@clerk/nextjs/server`) prima di fare qualsiasi query.
 
 7. **Componenti UI riutilizzabili in `/components/ui/`** — Button, Modal, Toggle, Badge non vanno riscritti inline nei componenti pagina.
 
@@ -520,17 +509,19 @@ vercel deploy --prod     # deploy su produzione
 
 ```bash
 # .env.local
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=        # solo lato server, non esporre mai
+DATABASE_URL=                            # connection string Neon
 
-RESEND_API_KEY=                   # per le email
-NEXT_PUBLIC_APP_URL=              # es. https://fotostudio.vercel.app
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+CLERK_SECRET_KEY=
 
-# Opzionale
+CLOUDFLARE_R2_ACCOUNT_ID=
 CLOUDFLARE_R2_BUCKET=
 CLOUDFLARE_R2_ACCESS_KEY=
 CLOUDFLARE_R2_SECRET_KEY=
+CLOUDFLARE_R2_PUBLIC_URL=                # es. https://pub-xxx.r2.dev
+
+RESEND_API_KEY=                          # per le email
+NEXT_PUBLIC_APP_URL=                     # es. https://fotostudio.vercel.app
 ```
 
 ---
@@ -545,4 +536,4 @@ CLOUDFLARE_R2_SECRET_KEY=
 
 ---
 
-*Ultimo aggiornamento: Marzo 2026 — versione prototipo HTML completata, inizio migrazione Next.js*
+*Ultimo aggiornamento: Ottobre 2026 — stack aggiornato a Neon + Clerk + Cloudflare R2 (migrazione da Supabase completata il 2026-04-23)*
