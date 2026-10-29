@@ -2,7 +2,7 @@
 
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { SHIPPING_FEE, FREE_SHIPPING_THRESHOLD } from '@/lib/shop/shipping'
+import { SHIPPING_FEE, ISLAND_SHIPPING_SURCHARGE, FREE_SHIPPING_THRESHOLD } from '@/lib/shop/shipping'
 
 export const metadata: Metadata = {
   title: 'Termini e Condizioni — Storie da Raccontare',
@@ -28,7 +28,7 @@ export default function TerminiPage() {
           Termini e Condizioni di Vendita
         </h1>
         <p style={{ fontSize: '13px', color: '#999', marginBottom: 48 }}>
-          Ultimo aggiornamento: maggio 2025 — ai sensi del D.Lgs. 206/2005 (Codice del Consumo)
+          Ultimo aggiornamento: ottobre 2026 — ai sensi del D.Lgs. 206/2005 (Codice del Consumo)
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
@@ -62,7 +62,12 @@ export default function TerminiPage() {
               studio è gratuito</strong>, mentre la <strong>spedizione a domicilio</strong> tramite
               corriere ha un costo fisso di <strong>{euro(SHIPPING_FEE)}</strong> ed è{' '}
               <strong>gratuita per ordini superiori a {euro(FREE_SHIPPING_THRESHOLD)}</strong>
-              (calcolati sul subtotale dopo eventuali sconti).
+              (calcolati sul subtotale dopo eventuali sconti). Per le spedizioni in{' '}
+              <strong>Sicilia e Sardegna</strong> si applica un supplemento fisso di{' '}
+              <strong>{euro(ISLAND_SHIPPING_SURCHARGE)}</strong>, non coperto dalla soglia di
+              spedizione gratuita. Per le isole minori (es. Elba, Capri, Ischia, Pantelleria)
+              potremmo contattarti per un supplemento ulteriore, da concordare in base al
+              corriere disponibile.
             </p>
             <p>
               Ci riserviamo il diritto di modificare i prezzi in qualsiasi momento. Il prezzo
@@ -72,9 +77,11 @@ export default function TerminiPage() {
 
           <Section title="4. Conclusione del contratto">
             <p>
-              L'ordine si intende concluso nel momento in cui il cliente riceve la <strong>conferma
-              d'ordine via email</strong>. Prima di tale momento il venditore può rifiutare l'ordine
-              in caso di indisponibilità del servizio, errori di prezzo manifesti o sospetto di frode.
+              L'ordine si intende concluso nel momento in cui il cliente visualizza la{' '}
+              <strong>pagina di conferma d'ordine</strong> sul sito al termine del pagamento
+              (o della conferma, per il pagamento in studio), dove sono riepilogati i dati
+              dell&apos;ordine. Prima di tale momento il venditore può rifiutare l'ordine in caso di
+              indisponibilità del servizio, errori di prezzo manifesti o sospetto di frode.
             </p>
           </Section>
 
@@ -84,27 +91,29 @@ export default function TerminiPage() {
             </p>
             <ul>
               <li><strong>Carta di credito / debito</strong> — tramite Stripe (sicuro, nessun dato carta viene salvato sui nostri server)</li>
-              <li><strong>Pagamento in studio</strong> — contanti o POS al momento del ritiro</li>
+              <li><strong>Pagamento in studio</strong> — contanti o POS al momento del ritiro, disponibile solo scegliendo il <strong>ritiro in studio</strong> come modalità di consegna</li>
             </ul>
             <p>
+              Con la <strong>spedizione a domicilio</strong> è disponibile solo il pagamento online.
               Il pagamento online viene elaborato da <strong>Stripe Inc.</strong>, certificata PCI DSS.
             </p>
           </Section>
 
           <Section title="6. Produzione e tempi di consegna">
             <p>
-              La produzione inizia <strong>dopo la conferma del pagamento</strong>.
-              I tempi indicativi sono:
+              Ogni prodotto è realizzato <strong>artigianalmente</strong>, a mano, dopo la
+              conferma del pagamento. Lo studio è chiuso il <strong>lunedì</strong>, il{' '}
+              <strong>sabato</strong> e la <strong>domenica</strong>: i &ldquo;giorni
+              lavorativi&rdquo; indicati in questa sezione vanno quindi dal martedì al venerdì,
+              esclusi i giorni festivi.
             </p>
-            <ul>
-              <li>Stampe Instax / Polaroid: 3–5 giorni lavorativi</li>
-              <li>Stampe classiche e poster: 5–7 giorni lavorativi</li>
-              <li>Stampe Hahnemühle Fine Art: 7–10 giorni lavorativi</li>
-              <li>Decorazioni (forex, tela, cornici): 7–14 giorni lavorativi</li>
-            </ul>
             <p>
+              La produzione richiede fino a <strong>7 giorni lavorativi</strong> dalla conferma
+              del pagamento. Per gli ordini con <strong>spedizione a domicilio</strong>, a questo
+              tempo va sommato il transito del corriere: considera fino a{' '}
+              <strong>una settimana aggiuntiva</strong> dalla spedizione alla consegna.
               I tempi possono variare durante periodi di alta stagione (Natale, San Valentino).
-              Riceverai una notifica quando l'ordine è pronto.
+              Riceverai una notifica quando l'ordine è pronto o quando viene spedito.
             </p>
           </Section>
 

@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
 
   const subtotalAfterDiscount = Math.max(0, subtotal - verifiedDiscount)
   // Costo di spedizione ricalcolato lato server sul subtotale DOPO lo sconto — mai dal client.
-  const shippingCost = getShippingCost(subtotalAfterDiscount, safeDeliveryMethod)
+  const shippingCost = getShippingCost(subtotalAfterDiscount, safeDeliveryMethod, shippingAddress?.province)
   const safeTotal = subtotalAfterDiscount + shippingCost
 
   // Salva l'ordine nel DB

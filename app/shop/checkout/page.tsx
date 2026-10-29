@@ -6,7 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useCart } from '@/components/shop/CartProvider'
 import { getLineTotal } from '@/lib/shop/calendar-pricing'
-import { SHIPPING_FEE, FREE_SHIPPING_THRESHOLD, getShippingCost } from '@/lib/shop/shipping'
+import { SHIPPING_FEE, ISLAND_SHIPPING_SURCHARGE, FREE_SHIPPING_THRESHOLD, getShippingCost, isIslandProvince } from '@/lib/shop/shipping'
 import type { DeliveryMethod, ShippingAddress } from '@/lib/shop/types'
 
 function formatPrice(cents: number) {
@@ -38,7 +38,8 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const shippingCost = getShippingCost(finalTotal, deliveryMethod)
+  const isIsland = deliveryMethod === 'shipping' && isIslandProvince(address.province)
+  const shippingCost = getShippingCost(finalTotal, deliveryMethod, address.province)
   const grandTotal = finalTotal + shippingCost
   const missingForFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD - finalTotal)
 
@@ -204,7 +205,7 @@ export default function CheckoutPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: deliveryMethod === 'shipping' ? 20 : 0 }}>
               {([
                 { value: 'pickup', label: 'Ritiro in studio', sublabel: 'Gratuito. Ti contatteremo per organizzare il ritiro.', icon: '📍' },
-                { value: 'shipping', label: 'Spedizione a domicilio', sublabel: `Corriere espresso — ${formatPrice(SHIPPING_FEE)}, gratuita sopra ${formatPrice(FREE_SHIPPING_THRESHOLD)}`, icon: '📦' },
+                { value: 'shipping', label: 'Spedizione a domicilio', sublabel: `Corriere espresso — ${formatPrice(SHIPPING_FEE)}, gratuita sopra ${formatPrice(FREE_SHIPPING_THRESHOLD)} (+${formatPrice(ISLAND_SHIPPING_SURCHARGE)} per Sicilia/Sardegna)`, icon: '📦' },
               ] as const).map(opt => (
                 <label
                   key={opt.value}
@@ -310,7 +311,7 @@ export default function CheckoutPage() {
                   />
                 </div>
                 <p style={{ fontSize: 11, color: 'var(--n-t3)', margin: 0 }}>
-                  Spediamo solo in Italia.
+                  Spediamo solo in Italia. Per le isole minori (es. Elba, Capri, Ischia, Pantelleria) potremmo contattarti per un supplemento da concordare in base al corriere disponibile.
                 </p>
               </div>
             )}
@@ -428,7 +429,12 @@ export default function CheckoutPage() {
                 {deliveryMethod === 'pickup' ? 'Gratis (ritiro)' : shippingCost > 0 ? formatPrice(shippingCost) : 'Gratis'}
               </span>
             </div>
-            {deliveryMethod === 'shipping' && shippingCost > 0 && (
+            {isIsland && (
+              <p style={{ fontSize: 11, color: 'var(--n-t3)', margin: '0 0 6px' }}>
+                Include il supplemento di {formatPrice(ISLAND_SHIPPING_SURCHARGE)} per Sicilia/Sardegna — non disponibile la soglia di spedizione gratuita.
+              </p>
+            )}
+            {deliveryMethod === 'shipping' && !isIsland && shippingCost > 0 && (
               <p style={{ fontSize: 11, color: 'var(--n-t3)', margin: '0 0 6px' }}>
                 Ti mancano {formatPrice(missingForFreeShipping)} per la spedizione gratuita.
               </p>

@@ -23,7 +23,7 @@ export default function PrivacyPolicyPage() {
           Privacy Policy
         </h1>
         <p style={{ fontSize: '13px', color: '#999', marginBottom: 48 }}>
-          Ultimo aggiornamento: maggio 2025
+          Ultimo aggiornamento: ottobre 2026
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
@@ -52,6 +52,7 @@ export default function PrivacyPolicyPage() {
               <tbody>
                 {[
                   ['Nome, email, telefono', 'Gestione dell\'ordine e comunicazioni', 'Esecuzione contratto (art. 6.1.b GDPR)'],
+                  ['Indirizzo di spedizione (nome destinatario, via, CAP, città, provincia, telefono, note citofono)', 'Consegna dell\'ordine a domicilio tramite corriere', 'Esecuzione contratto (art. 6.1.b GDPR)'],
                   ['Foto caricate', 'Produzione delle stampe ordinate', 'Esecuzione contratto (art. 6.1.b GDPR)'],
                   ['Indirizzo IP, dati di navigazione', 'Sicurezza e prevenzione frodi', 'Legittimo interesse (art. 6.1.f GDPR)'],
                   ['Dati di pagamento', 'Elaborazione pagamento (gestito da Stripe)', 'Esecuzione contratto (art. 6.1.b GDPR)'],
