@@ -326,6 +326,15 @@ export default function CalendarModelPage() {
               ? <>Salva modifiche</>
               : <><ShoppingCart size={16} /> Aggiungi al carrello</>}
           </button>
+
+          {!canSubmit && !added && (
+            <p style={{ fontSize: '12px', color: '#c9a05a', marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <AlertTriangle size={13} style={{ flexShrink: 0 }} />
+              {!allFilled
+                ? 'Carica tutte le foto richieste per continuare'
+                : 'Spunta la conferma dei diritti sulle foto per continuare'}
+            </p>
+          )}
         </div>
       </div>
 
