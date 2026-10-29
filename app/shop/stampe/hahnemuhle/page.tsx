@@ -509,7 +509,7 @@ export default function HahnemuhlePage() {
 
     addItem({
       productId:    'hahnemuhle',
-      variantId:    `${paper.id}__${format.fmt.replace('×', 'x')}`,
+      variantId:    `hah-${format.fmt.replace('×', 'x')}__${paper.id}`,
       quantity:     qty,
       productName:  'Stampa Fine Art Hahnemühle',
       variantLabel: `${paper.label} — ${fmtW}×${fmtH} cm${isSquare ? '' : rotated ? ' (orizzontale)' : ' (verticale)'}${spray ? ' · Spray' : ''}${certificato ? ' · Certificato' : ''}`,
