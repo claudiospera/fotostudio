@@ -89,6 +89,52 @@ async function sendTelegram(order: OrderNotification) {
   })
 }
 
+// ── Spedizione: email al cliente (Resend) ──────────────────────────────────────
+
+interface ShippedNotification {
+  orderId: string
+  customerName: string
+  customerEmail: string
+  trackingNumber?: string | null
+}
+
+export async function notifyOrderShipped(order: ShippedNotification) {
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) return
+
+  await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: 'Fotostudio Shop <noreply@storiedaraccontare.it>',
+      to: order.customerEmail,
+      subject: `📦 Il tuo ordine #${order.orderId} è stato spedito!`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1a1612;">
+          <h2 style="font-size: 20px; margin-bottom: 4px;">Ciao ${order.customerName}! 📦</h2>
+          <p style="font-size: 15px; line-height: 1.6;">
+            Il tuo ordine <strong>#${order.orderId}</strong> è stato spedito e sta arrivando da te.
+          </p>
+          ${order.trackingNumber ? `
+          <table style="width:100%; border-collapse: collapse; margin: 20px 0; background:#f7f7f5; border-radius:8px;">
+            <tr><td style="padding: 14px 16px; font-size:13px; color:#888;">Numero di tracking</td></tr>
+            <tr><td style="padding: 0 16px 14px; font-size:18px; font-weight:700;">${order.trackingNumber}</td></tr>
+          </table>
+          ` : `
+          <p style="font-size: 14px; color:#888;">Ti invieremo il numero di tracking non appena disponibile.</p>
+          `}
+          <p style="font-size: 14px; line-height: 1.6; margin-top: 20px;">
+            Grazie per la pazienza! 😊
+          </p>
+        </div>
+      `,
+    }),
+  })
+}
+
 // ── Email (Resend) ────────────────────────────────────────────────────────────
 
 async function sendEmail(order: OrderNotification) {

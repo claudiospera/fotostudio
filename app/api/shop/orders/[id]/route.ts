@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { sql } from '@/lib/db'
+import { notifyOrderShipped } from '@/lib/notify-order'
 
 // GET pubblico — solo i campi necessari per la pagina conferma ordine
 export async function GET(
@@ -36,12 +37,30 @@ export async function PATCH(
     return NextResponse.json({ error: 'Nessun campo da aggiornare' }, { status: 400 })
   }
 
+  const beforeRows = await sql`
+    SELECT status, customer_name, customer_email, tracking_number FROM shop_orders WHERE id = ${id}
+  ` as { status: string; customer_name: string; customer_email: string; tracking_number: string | null }[]
+  const [before] = beforeRows
+
   if (status !== undefined && trackingNumber !== undefined) {
     await sql`UPDATE shop_orders SET status = ${status}, tracking_number = ${trackingNumber}, updated_at = now() WHERE id = ${id}`
   } else if (status !== undefined) {
     await sql`UPDATE shop_orders SET status = ${status}, updated_at = now() WHERE id = ${id}`
   } else {
     await sql`UPDATE shop_orders SET tracking_number = ${trackingNumber}, updated_at = now() WHERE id = ${id}`
+  }
+
+  if (status === 'shipped' && before && before.status !== 'shipped' && before.customer_email) {
+    try {
+      await notifyOrderShipped({
+        orderId: id,
+        customerName: before.customer_name,
+        customerEmail: before.customer_email,
+        trackingNumber: trackingNumber !== undefined ? trackingNumber : before.tracking_number,
+      })
+    } catch {
+      // non bloccare l'aggiornamento dello stato se l'email fallisce
+    }
   }
 
   return NextResponse.json({ ok: true })
