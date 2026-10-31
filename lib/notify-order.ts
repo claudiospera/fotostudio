@@ -1,6 +1,8 @@
 // lib/notify-order.ts
 // Invia notifica Telegram + email a Claudio quando arriva un nuovo ordine shop
 
+import { CARRIERS } from './shop/carriers'
+
 interface ShippingAddress {
   recipientName: string
   address: string
@@ -96,11 +98,14 @@ interface ShippedNotification {
   customerName: string
   customerEmail: string
   trackingNumber?: string | null
+  carrier?: string | null
 }
 
 export async function notifyOrderShipped(order: ShippedNotification) {
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) return
+
+  const c = order.carrier ? CARRIERS[order.carrier] : undefined
 
   await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -120,8 +125,10 @@ export async function notifyOrderShipped(order: ShippedNotification) {
           </p>
           ${order.trackingNumber ? `
           <table style="width:100%; border-collapse: collapse; margin: 20px 0; background:#f7f7f5; border-radius:8px;">
-            <tr><td style="padding: 14px 16px; font-size:13px; color:#888;">Numero di tracking</td></tr>
+            ${c ? `<tr><td style="padding: 14px 16px 0; font-size:13px; color:#888;">Corriere</td></tr><tr><td style="padding: 0 16px 10px; font-size:14px; font-weight:600;">${c.label}</td></tr>` : ''}
+            <tr><td style="padding: ${c ? '0' : '14px'} 16px 0; font-size:13px; color:#888;">Numero di tracking</td></tr>
             <tr><td style="padding: 0 16px 14px; font-size:18px; font-weight:700;">${order.trackingNumber}</td></tr>
+            ${c ? `<tr><td style="padding: 0 16px 14px;"><a href="${c.trackUrl(order.trackingNumber)}" style="font-size:13px; color:#1a73e8;">Traccia la spedizione →</a></td></tr>` : ''}
           </table>
           ` : `
           <p style="font-size: 14px; color:#888;">Ti invieremo il numero di tracking non appena disponibile.</p>
