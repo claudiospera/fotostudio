@@ -7,6 +7,8 @@ import { normalizeToJpeg } from '@/lib/cropImage'
 const bucket = process.env.CLOUDFLARE_R2_BUCKET!.trim()
 const publicUrl = process.env.CLOUDFLARE_R2_PUBLIC_URL!.trim()
 
+export const maxDuration = 60
+
 // POST /api/shop/calendari/normalize-photo — pubblica (no auth), come presign-photo.
 // Dopo l'upload diretto su R2, converte HEIC/HEIF/AVIF in JPEG (sovrascrivendo lo
 // stesso key) e ritorna le dimensioni, usate dal client per l'avviso "poco nitida".

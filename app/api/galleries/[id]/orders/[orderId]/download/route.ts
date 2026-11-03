@@ -6,6 +6,8 @@ import { Readable } from 'node:stream'
 import { cropImage, buildInstaxCard, parseFormatRatio } from '@/lib/cropImage'
 import { PRODUCTS } from '@/lib/shop/products'
 
+export const maxDuration = 60
+
 interface OrderItem {
   photo_url?: string
   filename?: string

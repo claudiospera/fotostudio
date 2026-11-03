@@ -4,6 +4,8 @@ import { sql } from '@/lib/db'
 import JSZip from 'jszip'
 import { Readable } from 'node:stream'
 
+export const maxDuration = 60
+
 // POST /api/galleries/download  { galleryId }
 export async function POST(req: NextRequest) {
   const { userId } = await auth()
