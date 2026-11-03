@@ -6,7 +6,7 @@ import { CalendarsTeaserCard } from '@/components/shop/CalendarsTeaserCard'
 
 // Copertina fissa scelta da Claudio (foto di famiglia, non un modello a caso dal catalogo).
 // Su R2 (non in /public — le immagini vanno su CDN/storage, non committate su git).
-const CALENDAR_COVER_IMAGE = 'https://pub-53356d483eb74822990977c0e5c21f6c.r2.dev/calendari/copertina-shop.jpg'
+const CALENDAR_COVER_IMAGE = 'https://pub-53356d483eb74822990977c0e5c21f6c.r2.dev/calendari/copertina-shop-v2.jpg'
 
 export default function ShopHomePage() {
   const featured = getFeaturedProducts()
@@ -101,6 +101,7 @@ export default function ShopHomePage() {
             Tutti i prodotti
           </h2>
           <div className="shop-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
+            <CalendarsTeaserCard imageUrl={CALENDAR_COVER_IMAGE} />
             {PRODUCTS.filter((p) => p.status !== 'discontinued').map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
