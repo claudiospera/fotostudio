@@ -92,6 +92,42 @@ const breaksInstax: PriceBreak[] = [
 
 export const PRODUCTS: Product[] = [
 
+  // In cima all'elenco e "featured" perché va mostrata in evidenza accanto
+  // alla card dei Calendari 2027 in home (vedi app/shop/page.tsx).
+  {
+    id: 'palla-di-natale',
+    slug: 'palla-di-natale',
+    name: 'Palla di Natale con foto',
+    shortDescription: 'Palla di Natale in plastica con la tua foto e un testo personalizzato — ø 8 o 10 cm',
+    description:
+      'Palla di Natale in plastica, metà trasparente e metà colorata, personalizzabile con la tua foto e un testo. ' +
+      'Da appendere all\'albero, è un\'idea regalo originale. Viene consegnata in scatola.',
+    category: 'gadget',
+    status: 'available',
+    images: [
+      '/images/shop/gadget/palla-natale/ambientata.jpg',
+      '/images/shop/gadget/palla-natale/rosso.jpg',
+    ],
+    variants: [
+      { id: 'pn-8-rosso',          label: '8 cm · Rosso glitter',          price: 900, widthCm: 8,  heightCm: 8 },
+      { id: 'pn-8-oro',            label: '8 cm · Oro glitter',            price: 900, widthCm: 8,  heightCm: 8 },
+      { id: 'pn-8-argento',        label: '8 cm · Argento glitter',        price: 900, widthCm: 8,  heightCm: 8 },
+      { id: 'pn-8-caramel',        label: '8 cm · Caramel glitter',        price: 900, widthCm: 8,  heightCm: 8 },
+      { id: 'pn-8-rosa-glitter',   label: '8 cm · Rosa glitter',           price: 900, widthCm: 8,  heightCm: 8 },
+      { id: 'pn-8-bianco-glitter', label: '8 cm · Bianco glitter',         price: 900, widthCm: 8,  heightCm: 8 },
+      { id: 'pn-8-verde',          label: '8 cm · Verde glitter',          price: 900, widthCm: 8,  heightCm: 8 },
+      { id: 'pn-10-rosso',         label: '10 cm · Rosso glitter',         price: 1100, widthCm: 10, heightCm: 10 },
+      { id: 'pn-10-oro',           label: '10 cm · Oro glitter',           price: 1100, widthCm: 10, heightCm: 10 },
+      { id: 'pn-10-argento',       label: '10 cm · Argento glitter',       price: 1100, widthCm: 10, heightCm: 10 },
+      { id: 'pn-10-caramel',       label: '10 cm · Caramel glitter',       price: 1100, widthCm: 10, heightCm: 10 },
+      { id: 'pn-10-rosa-glitter',  label: '10 cm · Rosa glitter',          price: 1100, widthCm: 10, heightCm: 10 },
+      { id: 'pn-10-bianco-rombi',  label: '10 cm · Bianco a rombi',        price: 1100, widthCm: 10, heightCm: 10 },
+      { id: 'pn-10-rosa-satinato', label: '10 cm · Rosa satinato',         price: 1100, widthCm: 10, heightCm: 10 },
+    ],
+    featured: true,
+    createdAt: '2026-11-04T00:00:00Z',
+  },
+
   // ─── STAMPE ───────────────────────────────────────────────────────────────
 
   {

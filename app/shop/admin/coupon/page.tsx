@@ -27,6 +27,7 @@ const PRODUCTS = [
     { id: 'portachiavi-ecopelle',  label: 'Portachiavi Ecopelle' },
     { id: 'tappetino-mouse',       label: 'Tappetino Mouse' },
     { id: 'photo-globe-cuore',     label: 'Photo Globe Cuore' },
+    { id: 'palla-di-natale',       label: 'Palla di Natale con foto' },
   ]},
 ]
 
