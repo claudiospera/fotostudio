@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { HeroServiceTiles } from '@/components/home/HeroServiceTiles'
 
 export const metadata: Metadata = {
   alternates: { canonical: 'https://storiedaraccontare.it' },
@@ -97,10 +98,7 @@ export default async function HomePage() {
             Fotografia di matrimonio, ritratto e famiglia.<br />Ogni momento merita di essere ricordato per sempre.
           </p>
 
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <a href="/servizi" style={{ background: '#00c1de', color: '#fff', borderRadius: 12, padding: '14px 32px', fontSize: '13px', fontWeight: 700, textDecoration: 'none', letterSpacing: '.04em' }}>Scopri i servizi fotografici</a>
-            <a href="/shop" style={{ background: '#00c1de', color: '#fff', borderRadius: 12, padding: '14px 32px', fontSize: '13px', fontWeight: 700, textDecoration: 'none', letterSpacing: '.04em' }}>Area shop e stampa</a>
-          </div>
+          <HeroServiceTiles />
         </div>
 
         <div style={{ position: 'absolute', bottom: 36, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, opacity: .35 }}>
