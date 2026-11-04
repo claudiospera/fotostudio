@@ -25,6 +25,13 @@ const NAV_LINKS = [
 const R2 = 'https://pub-53356d483eb74822990977c0e5c21f6c.r2.dev'
 const BASE = `${R2}/images/galleria/matrimoni/portfolio`
 
+// Gli originali su R2 pesano 4-6MB l'uno (scatti RAW esportati a piena risoluzione).
+// Li serviamo attraverso l'ottimizzatore immagini di Next.js (ridimensiona + converte
+// in WebP/AVIF), così la griglia carica miniature leggere invece dei file originali.
+function optimized(url: string, width: number, quality = 75) {
+  return `/_next/image?url=${encodeURIComponent(url)}&w=${width}&q=${quality}`
+}
+
 const PHOTOS: string[] = [
   `${BASE}/_DSF0254.jpg`,
   `${BASE}/_DSF0291.jpg`,
@@ -258,7 +265,7 @@ export default function PortfolioPage() {
               {PHOTOS.map((src, idx) => (
                 <div key={idx} className="portfolio-photo" onClick={() => setLightbox(idx)}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={src} alt={`Foto matrimonio ${idx + 1}`} loading="lazy" />
+                  <img src={optimized(src, 828)} alt={`Foto matrimonio ${idx + 1}`} loading="lazy" decoding="async" />
                 </div>
               ))}
             </div>
@@ -287,7 +294,7 @@ export default function PortfolioPage() {
           <div onClick={e => e.stopPropagation()} style={{ maxWidth: '88vw', maxHeight: '90vh' }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={PHOTOS[lightbox]}
+              src={optimized(PHOTOS[lightbox], 2048)}
               alt=""
               style={{ maxWidth: '88vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 8 }}
             />
