@@ -46,29 +46,36 @@ export default function CopertinaConfigPage() {
     if (!gallery) return
     const w = Number(sizeW)
     const h = Number(sizeH)
-    if (enabled && (!sizeLabel.trim() || !w || !h)) {
-      setError('Imposta la misura (etichetta, larghezza e altezza) prima di salvare.')
+    if (enabled && (!w || !h)) {
+      setError('Imposta larghezza e altezza prima di salvare.')
       return
     }
     setSaving(true)
     setError(null)
-    const size = sizeLabel.trim() && w && h ? { id: 'size', label: sizeLabel.trim(), widthCm: w, heightCm: h } : null
+    // L'etichetta è facoltativa — se non la scrivi, la generiamo dalle misure.
+    const label = sizeLabel.trim() || (w && h ? `${w}×${h} cm` : '')
+    const size = w && h ? { id: 'size', label, widthCm: w, heightCm: h } : null
     const newSettings = {
       ...(gallery.settings ?? {}),
       cover_builder: { enabled, size },
     }
-    const res = await fetch(`/api/galleries/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ settings: newSettings }),
-    })
-    if (res.ok) {
-      const updated = await res.json()
-      setGallery(updated)
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2500)
-    } else {
-      setError('Salvataggio non riuscito. Riprova.')
+    try {
+      const res = await fetch(`/api/galleries/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings: newSettings }),
+      })
+      if (res.ok) {
+        const updated = await res.json()
+        setGallery(updated)
+        setSizeLabel(label)
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2500)
+      } else {
+        setError('Salvataggio non riuscito. Riprova.')
+      }
+    } catch {
+      setError('Salvataggio non riuscito. Controlla la connessione e riprova.')
     }
     setSaving(false)
   }, [gallery, id, enabled, sizeLabel, sizeW, sizeH])
@@ -147,7 +154,7 @@ export default function CopertinaConfigPage() {
           <p style={{ fontSize: '11px', color: 'var(--t3)', marginBottom: 12 }}>La misura della copertina fisica per questa galleria. La decidi tu: il cliente non la sceglie, vede già impostata la sua.</p>
 
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <input value={sizeLabel} onChange={e => setSizeLabel(e.target.value)} placeholder="Etichetta (es. 30×30 cm)"
+            <input value={sizeLabel} onChange={e => setSizeLabel(e.target.value)} placeholder="Etichetta facoltativa (es. Quadrato grande) — se vuota si genera dalle misure"
               style={{ flex: '1 1 180px', background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 'var(--r2)', padding: '8px 12px', fontSize: '12px', color: 'var(--tx)' }} />
             <input value={sizeW} onChange={e => setSizeW(e.target.value.replace(/[^0-9.]/g, ''))} placeholder="Largh. cm"
               style={{ width: 90, background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 'var(--r2)', padding: '8px 12px', fontSize: '12px', color: 'var(--tx)' }} />

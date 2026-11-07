@@ -235,16 +235,20 @@ export default function CopertineLibraryPage() {
   const save = useCallback(async () => {
     setSaving(true)
     setError(null)
-    const res = await fetch('/api/profile/cover-sections', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cover_colors: colors, cover_decor_categories: decorCategories, cover_materials: materials }),
-    })
-    if (res.ok) {
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2500)
-    } else {
-      setError('Salvataggio non riuscito. Riprova.')
+    try {
+      const res = await fetch('/api/profile/cover-sections', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cover_colors: colors, cover_decor_categories: decorCategories, cover_materials: materials }),
+      })
+      if (res.ok) {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2500)
+      } else {
+        setError('Salvataggio non riuscito. Riprova.')
+      }
+    } catch {
+      setError('Salvataggio non riuscito. Controlla la connessione e riprova.')
     }
     setSaving(false)
   }, [colors, decorCategories, materials])
