@@ -8,15 +8,16 @@ import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { Gallery, CoverSectionKey } from '@/lib/types'
-import { COVER_SECTION_LABELS } from '@/lib/types'
-
-const SECTION_KEYS: CoverSectionKey[] = ['battesimo', 'comunione', 'matrimonio', 'generico']
+import { COVER_SECTION_KEYS, COVER_SECTION_LABELS } from '@/lib/types'
 
 function defaultSectionForType(type?: string): CoverSectionKey {
   const t = (type ?? '').toLowerCase()
   if (t.includes('matrimonio') || t.includes('promessa')) return 'matrimonio'
   if (t.includes('battesimo')) return 'battesimo'
   if (t.includes('comunione')) return 'comunione'
+  if (t.includes('newborn')) return 'nascita'
+  if (t.includes('1 anno') || t.includes('18 anni')) return 'compleanno'
+  if (t.includes('anniversario')) return 'anniversario'
   return 'generico'
 }
 
@@ -183,7 +184,7 @@ export default function CopertinaConfigPage() {
           </p>
 
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {SECTION_KEYS.map(key => (
+            {COVER_SECTION_KEYS.map(key => (
               <button key={key} onClick={() => setSection(key)} style={{
                 padding: '10px 16px', borderRadius: 'var(--r2)',
                 border: `2px solid ${section === key ? 'var(--ac)' : 'var(--b1)'}`,

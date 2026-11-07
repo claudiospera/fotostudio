@@ -9,10 +9,14 @@ CREATE TABLE IF NOT EXISTS profiles (
   email       text,
   iban        text,
   ical_token  text UNIQUE,
-  -- Librerie "Crea Copertina" riusabili per occasione (battesimo/comunione/
-  -- matrimonio/generico), caricate una volta e condivise da tutte le gallerie
-  -- di quel tipo. Forma: { [sectionKey]: { colors: CoverColor[], decorations: CoverDecor[] } }
-  cover_sections jsonb DEFAULT '{}'::jsonb,
+  -- Librerie "Crea Copertina" riusabili per occasione (nascita/battesimo/
+  -- comunione/compleanno/anniversario/laurea/matrimonio/generico), caricate
+  -- una volta e condivise da tutte le gallerie di quel tipo.
+  -- Forma: { [sectionKey]: { colors: CoverColor[], decorations: CoverDecor[] } }
+  cover_sections  jsonb DEFAULT '{}'::jsonb,
+  -- Rivestimenti/materiali disponibili per "Crea Copertina" (es. Tela, Similpelle)
+  -- — globali, non legati a una sezione/occasione specifica.
+  cover_materials jsonb DEFAULT '["Tela", "Similpelle"]'::jsonb,
   created_at  timestamptz DEFAULT now()
 );
 
@@ -195,6 +199,7 @@ CREATE TABLE IF NOT EXISTS cover_orders (
   client_name     text,
   client_email    text,
   size_label      text NOT NULL,
+  material_label  text,
   color_label     text NOT NULL,
   decor_label     text,
   text_content    text,

@@ -7,13 +7,11 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import type { CoverColor, CoverDecor, CoverDecorPosition, CoverSectionKey, CoverSections } from '@/lib/types'
-import { COVER_SECTION_LABELS } from '@/lib/types'
+import { COVER_SECTION_KEYS, COVER_SECTION_LABELS } from '@/lib/types'
 
 function uid() {
   return Math.random().toString(36).slice(2, 10)
 }
-
-const SECTION_KEYS: CoverSectionKey[] = ['battesimo', 'comunione', 'matrimonio', 'generico']
 
 const POSITION_LABELS: Record<CoverDecorPosition, string> = {
   'top-left':     'Alto sinistra',
@@ -22,12 +20,10 @@ const POSITION_LABELS: Record<CoverDecorPosition, string> = {
   'bottom-right': 'Basso destra',
 }
 
-const EMPTY_SECTIONS: CoverSections = {
-  battesimo:  { colors: [], decorations: [] },
-  comunione:  { colors: [], decorations: [] },
-  matrimonio: { colors: [], decorations: [] },
-  generico:   { colors: [], decorations: [] },
-}
+const EMPTY_SECTIONS: CoverSections = COVER_SECTION_KEYS.reduce((acc, key) => {
+  acc[key] = { colors: [], decorations: [] }
+  return acc
+}, {} as CoverSections)
 
 async function uploadAsset(file: File, folder: string): Promise<string> {
   const res = await fetch('/api/photos/presign', {
@@ -47,6 +43,8 @@ export default function CopertineLibraryPage() {
   const [loading, setLoading] = useState(true)
   const [sections, setSections] = useState<CoverSections>(EMPTY_SECTIONS)
   const [activeSection, setActiveSection] = useState<CoverSectionKey>('matrimonio')
+  const [materials, setMaterials] = useState<string[]>([])
+  const [newMaterial, setNewMaterial] = useState('')
 
   const [uploadingColor, setUploadingColor] = useState(false)
   const [uploadingDecor, setUploadingDecor] = useState(false)
@@ -60,44 +58,64 @@ export default function CopertineLibraryPage() {
   useEffect(() => {
     fetch('/api/profile/cover-sections')
       .then(r => r.ok ? r.json() : Promise.reject())
-      .then((data: Partial<CoverSections>) => {
-        setSections({ ...EMPTY_SECTIONS, ...data })
+      .then((data: { cover_sections?: Partial<CoverSections>; cover_materials?: string[] }) => {
+        setSections({ ...EMPTY_SECTIONS, ...(data.cover_sections ?? {}) })
+        setMaterials(data.cover_materials ?? ['Tela', 'Similpelle'])
       })
       .catch(() => setError('Impossibile caricare la libreria.'))
       .finally(() => setLoading(false))
   }, [])
 
+  const addMaterial = useCallback(() => {
+    const label = newMaterial.trim()
+    if (!label || materials.includes(label)) return
+    setMaterials(prev => [...prev, label])
+    setNewMaterial('')
+  }, [newMaterial, materials])
+
+  const removeMaterial = useCallback((label: string) => {
+    setMaterials(prev => prev.filter(m => m !== label))
+  }, [])
+
   const current = sections[activeSection]
 
   const handleColorUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    const files = Array.from(e.target.files ?? [])
     e.target.value = ''
-    if (!file) return
+    if (files.length === 0) return
     setUploadingColor(true)
     setError(null)
-    try {
-      const imageUrl = await uploadAsset(file, `${activeSection}/colori`)
-      const newColor: CoverColor = { id: uid(), label: file.name.replace(/\.[^.]+$/, ''), imageUrl }
-      setSections(prev => ({ ...prev, [activeSection]: { ...prev[activeSection], colors: [...prev[activeSection].colors, newColor] } }))
-    } catch {
-      setError('Caricamento colore non riuscito. Riprova.')
+    const results = await Promise.allSettled(files.map(file => uploadAsset(file, `${activeSection}/colori`)))
+    const newColors: CoverColor[] = []
+    let failed = 0
+    results.forEach((r, i) => {
+      if (r.status === 'fulfilled') newColors.push({ id: uid(), label: files[i].name.replace(/\.[^.]+$/, ''), imageUrl: r.value })
+      else failed++
+    })
+    if (newColors.length > 0) {
+      setSections(prev => ({ ...prev, [activeSection]: { ...prev[activeSection], colors: [...prev[activeSection].colors, ...newColors] } }))
     }
+    if (failed > 0) setError(`${failed} colore${failed > 1 ? 'i' : ''} non caricat${failed > 1 ? 'i' : 'o'}. Riprova.`)
     setUploadingColor(false)
   }, [activeSection])
 
   const handleDecorUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    const files = Array.from(e.target.files ?? [])
     e.target.value = ''
-    if (!file) return
+    if (files.length === 0) return
     setUploadingDecor(true)
     setError(null)
-    try {
-      const imageUrl = await uploadAsset(file, `${activeSection}/decori`)
-      const newDecor: CoverDecor = { id: uid(), label: file.name.replace(/\.[^.]+$/, ''), imageUrl, position: 'bottom-right' }
-      setSections(prev => ({ ...prev, [activeSection]: { ...prev[activeSection], decorations: [...prev[activeSection].decorations, newDecor] } }))
-    } catch {
-      setError('Caricamento decoro non riuscito. Riprova.')
+    const results = await Promise.allSettled(files.map(file => uploadAsset(file, `${activeSection}/decori`)))
+    const newDecors: CoverDecor[] = []
+    let failed = 0
+    results.forEach((r, i) => {
+      if (r.status === 'fulfilled') newDecors.push({ id: uid(), label: files[i].name.replace(/\.[^.]+$/, ''), imageUrl: r.value, position: 'bottom-right' })
+      else failed++
+    })
+    if (newDecors.length > 0) {
+      setSections(prev => ({ ...prev, [activeSection]: { ...prev[activeSection], decorations: [...prev[activeSection].decorations, ...newDecors] } }))
     }
+    if (failed > 0) setError(`${failed} decor${failed > 1 ? 'i' : 'o'} non caricat${failed > 1 ? 'i' : 'o'}. Riprova.`)
     setUploadingDecor(false)
   }, [activeSection])
 
@@ -124,7 +142,7 @@ export default function CopertineLibraryPage() {
     const res = await fetch('/api/profile/cover-sections', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cover_sections: sections }),
+      body: JSON.stringify({ cover_sections: sections, cover_materials: materials }),
     })
     if (res.ok) {
       setSaved(true)
@@ -133,7 +151,7 @@ export default function CopertineLibraryPage() {
       setError('Salvataggio non riuscito. Riprova.')
     }
     setSaving(false)
-  }, [sections])
+  }, [sections, materials])
 
   if (loading) {
     return (
@@ -186,9 +204,36 @@ export default function CopertineLibraryPage() {
           </div>
         )}
 
+        {/* ── RIVESTIMENTI (globali, non legati a una sezione) ── */}
+        <section style={{ marginBottom: 28 }}>
+          <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '14px', fontWeight: 700, color: 'var(--tx)', marginBottom: 10 }}>Rivestimenti</h2>
+          <p style={{ fontSize: '11px', color: 'var(--t3)', marginBottom: 12 }}>I materiali della copertina fisica (es. Tela, Similpelle) — uguali per tutte le occasioni, il cliente ne sceglie uno insieme al colore.</p>
+
+          {materials.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+              {materials.map(m => (
+                <span key={m} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 'var(--r2)', padding: '8px 12px', fontSize: '12px', color: 'var(--tx)', fontWeight: 600 }}>
+                  {m}
+                  <button onClick={() => removeMaterial(m)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red)', padding: 0, display: 'flex' }}>
+                    <svg viewBox="0 0 24 24" width={12} height={12} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input value={newMaterial} onChange={e => setNewMaterial(e.target.value)} onKeyDown={e => e.key === 'Enter' && addMaterial()}
+              placeholder="Es. Velluto" style={{ flex: '0 1 220px', background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 'var(--r2)', padding: '8px 12px', fontSize: '12px', color: 'var(--tx)' }} />
+            <button onClick={addMaterial} style={{ background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 'var(--r2)', padding: '8px 16px', fontSize: '12px', fontWeight: 600, color: 'var(--tx)', cursor: 'pointer' }}>
+              Aggiungi
+            </button>
+          </div>
+        </section>
+
         {/* ── SEZIONI (tab) ── */}
         <div style={{ display: 'flex', borderBottom: '1px solid var(--b1)', marginBottom: 24, overflowX: 'auto' }}>
-          {SECTION_KEYS.map(key => (
+          {COVER_SECTION_KEYS.map(key => (
             <button
               key={key}
               onClick={() => setActiveSection(key)}
@@ -216,7 +261,7 @@ export default function CopertineLibraryPage() {
           </h2>
           <p style={{ fontSize: '11px', color: 'var(--t3)', marginBottom: 12 }}>Carica una foto per ogni colore/materiale reale disponibile per questa occasione.</p>
 
-          <input ref={colorInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleColorUpload} />
+          <input ref={colorInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleColorUpload} />
           {current.colors.length > 0 && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10, marginBottom: 12 }}>
               {current.colors.map(c => (
@@ -245,7 +290,7 @@ export default function CopertineLibraryPage() {
           </h2>
           <p style={{ fontSize: '11px', color: 'var(--t3)', marginBottom: 12 }}>Animaletti, fiori o altri motivi tra cui il cliente sceglierà. Scegli tu la posizione fissa di ciascuno.</p>
 
-          <input ref={decorInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleDecorUpload} />
+          <input ref={decorInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleDecorUpload} />
           {current.decorations.length > 0 && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 10, marginBottom: 12 }}>
               {current.decorations.map(d => (

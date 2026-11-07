@@ -19,6 +19,7 @@ interface PublicGallerySettings {
     size: CoverSize | null
     colors: CoverColor[]
     decorations: CoverDecor[]
+    materials: string[]
   }
 }
 
@@ -100,7 +101,7 @@ function getSessionId(): string {
 const DRAFT_KEY = 'fs-cover-draft-v1'
 
 interface Draft {
-  colorId: string; decorId: string
+  colorId: string; decorId: string; material: string
   uploadedUrl: string; filename?: string; natW: number; natH: number
   zoom: number; offsetX: number; offsetY: number
   text: string; fontId: string; textColor: string; textSize: number
@@ -125,6 +126,7 @@ export default function CopertinaPage() {
 
   const [colorId, setColorId] = useState('')
   const [decorId, setDecorId] = useState('')
+  const [material, setMaterial] = useState('')
 
   const [photoUrl, setPhotoUrl]         = useState<string | null>(null)
   const [uploadedUrl, setUploadedUrl]   = useState<string | null>(null)
@@ -161,6 +163,7 @@ export default function CopertinaPage() {
         if (!cb?.enabled || !cb.size) { setNotAvailable(true); return }
         setColorId(cb.colors[0]?.id ?? '')
         setDecorId(cb.decorations[0]?.id ?? '')
+        setMaterial(cb.materials?.[0] ?? '')
       })
       .catch(() => setNotAvailable(true))
       .finally(() => setLoading(false))
@@ -170,6 +173,7 @@ export default function CopertinaPage() {
   const size = cb?.size ?? null
   const colors = cb?.colors ?? []
   const decorations = cb?.decorations ?? []
+  const materials = cb?.materials ?? []
   const color = colors.find(c => c.id === colorId)
   const decor = decorations.find(d => d.id === decorId)
 
@@ -266,7 +270,7 @@ export default function CopertinaPage() {
       if (!raw) return
       const d: Draft = JSON.parse(raw)
       if (!d.uploadedUrl) return
-      setColorId(d.colorId); setDecorId(d.decorId)
+      setColorId(d.colorId); setDecorId(d.decorId); setMaterial(d.material)
       setPhotoUrl(d.uploadedUrl); setUploadedUrl(d.uploadedUrl); setPhotoFilename(d.filename)
       setPhotoZoom(d.zoom); setPhotoOffset({ x: d.offsetX, y: d.offsetY })
       setText(d.text); setFontId(d.fontId); setTextColor(d.textColor); setTextSize(d.textSize)
@@ -283,7 +287,7 @@ export default function CopertinaPage() {
     if (!uploadedUrl || uploading) { sessionStorage.removeItem(DRAFT_KEY); return }
     const t = setTimeout(() => {
       const d: Draft = {
-        colorId, decorId, uploadedUrl, filename: photoFilename,
+        colorId, decorId, material, uploadedUrl, filename: photoFilename,
         natW: photoNatSize?.w ?? 0, natH: photoNatSize?.h ?? 0,
         zoom: photoZoom, offsetX: photoOffset.x, offsetY: photoOffset.y,
         text, fontId, textColor, textSize, textPosX: textPos.x, textPosY: textPos.y,
@@ -292,7 +296,7 @@ export default function CopertinaPage() {
       sessionStorage.setItem(DRAFT_KEY, JSON.stringify(d))
     }, 400)
     return () => clearTimeout(t)
-  }, [colorId, decorId, uploadedUrl, uploading, photoFilename, photoNatSize, photoZoom, photoOffset, text, fontId, textColor, textSize, textPos, clientName, clientEmail])
+  }, [colorId, decorId, material, uploadedUrl, uploading, photoFilename, photoNatSize, photoZoom, photoOffset, text, fontId, textColor, textSize, textPos, clientName, clientEmail])
 
   // ── drag foto ──────────────────────────────────────────────────────────
   const photoDragRef = useRef<{ sx: number; sy: number; ox: number; oy: number } | null>(null)
@@ -378,6 +382,7 @@ export default function CopertinaPage() {
   // ── invio richiesta ────────────────────────────────────────────────────
   async function handleSend() {
     if (!photoUrl || uploading || isSending || uploadFailed || !size || !color || !gallery) return
+    if (materials.length > 0 && !material) return
     if (!photoImgRef.current || !photoNatSize) { setSendError(true); return }
 
     setIsSending(true)
@@ -448,6 +453,7 @@ export default function CopertinaPage() {
           client_name: clientName.trim() || null,
           client_email: clientEmail.trim() || null,
           size_label: size.label,
+          material_label: material || null,
           color_label: color.label,
           decor_label: decor?.label ?? null,
           text_content: text.trim() || null,
@@ -505,7 +511,7 @@ export default function CopertinaPage() {
     )
   }
 
-  const canSend = !!photoUrl && !!size && !!color && !uploading && !isSending && !uploadFailed
+  const canSend = !!photoUrl && !!size && !!color && (materials.length === 0 || !!material) && !uploading && !isSending && !uploadFailed
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8f8f6', fontFamily: 'Inter, sans-serif' }}>
@@ -577,21 +583,53 @@ export default function CopertinaPage() {
         <div className="cover-first-mobile" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div>
             <h1 style={{ fontFamily: headingFont, fontWeight: 800, fontSize: 'clamp(20px,2.6vw,28px)', color: '#111', marginBottom: 6 }}>Crea la tua copertina</h1>
-            <p style={{ fontSize: '13px', color: '#777', lineHeight: 1.6 }}>Scegli colore e decoro, poi carica la tua foto preferita — misura {size?.label}.</p>
+            <p style={{ fontSize: '13px', color: '#777', lineHeight: 1.6 }}>Scegli rivestimento, colore e decoro, poi carica la tua foto preferita — misura {size?.label}.</p>
           </div>
+
+          {materials.length > 0 && (
+            <div>
+              <p style={labelStyle}>Rivestimento</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {materials.map(m => (
+                  <button key={m} onClick={() => setMaterial(m)} style={{
+                    padding: '10px 16px', borderRadius: 10, border: `2px solid ${material === m ? accent : '#e0e0e0'}`,
+                    background: material === m ? `${accent}18` : '#fff', fontSize: '13px', fontWeight: material === m ? 700 : 500,
+                    color: material === m ? accent : '#444', cursor: 'pointer',
+                  }}>{m}</button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {colors.length > 0 && (
             <div>
               <p style={labelStyle}>Colore</p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(76px, 1fr))', gap: 8 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(84px, 1fr))', gap: 10 }}>
                 {colors.map(c => (
                   <button key={c.id} onClick={() => setColorId(c.id)} style={{
-                    padding: 6, borderRadius: 10, border: `2px solid ${colorId === c.id ? accent : '#e0e0e0'}`,
-                    background: '#fff', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+                    padding: '10px 6px 8px', borderRadius: 14, border: 'none',
+                    background: colorId === c.id ? `${accent}14` : 'transparent', cursor: 'pointer',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7,
+                    transition: 'background .15s',
                   }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={c.imageUrl} alt={c.label} style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} />
-                    <span style={{ fontSize: '10px', fontWeight: colorId === c.id ? 700 : 500, color: colorId === c.id ? accent : '#555', textAlign: 'center' }}>{c.label}</span>
+                    <span style={{ position: 'relative', display: 'inline-flex' }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={c.imageUrl} alt={c.label} style={{
+                        width: 56, height: 56, borderRadius: '50%', objectFit: 'cover',
+                        boxShadow: colorId === c.id ? `0 0 0 3px #fff, 0 0 0 5px ${accent}` : '0 0 0 1px rgba(0,0,0,.08)',
+                        transition: 'box-shadow .15s',
+                      }} />
+                      {colorId === c.id && (
+                        <span style={{
+                          position: 'absolute', top: -2, right: -2, width: 20, height: 20, borderRadius: '50%',
+                          background: accent, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          border: '2px solid #fff',
+                        }}>
+                          <svg viewBox="0 0 24 24" width={11} height={11} fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </span>
+                      )}
+                    </span>
+                    <span style={{ fontSize: '11px', fontWeight: colorId === c.id ? 700 : 500, color: colorId === c.id ? accent : '#555', textAlign: 'center', lineHeight: 1.25 }}>{c.label}</span>
                   </button>
                 ))}
               </div>
@@ -601,15 +639,27 @@ export default function CopertinaPage() {
           {decorations.length > 0 && (
             <div>
               <p style={labelStyle}>Decoro</p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(76px, 1fr))', gap: 8 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))', gap: 10 }}>
                 {decorations.map(d => (
                   <button key={d.id} onClick={() => setDecorId(d.id)} style={{
-                    padding: 6, borderRadius: 10, border: `2px solid ${decorId === d.id ? accent : '#e0e0e0'}`,
-                    background: '#fff', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+                    padding: 0, borderRadius: 14, border: `2px solid ${decorId === d.id ? accent : '#e8e8e8'}`,
+                    background: decorId === d.id ? `${accent}0d` : '#fff', cursor: 'pointer', overflow: 'hidden',
+                    display: 'flex', flexDirection: 'column', transition: 'all .15s',
+                    boxShadow: decorId === d.id ? `0 4px 14px ${accent}33` : 'none',
                   }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={d.imageUrl} alt={d.label} style={{ width: 40, height: 40, objectFit: 'contain' }} />
-                    <span style={{ fontSize: '10px', fontWeight: decorId === d.id ? 700 : 500, color: decorId === d.id ? accent : '#555', textAlign: 'center' }}>{d.label}</span>
+                    <span style={{ position: 'relative', display: 'block', aspectRatio: '1', background: '#f6f6f4' }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={d.imageUrl} alt={d.label} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', padding: 10, boxSizing: 'border-box' }} />
+                      {decorId === d.id && (
+                        <span style={{
+                          position: 'absolute', top: 6, right: 6, width: 18, height: 18, borderRadius: '50%',
+                          background: accent, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          <svg viewBox="0 0 24 24" width={10} height={10} fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </span>
+                      )}
+                    </span>
+                    <span style={{ fontSize: '11px', fontWeight: decorId === d.id ? 700 : 500, color: decorId === d.id ? accent : '#555', textAlign: 'center', padding: '7px 4px 8px' }}>{d.label}</span>
                   </button>
                 ))}
               </div>

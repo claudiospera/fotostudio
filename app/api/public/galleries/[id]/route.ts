@@ -19,7 +19,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       ) AS photos,
       (SELECT json_build_object('name', pr.name, 'studio_name', pr.studio_name)
        FROM profiles pr WHERE pr.id = g.user_id) AS profiles,
-      (SELECT pr.cover_sections FROM profiles pr WHERE pr.id = g.user_id) AS cover_sections
+      (SELECT pr.cover_sections FROM profiles pr WHERE pr.id = g.user_id) AS cover_sections,
+      (SELECT pr.cover_materials FROM profiles pr WHERE pr.id = g.user_id) AS cover_materials
     FROM galleries g
     WHERE g.id = ${id} AND g.status = 'active'
   `
@@ -41,10 +42,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         ...cb,
         colors: assets?.colors ?? [],
         decorations: assets?.decorations ?? [],
+        materials: (gallery.cover_materials as string[] | null) ?? [],
       },
     }
   }
   delete gallery.cover_sections
+  delete gallery.cover_materials
 
   return NextResponse.json(gallery)
 }

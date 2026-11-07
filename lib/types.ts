@@ -52,13 +52,23 @@ export interface CoverDecor {
   position: CoverDecorPosition
 }
 
-export type CoverSectionKey = 'battesimo' | 'comunione' | 'matrimonio' | 'generico'
+export type CoverSectionKey =
+  | 'nascita' | 'battesimo' | 'comunione' | 'compleanno'
+  | 'anniversario' | 'laurea' | 'matrimonio' | 'generico'
+
+export const COVER_SECTION_KEYS: CoverSectionKey[] = [
+  'nascita', 'battesimo', 'comunione', 'compleanno', 'anniversario', 'laurea', 'matrimonio', 'generico',
+]
 
 export const COVER_SECTION_LABELS: Record<CoverSectionKey, string> = {
-  battesimo:  'Battesimo',
-  comunione:  'Comunione',
-  matrimonio: 'Matrimonio',
-  generico:   'Generico',
+  nascita:      'Nascita',
+  battesimo:    'Battesimo',
+  comunione:    'Comunione',
+  compleanno:   'Compleanno',
+  anniversario: 'Anniversario',
+  laurea:       'Laurea',
+  matrimonio:   'Matrimonio',
+  generico:     'Generico',
 }
 
 export interface CoverSectionAssets {
@@ -130,6 +140,7 @@ export interface CoverOrder {
   client_name?: string | null
   client_email?: string | null
   size_label: string
+  material_label?: string | null
   color_label: string
   decor_label?: string | null
   text_content?: string | null
@@ -401,5 +412,6 @@ export interface Profile {
   iban?: string
   plan: 'free' | 'pro' | 'professional'
   cover_sections?: CoverSections
+  cover_materials?: string[]  // rivestimenti disponibili per "Crea Copertina" (es. Tela, Similpelle)
   created_at: string
 }
