@@ -25,11 +25,14 @@ function uid() {
 }
 
 const POSITION_LABELS: Record<CoverDecorPosition, string> = {
+  'center':       'Centro',
   'top-left':     'Alto sinistra',
   'top-right':    'Alto destra',
   'bottom-left':  'Basso sinistra',
   'bottom-right': 'Basso destra',
 }
+
+const DEFAULT_DECOR_SIZE_CM = 5
 
 async function uploadAsset(file: File, folder: string): Promise<string> {
   const res = await fetch('/api/photos/presign', {
@@ -198,7 +201,7 @@ export default function CopertineLibraryPage() {
     const newDecors: CoverDecor[] = []
     let failed = 0
     results.forEach((r, i) => {
-      if (r.status === 'fulfilled') newDecors.push({ id: uid(), label: files[i].name.replace(/\.[^.]+$/, ''), imageUrl: r.value, position: 'bottom-right' })
+      if (r.status === 'fulfilled') newDecors.push({ id: uid(), label: files[i].name.replace(/\.[^.]+$/, ''), imageUrl: r.value, position: 'center', sizeCm: DEFAULT_DECOR_SIZE_CM })
       else failed++
     })
     if (newDecors.length > 0) {
@@ -216,6 +219,11 @@ export default function CopertineLibraryPage() {
   const updateDecorPosition = useCallback((categoryId: string, did: string, position: CoverDecorPosition) => {
     setDecorCategories(prev => prev.map(c => c.id === categoryId
       ? { ...c, decorations: c.decorations.map(d => d.id === did ? { ...d, position } : d) }
+      : c))
+  }, [])
+  const updateDecorSize = useCallback((categoryId: string, did: string, sizeCm: number) => {
+    setDecorCategories(prev => prev.map(c => c.id === categoryId
+      ? { ...c, decorations: c.decorations.map(d => d.id === did ? { ...d, sizeCm } : d) }
       : c))
   }, [])
   const removeDecor = useCallback((categoryId: string, did: string) => {
@@ -483,6 +491,12 @@ export default function CopertineLibraryPage() {
                                 <option key={p} value={p}>{POSITION_LABELS[p]}</option>
                               ))}
                             </select>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <input type="number" min={1} max={30} step={0.5} value={d.sizeCm ?? DEFAULT_DECOR_SIZE_CM}
+                                onChange={e => updateDecorSize(cat.id, d.id, Number(e.target.value) || DEFAULT_DECOR_SIZE_CM)}
+                                style={{ width: 54, background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 6, padding: '5px 8px', fontSize: '11px', color: 'var(--tx)' }} />
+                              <span style={{ fontSize: '11px', color: 'var(--t3)' }}>cm</span>
+                            </div>
                             <button onClick={() => removeDecor(cat.id, d.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red)', fontSize: '10px', padding: 0, textAlign: 'left' }}>Rimuovi</button>
                           </div>
                         </div>

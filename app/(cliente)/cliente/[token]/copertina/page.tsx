@@ -40,16 +40,66 @@ const FONT_FAMILY: Record<string, string> = {
 }
 
 const TEXT_FONTS = [
-  { id: 'montserrat', label: 'Montserrat',      css: 'Montserrat, sans-serif' },
-  { id: 'poppins',    label: 'Poppins',          css: 'Poppins, sans-serif' },
-  { id: 'georgia',    label: 'Georgia',          css: 'Georgia, serif' },
-  { id: 'pacifico',   label: 'Pacifico',         css: 'Pacifico, cursive' },
-  { id: 'dancing',    label: 'Dancing Script',   css: '"Dancing Script", cursive' },
-  { id: 'playfair2',  label: 'Playfair Display', css: '"Playfair Display", serif' },
+  { id: 'montserrat', label: 'Montserrat', css: 'Montserrat, sans-serif' },
+  { id: 'pacifico', label: 'Pacifico', css: 'Pacifico, cursive' },
+  { id: 'dancing-script', label: 'Dancing Script', css: '"Dancing Script", cursive' },
+  { id: 'great-vibes', label: 'Great Vibes', css: '"Great Vibes", cursive' },
+  { id: 'alex-brush', label: 'Alex Brush', css: '"Alex Brush", cursive' },
+  { id: 'allura', label: 'Allura', css: 'Allura, cursive' },
+  { id: 'parisienne', label: 'Parisienne', css: 'Parisienne, cursive' },
+  { id: 'sacramento', label: 'Sacramento', css: 'Sacramento, cursive' },
+  { id: 'tangerine', label: 'Tangerine', css: 'Tangerine, cursive' },
+  { id: 'marck-script', label: 'Marck Script', css: '"Marck Script", cursive' },
+  { id: 'satisfy', label: 'Satisfy', css: 'Satisfy, cursive' },
+  { id: 'courgette', label: 'Courgette', css: 'Courgette, cursive' },
+  { id: 'kaushan-script', label: 'Kaushan Script', css: '"Kaushan Script", cursive' },
+  { id: 'pinyon-script', label: 'Pinyon Script', css: '"Pinyon Script", cursive' },
+  { id: 'mr-dafoe', label: 'Mr Dafoe', css: '"Mr Dafoe", cursive' },
+  { id: 'yellowtail', label: 'Yellowtail', css: 'Yellowtail, cursive' },
+  { id: 'rouge-script', label: 'Rouge Script', css: '"Rouge Script", cursive' },
+  { id: 'cookie', label: 'Cookie', css: 'Cookie, cursive' },
+  { id: 'playball', label: 'Playball', css: 'Playball, cursive' },
+  { id: 'caveat', label: 'Caveat', css: 'Caveat, cursive' },
+  { id: 'shadows-into-light', label: 'Shadows Into Light', css: '"Shadows Into Light", cursive' },
+  { id: 'permanent-marker', label: 'Permanent Marker', css: '"Permanent Marker", cursive' },
+  { id: 'indie-flower', label: 'Indie Flower', css: '"Indie Flower", cursive' },
+  { id: 'homemade-apple', label: 'Homemade Apple', css: '"Homemade Apple", cursive' },
+  { id: 'herr-von-muellerhoff', label: 'Herr Von Muellerhoff', css: '"Herr Von Muellerhoff", cursive' },
+  { id: 'playfair2', label: 'Playfair Display', css: '"Playfair Display", serif' },
+  { id: 'cormorant-garamond', label: 'Cormorant Garamond', css: '"Cormorant Garamond", serif' },
+  { id: 'cormorant', label: 'Cormorant', css: 'Cormorant, serif' },
+  { id: 'eb-garamond', label: 'EB Garamond', css: '"EB Garamond", serif' },
+  { id: 'lora', label: 'Lora', css: 'Lora, serif' },
+  { id: 'merriweather', label: 'Merriweather', css: 'Merriweather, serif' },
+  { id: 'libre-baskerville', label: 'Libre Baskerville', css: '"Libre Baskerville", serif' },
+  { id: 'crimson-text', label: 'Crimson Text', css: '"Crimson Text", serif' },
+  { id: 'pt-serif', label: 'PT Serif', css: '"PT Serif", serif' },
+  { id: 'noto-serif', label: 'Noto Serif', css: '"Noto Serif", serif' },
+  { id: 'bodoni-moda', label: 'Bodoni Moda', css: '"Bodoni Moda", serif' },
+  { id: 'prata', label: 'Prata', css: 'Prata, serif' },
+  { id: 'marcellus', label: 'Marcellus', css: 'Marcellus, serif' },
+  { id: 'italiana', label: 'Italiana', css: 'Italiana, serif' },
+  { id: 'cinzel', label: 'Cinzel', css: 'Cinzel, serif' },
+  { id: 'abril-fatface', label: 'Abril Fatface', css: '"Abril Fatface", serif' },
+  { id: 'georgia', label: 'Georgia', css: 'Georgia, serif' },
+  { id: 'poppins', label: 'Poppins', css: 'Poppins, sans-serif' },
+  { id: 'raleway', label: 'Raleway', css: 'Raleway, sans-serif' },
+  { id: 'lato', label: 'Lato', css: 'Lato, sans-serif' },
+  { id: 'nunito', label: 'Nunito', css: 'Nunito, sans-serif' },
+  { id: 'quicksand', label: 'Quicksand', css: 'Quicksand, sans-serif' },
+  { id: 'josefin-sans', label: 'Josefin Sans', css: '"Josefin Sans", sans-serif' },
+  { id: 'work-sans', label: 'Work Sans', css: '"Work Sans", sans-serif' },
+  { id: 'jost', label: 'Jost', css: 'Jost, sans-serif' },
+  { id: 'karla', label: 'Karla', css: 'Karla, sans-serif' },
+  { id: 'dm-sans', label: 'DM Sans', css: '"DM Sans", sans-serif' },
+  { id: 'outfit', label: 'Outfit', css: 'Outfit, sans-serif' },
+  { id: 'manrope', label: 'Manrope', css: 'Manrope, sans-serif' },
+  { id: 'comfortaa', label: 'Comfortaa', css: 'Comfortaa, sans-serif' },
+  { id: 'amatic-sc', label: 'Amatic SC', css: '"Amatic SC", sans-serif' },
 ]
 
 const GOOGLE_FONTS_URL =
-  'https://fonts.googleapis.com/css2?family=Pacifico&family=Dancing+Script:wght@700&family=Playfair+Display:wght@400;700&family=Poppins:wght@400;700&family=Montserrat:wght@400;700&display=swap'
+  'https://fonts.googleapis.com/css2?family=Pacifico:wght@400;700&family=Dancing+Script:wght@400;700&family=Great+Vibes:wght@400;700&family=Alex+Brush:wght@400;700&family=Allura:wght@400;700&family=Parisienne:wght@400;700&family=Sacramento:wght@400;700&family=Tangerine:wght@400;700&family=Marck+Script:wght@400;700&family=Satisfy:wght@400;700&family=Courgette:wght@400;700&family=Kaushan+Script:wght@400;700&family=Pinyon+Script:wght@400;700&family=Mr+Dafoe:wght@400;700&family=Yellowtail:wght@400;700&family=Rouge+Script:wght@400;700&family=Cookie:wght@400;700&family=Playball:wght@400;700&family=Caveat:wght@400;700&family=Shadows+Into+Light:wght@400;700&family=Permanent+Marker:wght@400;700&family=Indie+Flower:wght@400;700&family=Homemade+Apple:wght@400;700&family=Herr+Von+Muellerhoff:wght@400;700&family=Playfair+Display:wght@400;700&family=Cormorant+Garamond:wght@400;700&family=Cormorant:wght@400;700&family=EB+Garamond:wght@400;700&family=Lora:wght@400;700&family=Merriweather:wght@400;700&family=Libre+Baskerville:wght@400;700&family=Crimson+Text:wght@400;700&family=PT+Serif:wght@400;700&family=Noto+Serif:wght@400;700&family=Bodoni+Moda:wght@400;700&family=Prata:wght@400;700&family=Marcellus:wght@400;700&family=Italiana:wght@400;700&family=Cinzel:wght@400;700&family=Abril+Fatface:wght@400;700&family=Montserrat:wght@400;700&family=Poppins:wght@400;700&family=Raleway:wght@400;700&family=Lato:wght@400;700&family=Nunito:wght@400;700&family=Quicksand:wght@400;700&family=Josefin+Sans:wght@400;700&family=Work+Sans:wght@400;700&family=Jost:wght@400;700&family=Karla:wght@400;700&family=DM+Sans:wght@400;700&family=Outfit:wght@400;700&family=Manrope:wght@400;700&family=Comfortaa:wght@400;700&family=Amatic+SC:wght@400;700&display=swap'
 
 const TEXT_PALETTE = [
   '#000000', '#333333', '#666666', '#ffffff',
@@ -60,7 +110,7 @@ const TEXT_PALETTE = [
 const BASE_PREVIEW_LONG = 340
 const DPI = 300
 const BORDER_FRACTION = 0.07   // bordo colore intorno alla foto, come frazione del lato minore
-const DECOR_FRACTION  = 0.16   // dimensione decoro come frazione del lato minore
+const DEFAULT_DECOR_SIZE_CM = 5   // dimensione decoro (lato lungo) se non specificata dal fotografo
 const DECOR_MARGIN_FRACTION = 0.035
 
 function cmToPx(cm: number) { return Math.round((cm / 2.54) * DPI) }
@@ -268,17 +318,17 @@ export default function CopertinaPage() {
     }
 
     const decorImg = decorImgRef.current
-    if (decorImg) {
-      const dSize = Math.min(W, H) * DECOR_FRACTION
-      const dRatio = decorImg.naturalHeight / decorImg.naturalWidth
-      const dw = dSize, dh = dSize * dRatio
+    if (decorImg && size) {
+      const pxPerCm = W / size.widthCm
+      const dw = (decor?.sizeCm ?? DEFAULT_DECOR_SIZE_CM) * pxPerCm
+      const dh = dw * (decorImg.naturalHeight / decorImg.naturalWidth)
       const m = Math.min(W, H) * DECOR_MARGIN_FRACTION
-      const pos = decor?.position ?? 'bottom-right'
-      const dx = pos.includes('right') ? W - m - dw : m
-      const dy = pos.includes('bottom') ? H - m - dh : m
+      const pos = decor?.position ?? 'center'
+      const dx = pos === 'center' ? (W - dw) / 2 : pos.includes('right') ? W - m - dw : m
+      const dy = pos === 'center' ? (H - dh) / 2 : pos.includes('bottom') ? H - m - dh : m
       ctx.drawImage(decorImg, dx, dy, dw, dh)
     }
-  }, [previewDims, photoNatSize, photoZoom, photoOffset, decor])
+  }, [previewDims, photoNatSize, photoZoom, photoOffset, decor, size])
 
   useEffect(() => { redraw() }, [redraw])
 
@@ -432,13 +482,12 @@ export default function CopertinaPage() {
 
       const decorImg = decorImgRef.current
       if (decorImg) {
-        const dSize = Math.min(outputDims.w, outputDims.h) * DECOR_FRACTION
-        const dRatio = decorImg.naturalHeight / decorImg.naturalWidth
-        const dw = dSize, dh = dSize * dRatio
+        const dw = cmToPx(decor?.sizeCm ?? DEFAULT_DECOR_SIZE_CM)
+        const dh = dw * (decorImg.naturalHeight / decorImg.naturalWidth)
         const m = Math.min(outputDims.w, outputDims.h) * DECOR_MARGIN_FRACTION
-        const pos = decor?.position ?? 'bottom-right'
-        const dx = pos.includes('right') ? outputDims.w - m - dw : m
-        const dy = pos.includes('bottom') ? outputDims.h - m - dh : m
+        const pos = decor?.position ?? 'center'
+        const dx = pos === 'center' ? (outputDims.w - dw) / 2 : pos.includes('right') ? outputDims.w - m - dw : m
+        const dy = pos === 'center' ? (outputDims.h - dh) / 2 : pos.includes('bottom') ? outputDims.h - m - dh : m
         ctx.drawImage(decorImg, dx, dy, dw, dh)
       }
 

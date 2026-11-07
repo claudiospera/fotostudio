@@ -62,13 +62,14 @@ export interface CoverColor {
   mockups?: CoverMockupSet  // opzionale: foto dell'album vero con questo colore/campione, per orientamento
 }
 
-export type CoverDecorPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+export type CoverDecorPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center'
 
 export interface CoverDecor {
   id: string
   label: string       // es. "Orsetto"
   imageUrl: string
   position: CoverDecorPosition
+  sizeCm?: number     // dimensione reale sulla copertina (lato lungo, cm) — default 5
 }
 
 // Categoria di decori definita liberamente dal fotografo (es. "Animali",
