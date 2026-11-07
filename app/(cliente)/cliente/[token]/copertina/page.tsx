@@ -9,6 +9,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import type { CoverSize, CoverColor, CoverDecor, CoverMaterial } from '@/lib/types'
+import { coverOrientation } from '@/lib/types'
 import { normalizeImageOrientation } from '@/lib/shop/normalize-image'
 
 interface PublicGallerySettings {
@@ -101,7 +102,7 @@ function getSessionId(): string {
 const DRAFT_KEY = 'fs-cover-draft-v1'
 
 interface Draft {
-  colorId: string; decorId: string; materialId: string
+  colorId: string; decorId: string; materialId: string; sampleId: string
   uploadedUrl: string; filename?: string; natW: number; natH: number
   zoom: number; offsetX: number; offsetY: number
   text: string; fontId: string; textColor: string; textSize: number
@@ -127,6 +128,7 @@ export default function CopertinaPage() {
   const [colorId, setColorId] = useState('')
   const [decorId, setDecorId] = useState('')
   const [materialId, setMaterialId] = useState('')
+  const [sampleId, setSampleId] = useState('')
 
   const [photoUrl, setPhotoUrl]         = useState<string | null>(null)
   const [uploadedUrl, setUploadedUrl]   = useState<string | null>(null)
@@ -163,7 +165,9 @@ export default function CopertinaPage() {
         if (!cb?.enabled || !cb.size) { setNotAvailable(true); return }
         setColorId(cb.colors[0]?.id ?? '')
         setDecorId(cb.decorations[0]?.id ?? '')
-        setMaterialId(cb.materials?.[0]?.id ?? '')
+        const firstMaterial = cb.materials?.[0]
+        setMaterialId(firstMaterial?.id ?? '')
+        setSampleId(firstMaterial && !firstMaterial.customizable ? (firstMaterial.samples?.[0]?.id ?? '') : '')
       })
       .catch(() => setNotAvailable(true))
       .finally(() => setLoading(false))
@@ -176,12 +180,17 @@ export default function CopertinaPage() {
   const materials = cb?.materials ?? []
   const selectedMaterial = materials.find(m => m.id === materialId)
   // Se il rivestimento non è personalizzabile, niente scelta di colore/decoro:
-  // la copertina usa il campione caricato dal fotografo per quel materiale.
+  // il cliente sceglie invece uno dei campioni caricati dal fotografo per quel materiale.
   const isCustomizable = selectedMaterial ? selectedMaterial.customizable : true
-  const color = isCustomizable ? colors.find(c => c.id === colorId) : undefined
+  const samples = selectedMaterial?.samples ?? []
+  const color = isCustomizable ? colors.find(c => c.id === colorId) : samples.find(s => s.id === sampleId)
   const decor = isCustomizable ? decorations.find(d => d.id === decorId) : undefined
-  const backgroundImageUrl = isCustomizable ? color?.imageUrl : selectedMaterial?.sampleImageUrl
-  const materialNeedsSample = !isCustomizable && !selectedMaterial?.sampleImageUrl
+  // Se il campione scelto ha un mockup dell'album vero per l'orientamento di questa
+  // misura (orizzontale/verticale/quadrato), lo usiamo al posto della foto del campione.
+  const orientation = size ? coverOrientation(size) : null
+  const mockupUrl = !isCustomizable && orientation ? color?.mockups?.[orientation] : undefined
+  const backgroundImageUrl = mockupUrl ?? color?.imageUrl
+  const materialNeedsSample = !isCustomizable && samples.length === 0
 
   const paletteId = gallery?.settings?.theme_palette ?? 'agave'
   const accent = PALETTE_ACCENT[paletteId] ?? PALETTE_ACCENT.agave
@@ -276,7 +285,7 @@ export default function CopertinaPage() {
       if (!raw) return
       const d: Draft = JSON.parse(raw)
       if (!d.uploadedUrl) return
-      setColorId(d.colorId); setDecorId(d.decorId); setMaterialId(d.materialId)
+      setColorId(d.colorId); setDecorId(d.decorId); setMaterialId(d.materialId); setSampleId(d.sampleId ?? '')
       setPhotoUrl(d.uploadedUrl); setUploadedUrl(d.uploadedUrl); setPhotoFilename(d.filename)
       setPhotoZoom(d.zoom); setPhotoOffset({ x: d.offsetX, y: d.offsetY })
       setText(d.text); setFontId(d.fontId); setTextColor(d.textColor); setTextSize(d.textSize)
@@ -293,7 +302,7 @@ export default function CopertinaPage() {
     if (!uploadedUrl || uploading) { sessionStorage.removeItem(DRAFT_KEY); return }
     const t = setTimeout(() => {
       const d: Draft = {
-        colorId, decorId, materialId, uploadedUrl, filename: photoFilename,
+        colorId, decorId, materialId, sampleId, uploadedUrl, filename: photoFilename,
         natW: photoNatSize?.w ?? 0, natH: photoNatSize?.h ?? 0,
         zoom: photoZoom, offsetX: photoOffset.x, offsetY: photoOffset.y,
         text, fontId, textColor, textSize, textPosX: textPos.x, textPosY: textPos.y,
@@ -302,7 +311,7 @@ export default function CopertinaPage() {
       sessionStorage.setItem(DRAFT_KEY, JSON.stringify(d))
     }, 400)
     return () => clearTimeout(t)
-  }, [colorId, decorId, materialId, uploadedUrl, uploading, photoFilename, photoNatSize, photoZoom, photoOffset, text, fontId, textColor, textSize, textPos, clientName, clientEmail])
+  }, [colorId, decorId, materialId, sampleId, uploadedUrl, uploading, photoFilename, photoNatSize, photoZoom, photoOffset, text, fontId, textColor, textSize, textPos, clientName, clientEmail])
 
   // ── drag foto ──────────────────────────────────────────────────────────
   const photoDragRef = useRef<{ sx: number; sy: number; ox: number; oy: number } | null>(null)
@@ -389,8 +398,7 @@ export default function CopertinaPage() {
   async function handleSend() {
     if (!photoUrl || uploading || isSending || uploadFailed || !size || !gallery) return
     if (materials.length > 0 && !selectedMaterial) return
-    if (isCustomizable && !color) return
-    if (!isCustomizable && !selectedMaterial?.sampleImageUrl) return
+    if (!color) return
     if (!photoImgRef.current || !photoNatSize) { setSendError(true); return }
 
     setIsSending(true)
@@ -519,8 +527,8 @@ export default function CopertinaPage() {
     )
   }
 
-  const materialOk = materials.length === 0 || (!!selectedMaterial && (isCustomizable ? true : !!selectedMaterial.sampleImageUrl))
-  const canSend = !!photoUrl && !!size && materialOk && (!isCustomizable || !!color) && !uploading && !isSending && !uploadFailed
+  const materialOk = materials.length === 0 || !!selectedMaterial
+  const canSend = !!photoUrl && !!size && materialOk && !!color && !uploading && !isSending && !uploadFailed
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8f8f6', fontFamily: 'Inter, sans-serif' }}>
@@ -602,7 +610,7 @@ export default function CopertinaPage() {
               <p style={labelStyle}>Rivestimento</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {materials.map(m => (
-                  <button key={m.id} onClick={() => setMaterialId(m.id)} style={{
+                  <button key={m.id} onClick={() => { setMaterialId(m.id); setSampleId(m.customizable ? '' : (m.samples?.[0]?.id ?? '')) }} style={{
                     padding: '10px 16px', borderRadius: 10, border: `2px solid ${materialId === m.id ? accent : '#e0e0e0'}`,
                     background: materialId === m.id ? `${accent}18` : '#fff', fontSize: '13px', fontWeight: materialId === m.id ? 700 : 500,
                     color: materialId === m.id ? accent : '#444', cursor: 'pointer',
@@ -611,7 +619,7 @@ export default function CopertinaPage() {
               </div>
               {!isCustomizable && (
                 <p style={{ fontSize: '11px', color: '#888', marginTop: 8, lineHeight: 1.5 }}>
-                  Questo rivestimento ha un aspetto fisso — colore e decoro non sono personalizzabili.
+                  Questo rivestimento ha un aspetto fisso — {samples.length > 1 ? 'scegli il campione qui sotto; ' : ''}colore e decoro non sono personalizzabili.
                 </p>
               )}
               {materialNeedsSample && (
@@ -619,6 +627,41 @@ export default function CopertinaPage() {
                   Questo rivestimento non è ancora configurato dal fotografo — scegline un altro o riprova più tardi.
                 </p>
               )}
+            </div>
+          )}
+
+          {!isCustomizable && samples.length > 0 && (
+            <div>
+              <p style={labelStyle}>Campione</p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(84px, 1fr))', gap: 10 }}>
+                {samples.map(s => (
+                  <button key={s.id} onClick={() => setSampleId(s.id)} style={{
+                    padding: '10px 6px 8px', borderRadius: 14, border: 'none',
+                    background: sampleId === s.id ? `${accent}14` : 'transparent', cursor: 'pointer',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7,
+                    transition: 'background .15s',
+                  }}>
+                    <span style={{ position: 'relative', display: 'inline-flex' }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={s.imageUrl} alt={s.label} style={{
+                        width: 56, height: 56, borderRadius: '50%', objectFit: 'cover',
+                        boxShadow: sampleId === s.id ? `0 0 0 3px #fff, 0 0 0 5px ${accent}` : '0 0 0 1px rgba(0,0,0,.08)',
+                        transition: 'box-shadow .15s',
+                      }} />
+                      {sampleId === s.id && (
+                        <span style={{
+                          position: 'absolute', top: -2, right: -2, width: 20, height: 20, borderRadius: '50%',
+                          background: accent, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          border: '2px solid #fff',
+                        }}>
+                          <svg viewBox="0 0 24 24" width={11} height={11} fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </span>
+                      )}
+                    </span>
+                    <span style={{ fontSize: '11px', fontWeight: sampleId === s.id ? 700 : 500, color: sampleId === s.id ? accent : '#555', textAlign: 'center', lineHeight: 1.25 }}>{s.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 

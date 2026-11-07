@@ -37,10 +37,29 @@ export interface CoverSize {
   heightCm: number
 }
 
+export type CoverOrientation = 'horizontal' | 'vertical' | 'square'
+
+// Determina l'orientamento della copertina dalla misura — usato per scegliere
+// automaticamente la versione giusta del mockup (orizzontale/verticale/quadrato).
+export function coverOrientation(size: Pick<CoverSize, 'widthCm' | 'heightCm'>): CoverOrientation {
+  if (size.widthCm === size.heightCm) return 'square'
+  return size.widthCm > size.heightCm ? 'horizontal' : 'vertical'
+}
+
+// Foto del fotografo di un vero album già rilegato, pronta all'uso come sfondo
+// (inquadratura frontale, a riempimento) — una per orientamento, perché la stessa
+// copertina può essere prodotta in formato orizzontale/verticale/quadrato.
+export interface CoverMockupSet {
+  horizontal?: string
+  vertical?: string
+  square?: string
+}
+
 export interface CoverColor {
   id: string
   label: string       // es. "Verde salvia"
   imageUrl: string    // foto del materiale/colore reale, caricata dal fotografo
+  mockups?: CoverMockupSet  // opzionale: foto dell'album vero con questo colore/campione, per orientamento
 }
 
 export type CoverDecorPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
@@ -78,12 +97,13 @@ export interface CoverSectionAssets {
 
 // Rivestimento/materiale fisico della copertina (es. Tela, Similpelle) — globale,
 // non legato a una sezione/occasione. Se `customizable` è false, il cliente non
-// sceglie colore/decoro: la copertina usa `sampleImageUrl` ("il campione") così com'è.
+// sceglie colore/decoro: sceglie invece uno dei `samples` ("campioni") caricati
+// dal fotografo — la copertina usa quel campione (o il suo mockup) così com'è.
 export interface CoverMaterial {
   id: string
   label: string
   customizable: boolean
-  sampleImageUrl?: string  // obbligatorio quando customizable === false
+  samples?: CoverColor[]  // almeno un campione obbligatorio quando customizable === false
 }
 
 // Libreria colori/decori per occasione — salvata su profiles.cover_sections,

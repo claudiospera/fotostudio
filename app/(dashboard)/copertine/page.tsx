@@ -6,12 +6,18 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import type { CoverColor, CoverDecor, CoverDecorPosition, CoverMaterial, CoverSectionKey, CoverSections } from '@/lib/types'
+import type { CoverColor, CoverDecor, CoverDecorPosition, CoverMaterial, CoverMockupSet, CoverSectionKey, CoverSections } from '@/lib/types'
 import { COVER_SECTION_KEYS, COVER_SECTION_LABELS } from '@/lib/types'
 
 const DEFAULT_MATERIALS: CoverMaterial[] = [
   { id: 'tela',       label: 'Tela',       customizable: true },
-  { id: 'similpelle', label: 'Similpelle', customizable: false },
+  { id: 'similpelle', label: 'Similpelle', customizable: false, samples: [] },
+]
+
+const MOCKUP_ORIENTATIONS: { key: keyof CoverMockupSet; label: string }[] = [
+  { key: 'horizontal', label: 'Orizzontale' },
+  { key: 'vertical',   label: 'Verticale' },
+  { key: 'square',     label: 'Quadrato' },
 ]
 
 function uid() {
@@ -50,7 +56,8 @@ export default function CopertineLibraryPage() {
   const [activeSection, setActiveSection] = useState<CoverSectionKey>('matrimonio')
   const [materials, setMaterials] = useState<CoverMaterial[]>([])
   const [newMaterial, setNewMaterial] = useState('')
-  const [uploadingSampleId, setUploadingSampleId] = useState<string | null>(null)
+  const [uploadingSampleFor, setUploadingSampleFor] = useState<string | null>(null)
+  const [uploadingMockupKey, setUploadingMockupKey] = useState<string | null>(null)
 
   const [uploadingColor, setUploadingColor] = useState(false)
   const [uploadingDecor, setUploadingDecor] = useState(false)
@@ -61,6 +68,7 @@ export default function CopertineLibraryPage() {
   const colorInputRef = useRef<HTMLInputElement>(null)
   const decorInputRef = useRef<HTMLInputElement>(null)
   const sampleInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+  const mockupInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
   useEffect(() => {
     fetch('/api/profile/cover-sections')
@@ -93,18 +101,51 @@ export default function CopertineLibraryPage() {
   }, [])
 
   const handleSampleUpload = useCallback(async (materialId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? [])
+    e.target.value = ''
+    if (files.length === 0) return
+    setUploadingSampleFor(materialId)
+    setError(null)
+    const results = await Promise.allSettled(files.map(file => uploadAsset(file, `rivestimenti/${materialId}`)))
+    const newSamples: CoverColor[] = []
+    let failed = 0
+    results.forEach((r, i) => {
+      if (r.status === 'fulfilled') newSamples.push({ id: uid(), label: files[i].name.replace(/\.[^.]+$/, ''), imageUrl: r.value })
+      else failed++
+    })
+    if (newSamples.length > 0) {
+      setMaterials(prev => prev.map(m => m.id === materialId ? { ...m, samples: [...(m.samples ?? []), ...newSamples] } : m))
+    }
+    if (failed > 0) setError(`${failed} campion${failed > 1 ? 'i' : 'e'} non caricat${failed > 1 ? 'i' : 'o'}. Riprova.`)
+    setUploadingSampleFor(null)
+  }, [])
+
+  const removeSample = useCallback((materialId: string, sampleId: string) => {
+    setMaterials(prev => prev.map(m => m.id === materialId ? { ...m, samples: (m.samples ?? []).filter(s => s.id !== sampleId) } : m))
+  }, [])
+
+  const updateSampleLabel = useCallback((materialId: string, sampleId: string, label: string) => {
+    setMaterials(prev => prev.map(m => m.id === materialId
+      ? { ...m, samples: (m.samples ?? []).map(s => s.id === sampleId ? { ...s, label } : s) }
+      : m))
+  }, [])
+
+  const handleMockupUpload = useCallback(async (materialId: string, sampleId: string, orientation: keyof CoverMockupSet, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
-    setUploadingSampleId(materialId)
+    const key = `${materialId}:${sampleId}:${orientation}`
+    setUploadingMockupKey(key)
     setError(null)
     try {
-      const sampleImageUrl = await uploadAsset(file, `rivestimenti/${materialId}`)
-      setMaterials(prev => prev.map(m => m.id === materialId ? { ...m, sampleImageUrl } : m))
+      const url = await uploadAsset(file, `rivestimenti/${materialId}/mockup-${orientation}`)
+      setMaterials(prev => prev.map(m => m.id === materialId
+        ? { ...m, samples: (m.samples ?? []).map(s => s.id === sampleId ? { ...s, mockups: { ...s.mockups, [orientation]: url } } : s) }
+        : m))
     } catch {
-      setError('Caricamento campione non riuscito. Riprova.')
+      setError('Caricamento mockup non riuscito. Riprova.')
     }
-    setUploadingSampleId(null)
+    setUploadingMockupKey(null)
   }, [])
 
   const current = sections[activeSection]
@@ -238,7 +279,7 @@ export default function CopertineLibraryPage() {
         <section style={{ marginBottom: 28 }}>
           <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '14px', fontWeight: 700, color: 'var(--tx)', marginBottom: 10 }}>Rivestimenti</h2>
           <p style={{ fontSize: '11px', color: 'var(--t3)', marginBottom: 12 }}>
-            I materiali della copertina fisica — uguali per tutte le occasioni. Se <strong>personalizzabile</strong>, il cliente sceglie colore e decoro (dalla sezione sotto); se no, carica un&apos;immagine campione: la copertina sarà sempre quella, senza scelta di colore/decoro.
+            I materiali della copertina fisica — uguali per tutte le occasioni. Se <strong>personalizzabile</strong>, il cliente sceglie colore e decoro (dalla sezione sotto); se no, carica uno o più <strong>campioni</strong> (es. colori diversi dello stesso materiale) tra cui il cliente sceglierà — senza scelta separata di colore/decoro. Per ogni campione puoi anche caricare 3 foto dell&apos;album vero già rilegato (orizzontale/verticale/quadrato): se presenti, verranno mostrate al cliente al posto del campione, nella versione giusta in base alla misura della galleria.
           </p>
 
           {materials.length > 0 && (
@@ -269,24 +310,67 @@ export default function CopertineLibraryPage() {
                   </div>
 
                   {!m.customizable && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <input ref={el => { sampleInputRefs.current[m.id] = el }} type="file" accept="image/*" style={{ display: 'none' }}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      <input ref={el => { sampleInputRefs.current[m.id] = el }} type="file" accept="image/*" multiple style={{ display: 'none' }}
                         onChange={e => handleSampleUpload(m.id, e)} />
-                      {m.sampleImageUrl ? (
-                        <>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={m.sampleImageUrl} alt={`Campione ${m.label}`} style={{ width: 64, height: 64, borderRadius: 8, objectFit: 'cover', border: '1px solid var(--b1)' }} />
-                          <button onClick={() => sampleInputRefs.current[m.id]?.click()} disabled={uploadingSampleId === m.id}
-                            style={{ background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 6, padding: '6px 12px', fontSize: '11px', fontWeight: 600, color: 'var(--t2)', cursor: 'pointer' }}>
-                            {uploadingSampleId === m.id ? 'Caricamento…' : 'Cambia campione'}
-                          </button>
-                        </>
-                      ) : (
-                        <button onClick={() => sampleInputRefs.current[m.id]?.click()} disabled={uploadingSampleId === m.id}
-                          style={{ background: 'var(--s2)', border: '1px dashed var(--b2)', borderRadius: 6, padding: '8px 14px', fontSize: '11px', fontWeight: 600, color: 'var(--red)', cursor: 'pointer' }}>
-                          {uploadingSampleId === m.id ? 'Caricamento…' : '+ Carica campione (obbligatorio)'}
-                        </button>
+
+                      {(m.samples ?? []).length > 0 && (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10 }}>
+                          {(m.samples ?? []).map(s => (
+                            <div key={s.id} style={{ background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 8, overflow: 'hidden' }}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={s.imageUrl} alt={s.label} style={{ width: '100%', height: 80, objectFit: 'cover', display: 'block' }} />
+                              <div style={{ padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                <input value={s.label} onChange={e => updateSampleLabel(m.id, s.id, e.target.value)}
+                                  style={{ background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 6, padding: '5px 8px', fontSize: '11px', color: 'var(--tx)', width: '100%' }} />
+
+                                <div style={{ display: 'flex', gap: 4 }}>
+                                  {MOCKUP_ORIENTATIONS.map(o => {
+                                    const mockupKey = `${m.id}:${s.id}:${o.key}`
+                                    const mockupUrl = s.mockups?.[o.key]
+                                    return (
+                                      <div key={o.key} style={{ flex: 1 }}>
+                                        <input ref={el => { mockupInputRefs.current[mockupKey] = el }} type="file" accept="image/*" style={{ display: 'none' }}
+                                          onChange={e => handleMockupUpload(m.id, s.id, o.key, e)} />
+                                        <button
+                                          onClick={() => mockupInputRefs.current[mockupKey]?.click()}
+                                          disabled={uploadingMockupKey === mockupKey}
+                                          title={`Mockup ${o.label}`}
+                                          style={{
+                                            width: '100%', height: 36, borderRadius: 6, cursor: 'pointer',
+                                            border: mockupUrl ? '1px solid var(--ac)' : '1px dashed var(--b2)',
+                                            background: mockupUrl ? `url(${mockupUrl}) center/cover` : 'var(--s1)',
+                                            position: 'relative', display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+                                          }}
+                                        >
+                                          <span style={{
+                                            fontSize: '8px', fontWeight: 700, color: mockupUrl ? '#fff' : 'var(--t3)',
+                                            background: mockupUrl ? 'rgba(0,0,0,.45)' : 'transparent', width: '100%',
+                                            padding: '2px 0', borderRadius: '0 0 5px 5px', textAlign: 'center',
+                                          }}>
+                                            {uploadingMockupKey === mockupKey ? '…' : o.label.slice(0, 4)}
+                                          </span>
+                                        </button>
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+
+                                <button onClick={() => removeSample(m.id, s.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red)', fontSize: '10px', padding: 0, textAlign: 'left' }}>Rimuovi campione</button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       )}
+
+                      <button onClick={() => sampleInputRefs.current[m.id]?.click()} disabled={uploadingSampleFor === m.id}
+                        style={{
+                          alignSelf: 'flex-start', background: 'var(--s2)', border: '1px dashed var(--b2)', borderRadius: 6, padding: '8px 14px',
+                          fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+                          color: (m.samples ?? []).length === 0 ? 'var(--red)' : 'var(--t2)',
+                        }}>
+                        {uploadingSampleFor === m.id ? 'Caricamento…' : (m.samples ?? []).length === 0 ? '+ Carica campione (almeno uno obbligatorio)' : '+ Aggiungi campione'}
+                      </button>
                     </div>
                   )}
                 </div>

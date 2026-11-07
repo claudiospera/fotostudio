@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { sql } from '@/lib/db'
-import type { CoverSections } from '@/lib/types'
+import type { CoverMaterial, CoverSections } from '@/lib/types'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -42,7 +42,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         ...cb,
         colors: assets?.colors ?? [],
         decorations: assets?.decorations ?? [],
-        materials: (gallery.cover_materials as string[] | null) ?? [],
+        materials: (gallery.cover_materials as CoverMaterial[] | null) ?? [],
       },
     }
   }
