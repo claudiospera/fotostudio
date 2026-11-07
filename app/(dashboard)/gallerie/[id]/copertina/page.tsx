@@ -9,6 +9,11 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { Gallery } from '@/lib/types'
 
+// Riconosce misure scritte nell'etichetta tipo "30x30", "30×40 cm" per
+// precompilare largh./alt. — molti fotografi scrivono lì la misura e non
+// capiscono perché servano anche i due campi numerici separati.
+const SIZE_IN_LABEL = /(\d+(?:[.,]\d+)?)\s*[x×]\s*(\d+(?:[.,]\d+)?)/i
+
 export default function CopertinaConfigPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
@@ -42,10 +47,25 @@ export default function CopertinaConfigPage() {
       .finally(() => setLoading(false))
   }, [id, router])
 
+  // Se scrivi la misura nell'etichetta (es. "30x30 cm") e lasci vuoti i campi
+  // numerici, li precompiliamo da soli.
+  const handleLabelChange = useCallback((value: string) => {
+    setSizeLabel(value)
+    if (sizeW.trim() || sizeH.trim()) return
+    const m = value.match(SIZE_IN_LABEL)
+    if (m) {
+      setSizeW(m[1].replace(',', '.'))
+      setSizeH(m[2].replace(',', '.'))
+    }
+  }, [sizeW, sizeH])
+
   const save = useCallback(async () => {
     if (!gallery) return
-    const w = Number(sizeW)
-    const h = Number(sizeH)
+    // Fallback: se i campi numerici sono ancora vuoti ma l'etichetta contiene
+    // una misura tipo "30x30", usiamo quella invece di bloccare il salvataggio.
+    const fallback = (!sizeW.trim() || !sizeH.trim()) ? sizeLabel.match(SIZE_IN_LABEL) : null
+    const w = Number(sizeW) || (fallback ? Number(fallback[1].replace(',', '.')) : 0)
+    const h = Number(sizeH) || (fallback ? Number(fallback[2].replace(',', '.')) : 0)
     if (enabled && (!w || !h)) {
       setError('Imposta larghezza e altezza prima di salvare.')
       return
@@ -154,7 +174,7 @@ export default function CopertinaConfigPage() {
           <p style={{ fontSize: '11px', color: 'var(--t3)', marginBottom: 12 }}>La misura della copertina fisica per questa galleria. La decidi tu: il cliente non la sceglie, vede già impostata la sua.</p>
 
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <input value={sizeLabel} onChange={e => setSizeLabel(e.target.value)} placeholder="Etichetta facoltativa (es. Quadrato grande) — se vuota si genera dalle misure"
+            <input value={sizeLabel} onChange={e => handleLabelChange(e.target.value)} placeholder="Etichetta facoltativa — es. scrivi &quot;30x30 cm&quot; e compiliamo noi largh./alt."
               style={{ flex: '1 1 180px', background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 'var(--r2)', padding: '8px 12px', fontSize: '12px', color: 'var(--tx)' }} />
             <input value={sizeW} onChange={e => setSizeW(e.target.value.replace(/[^0-9.]/g, ''))} placeholder="Largh. cm"
               style={{ width: 90, background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 'var(--r2)', padding: '8px 12px', fontSize: '12px', color: 'var(--tx)' }} />
