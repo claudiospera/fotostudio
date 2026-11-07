@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import GalleryLightbox from './GalleryLightbox'
 import { PublicNavbar } from '@/components/public/PublicNavbar'
+import { optimizedSrc, SIZES } from '@/lib/image-optimize'
 
 // ─── Dati servizi ─────────────────────────────────────────────────────────────
 
@@ -295,7 +296,7 @@ export default async function ServizioPage({ params }: { params: Promise<{ slug:
         overflow: 'hidden',
       }}>
         {servizio.cover && (
-          <img src={servizio.cover} alt="" style={{
+          <img src={optimizedSrc(servizio.cover, SIZES.hero)} alt="" style={{
             position: 'absolute', inset: 0,
             width: '100%', height: '100%', objectFit: 'cover',
           }} />
@@ -377,8 +378,10 @@ export default async function ServizioPage({ params }: { params: Promise<{ slug:
                   }}>
                     {cat.cover && (
                       <img
-                        src={cat.cover}
+                        src={optimizedSrc(cat.cover, SIZES.thumb)}
                         alt={cat.nome}
+                        loading="lazy"
+                        decoding="async"
                         style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .7s ease' }}
                       />
                     )}

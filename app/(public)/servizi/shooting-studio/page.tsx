@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { PublicNavbar } from '@/components/public/PublicNavbar'
+import { optimizedSrc, SIZES } from '@/lib/image-optimize'
 
 const BG     = '#F5F0E8'
 const INK    = '#1a1612'
@@ -112,7 +113,7 @@ export default function ShootingStudioPage() {
               {PHOTOS.map((src, idx) => (
                 <div key={idx} className="studio-photo" onClick={() => setLightbox(idx)}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={src} alt={`Shooting Studio foto ${idx + 1}`} loading="lazy" />
+                  <img src={optimizedSrc(src, SIZES.thumb)} alt={`Shooting Studio foto ${idx + 1}`} loading="lazy" decoding="async" />
                 </div>
               ))}
             </div>
@@ -186,7 +187,7 @@ export default function ShootingStudioPage() {
 
           <div onClick={e => e.stopPropagation()}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={PHOTOS[lightbox]} alt="" style={{ maxWidth: '88vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 8 }} />
+            <img src={optimizedSrc(PHOTOS[lightbox], SIZES.full)} alt="" style={{ maxWidth: '88vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 8 }} />
           </div>
 
           <button onClick={e => { e.stopPropagation(); next() }} style={{

@@ -4,6 +4,7 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { PublicNavbar } from '@/components/public/PublicNavbar'
+import { optimizedSrc, SIZES } from '@/lib/image-optimize'
 
 export const metadata: Metadata = {
   title: 'Chi sono — Claudio Spera Fotografo',
@@ -106,7 +107,7 @@ export default function ChiSonoPage() {
         }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="https://pub-53356d483eb74822990977c0e5c21f6c.r2.dev/images/claudio/claudio-spera-portrait.jpg"
+            src={optimizedSrc('https://pub-53356d483eb74822990977c0e5c21f6c.r2.dev/images/claudio/claudio-spera-portrait.jpg', SIZES.hero)}
             alt="Claudio Spera — Fotografo"
             style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }}
           />

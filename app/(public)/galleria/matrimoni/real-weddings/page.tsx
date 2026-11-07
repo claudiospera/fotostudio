@@ -5,6 +5,7 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import { WEDDINGS } from './_data'
 import { PublicNavbar } from '@/components/public/PublicNavbar'
+import { optimizedSrc, SIZES } from '@/lib/image-optimize'
 
 export const metadata: Metadata = {
   title: 'Real Weddings — Matrimoni Reali — Claudio Spera Fotografo',
@@ -116,8 +117,10 @@ export default function RealWeddingsPage() {
                   }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={w.cover}
+                      src={optimizedSrc(w.cover, SIZES.thumb)}
                       alt={w.title}
+                      loading="lazy"
+                      decoding="async"
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
                   </div>

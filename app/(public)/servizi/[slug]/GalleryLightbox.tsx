@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { optimizedSrc, SIZES } from '@/lib/image-optimize'
 
 interface Props {
   photos: string[]
@@ -28,7 +29,7 @@ export default function GalleryLightbox({ photos }: Props) {
         {photos.map((src, idx) => (
           <div key={idx} className="srv-photo" onClick={() => setLightbox(idx)}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={src} alt={`Foto ${idx + 1}`} loading="lazy" />
+            <img src={optimizedSrc(src, SIZES.thumb)} alt={`Foto ${idx + 1}`} loading="lazy" decoding="async" />
           </div>
         ))}
       </div>
@@ -52,7 +53,7 @@ export default function GalleryLightbox({ photos }: Props) {
           <div onClick={e => e.stopPropagation()} style={{ maxWidth: '88vw', maxHeight: '90vh' }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={photos[lightbox]}
+              src={optimizedSrc(photos[lightbox], SIZES.full)}
               alt=""
               style={{ maxWidth: '88vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 8 }}
             />

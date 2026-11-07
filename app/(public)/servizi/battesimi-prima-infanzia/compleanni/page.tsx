@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { PublicNavbar } from '@/components/public/PublicNavbar'
+import { optimizedSrc, SIZES } from '@/lib/image-optimize'
 
 const BG     = '#F5F0E8'
 const INK    = '#1a1612'
@@ -74,7 +75,7 @@ export default function CompleannPage() {
           {PHOTOS.map((src, idx) => (
             <div key={idx} className="compl-photo" onClick={() => setLightbox(idx)}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={src} alt={`Compleanno foto ${idx + 1}`} loading="lazy" />
+              <img src={optimizedSrc(src, SIZES.thumb)} alt={`Compleanno foto ${idx + 1}`} loading="lazy" decoding="async" />
             </div>
           ))}
         </div>
@@ -98,7 +99,7 @@ export default function CompleannPage() {
 
           <div onClick={e => e.stopPropagation()}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={PHOTOS[lightbox]} alt="" style={{ maxWidth: '88vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 8 }} />
+            <img src={optimizedSrc(PHOTOS[lightbox], SIZES.full)} alt="" style={{ maxWidth: '88vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 8 }} />
           </div>
 
           <button onClick={e => { e.stopPropagation(); next() }} style={{

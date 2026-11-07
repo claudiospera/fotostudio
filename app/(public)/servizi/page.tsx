@@ -4,6 +4,7 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { PublicNavbar } from '@/components/public/PublicNavbar'
+import { optimizedSrc, SIZES } from '@/lib/image-optimize'
 
 export const metadata: Metadata = {
   title: 'Servizi Fotografici — Claudio Spera Fotografo',
@@ -100,7 +101,7 @@ export default function ServiziPage() {
                 }}>
                   {s.cover && (
                     /* eslint-disable-next-line @next/next/no-img-element */
-                    <img src={s.cover} alt={s.nome}
+                    <img src={optimizedSrc(s.cover, SIZES.thumb)} alt={s.nome} loading="lazy" decoding="async"
                       style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                   )}
                 </div>
@@ -180,7 +181,7 @@ export default function ServiziPage() {
               style={{
                 display: 'block', textDecoration: 'none',
                 aspectRatio: '9/16',
-                background: cover ? `url(${cover}) center/cover no-repeat` : 'rgba(26,22,18,0.06)',
+                background: cover ? `url(${optimizedSrc(cover, SIZES.thumb)}) center/cover no-repeat` : 'rgba(26,22,18,0.06)',
                 position: 'relative', overflow: 'hidden',
               }}
               className="reel-card"

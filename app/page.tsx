@@ -2,6 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { HeroServiceTiles } from '@/components/home/HeroServiceTiles'
+import { optimizedSrc, SIZES } from '@/lib/image-optimize'
 
 export const metadata: Metadata = {
   alternates: { canonical: 'https://storiedaraccontare.it' },
@@ -127,7 +128,7 @@ export default async function HomePage() {
                 style={{
                   display: 'block', textDecoration: 'none',
                   aspectRatio: '9/16', borderRadius: 12, overflow: 'hidden',
-                  background: `url(${cover}) center/cover no-repeat #f3f3f3`,
+                  background: `url(${optimizedSrc(cover, SIZES.thumb)}) center/cover no-repeat #f3f3f3`,
                   position: 'relative',
                 }} className="reel-home-card">
                 <div className="reel-home-overlay" style={{

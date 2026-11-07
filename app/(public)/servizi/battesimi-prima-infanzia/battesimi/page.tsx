@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { PublicNavbar } from '@/components/public/PublicNavbar'
+import { optimizedSrc, SIZES } from '@/lib/image-optimize'
 
 const BG     = '#F5F0E8'
 const INK    = '#1a1612'
@@ -77,7 +78,7 @@ export default function BattesimiPage() {
           {PHOTOS.map((src, idx) => (
             <div key={idx} className="batt-photo" onClick={() => setLightbox(idx)}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={src} alt={`Battesimo foto ${idx + 1}`} loading="lazy" />
+              <img src={optimizedSrc(src, SIZES.thumb)} alt={`Battesimo foto ${idx + 1}`} loading="lazy" decoding="async" />
             </div>
           ))}
         </div>
@@ -98,7 +99,7 @@ export default function BattesimiPage() {
 
           <div onClick={e => e.stopPropagation()}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={PHOTOS[lightbox]} alt="" style={{ maxWidth: '88vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 8 }} />
+            <img src={optimizedSrc(PHOTOS[lightbox], SIZES.full)} alt="" style={{ maxWidth: '88vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 8 }} />
           </div>
 
           <button onClick={e => { e.stopPropagation(); next() }} style={{

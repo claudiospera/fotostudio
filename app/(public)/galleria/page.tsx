@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { PublicNavbar } from '@/components/public/PublicNavbar'
+import { optimizedSrc, SIZES } from '@/lib/image-optimize'
 
 export const metadata: Metadata = {
   title: 'Galleria — Claudio Spera Fotografo',
@@ -78,7 +79,7 @@ export default function GalleriaPage() {
                 }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={cat.cover}
+                    src={optimizedSrc(cat.cover, SIZES.thumb)}
                     alt={cat.label}
                     style={{
                       width: '100%', height: '100%', objectFit: 'cover',

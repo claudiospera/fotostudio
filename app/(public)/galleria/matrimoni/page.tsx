@@ -4,6 +4,7 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { PublicNavbar } from '@/components/public/PublicNavbar'
+import { optimizedSrc, SIZES } from '@/lib/image-optimize'
 
 export const metadata: Metadata = {
   title: 'Matrimoni — Claudio Spera Fotografo',
@@ -82,8 +83,10 @@ export default function MatrimoniPage() {
               }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="https://pub-53356d483eb74822990977c0e5c21f6c.r2.dev/images/galleria/matrimoni/portfolio-cover.jpg"
+                  src={optimizedSrc('https://pub-53356d483eb74822990977c0e5c21f6c.r2.dev/images/galleria/matrimoni/portfolio-cover.jpg', SIZES.thumb)}
                   alt="Portfolio"
+                  loading="lazy"
+                  decoding="async"
                   style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .7s ease' }}
                 />
                 {/* overlay hover */}
@@ -118,8 +121,10 @@ export default function MatrimoniPage() {
               }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="https://pub-53356d483eb74822990977c0e5c21f6c.r2.dev/images/galleria/matrimoni/real-weddings/mario%20e%20marianna/DSCF4629.jpg"
+                  src={optimizedSrc('https://pub-53356d483eb74822990977c0e5c21f6c.r2.dev/images/galleria/matrimoni/real-weddings/mario%20e%20marianna/DSCF4629.jpg', SIZES.thumb)}
                   alt="Real Weddings"
+                  loading="lazy"
+                  decoding="async"
                   style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .7s ease' }}
                 />
                 <div style={{

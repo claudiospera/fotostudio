@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { WEDDINGS } from '../_data'
 import { PublicNavbar } from '@/components/public/PublicNavbar'
+import { optimizedSrc, SIZES } from '@/lib/image-optimize'
 
 const BG     = '#F5F0E8'
 const INK    = '#1a1612'
@@ -102,7 +103,7 @@ export default function WeddingDetailPage({ params }: { params: Promise<{ slug: 
               style={{ aspectRatio: '16/9', marginBottom: 8 }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={photos[0]} alt={`${wedding.title} — 1`} />
+              <img src={optimizedSrc(photos[0], SIZES.hero)} alt={`${wedding.title} — 1`} />
             </div>
 
             {/* Griglia restanti */}
@@ -121,7 +122,7 @@ export default function WeddingDetailPage({ params }: { params: Promise<{ slug: 
                     style={{ aspectRatio: '1/1' }}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={src} alt={`${wedding.title} — ${idx + 2}`} loading="lazy" />
+                    <img src={optimizedSrc(src, SIZES.thumb)} alt={`${wedding.title} — ${idx + 2}`} loading="lazy" decoding="async" />
                   </div>
                 ))}
               </div>
@@ -149,7 +150,7 @@ export default function WeddingDetailPage({ params }: { params: Promise<{ slug: 
           <div onClick={e => e.stopPropagation()} style={{ maxWidth: '88vw', maxHeight: '90vh' }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={photos[lightbox]}
+              src={optimizedSrc(photos[lightbox], SIZES.full)}
               alt=""
               style={{ maxWidth: '88vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 8 }}
             />
