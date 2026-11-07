@@ -182,6 +182,26 @@ CREATE TABLE IF NOT EXISTS print_orders (
   created_at   timestamptz DEFAULT now()
 );
 
+-- Richieste "Crea Copertina" — progettazione copertina album dal portale cliente
+-- (nessun pagamento online: il fotografo la produce manualmente, come print_orders)
+CREATE TABLE IF NOT EXISTS cover_orders (
+  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  gallery_id      uuid REFERENCES galleries(id) ON DELETE CASCADE NOT NULL,
+  session_id      text NOT NULL,
+  client_name     text,
+  client_email    text,
+  size_label      text NOT NULL,
+  color_label     text NOT NULL,
+  decor_label     text,
+  text_content    text,
+  font_label      text,
+  text_color      text,
+  cover_image_url text NOT NULL,
+  status          text NOT NULL DEFAULT 'nuovo',
+  notes           text,
+  created_at      timestamptz DEFAULT now()
+);
+
 -- Clienti (anagrafica completa)
 CREATE TABLE IF NOT EXISTS clienti (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),

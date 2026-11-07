@@ -1,0 +1,22 @@
+import { NextResponse } from 'next/server'
+import { getPresignedUploadUrl } from '@/lib/r2'
+
+// POST /api/public/cover-photo-presign — public (no auth), for "Crea Copertina" client uploads
+export async function POST(request: Request) {
+  const { filename, contentType } = await request.json()
+
+  if (!filename || typeof filename !== 'string') {
+    return NextResponse.json({ error: 'filename mancante' }, { status: 400 })
+  }
+  // iOS può inviare contentType vuoto per HEIC/HEIF convertiti — fallback a image/jpeg
+  const effectiveContentType = contentType || 'image/jpeg'
+  if (!effectiveContentType.startsWith('image/')) {
+    return NextResponse.json({ error: 'Solo immagini consentite' }, { status: 400 })
+  }
+
+  const ext = filename.split('.').pop()?.toLowerCase() || 'jpg'
+  const key = `cover-orders/tmp/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+
+  const { uploadUrl, publicUrl } = await getPresignedUploadUrl(key)
+  return NextResponse.json({ uploadUrl, publicUrl })
+}

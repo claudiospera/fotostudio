@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import type { Gallery, Photo, GalleryStatus } from '@/lib/types'
 // Neon + Clerk: uploads via R2 presign
 import { useUIStore } from '@/store/ui'
@@ -731,6 +732,19 @@ export default function GalleryDetailPage() {
               {t.icon} {t.label}
             </button>
           ))}
+          <Link
+            href={`/gallerie/${id}/copertina`}
+            style={{
+              padding: '10px 16px', fontSize: '12px', fontWeight: 400,
+              color: 'var(--t3)', textDecoration: 'none',
+              border: 'none', borderBottom: '2px solid transparent',
+              display: 'flex', alignItems: 'center', gap: 6,
+              whiteSpace: 'nowrap', transition: 'all .15s',
+            }}
+          >
+            <svg viewBox="0 0 24 24" width={13} height={13} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M8 7h.01M16 7h.01"/><path d="M8 11c1.5 2 2.5 2 4 0s2.5-2 4 0"/></svg>
+            Crea Copertina
+          </Link>
         </div>
 
         {/* ── TAB: FOTO ────────────────────────────────────────────────── */}

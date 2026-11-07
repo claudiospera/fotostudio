@@ -30,6 +30,35 @@ export interface PreventivoTemplate {
   colore: string
 }
 
+export interface CoverSize {
+  id: string
+  label: string      // es. "30×30 cm"
+  widthCm: number
+  heightCm: number
+}
+
+export interface CoverColor {
+  id: string
+  label: string       // es. "Verde salvia"
+  imageUrl: string    // foto del materiale/colore reale, caricata dal fotografo
+}
+
+export type CoverDecorPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+
+export interface CoverDecor {
+  id: string
+  label: string       // es. "Orsetto"
+  imageUrl: string
+  position: CoverDecorPosition
+}
+
+export interface CoverBuilderSettings {
+  enabled: boolean
+  size: CoverSize | null  // la misura la decide il fotografo per questa galleria, non il cliente
+  colors: CoverColor[]
+  decorations: CoverDecor[]
+}
+
 export interface GallerySettings {
   preferiti: boolean
   commenti: boolean
@@ -45,6 +74,7 @@ export interface GallerySettings {
     paypal: boolean
     bonifico: boolean
   }
+  cover_builder?: CoverBuilderSettings
   // Appearance / portale cliente
   show_title?: boolean
   show_subtitle?: boolean
@@ -73,6 +103,24 @@ export interface Photo {
   height?: number
   order_index: number
   folder?: string | null
+  created_at: string
+}
+
+export interface CoverOrder {
+  id: string
+  gallery_id: string
+  session_id: string
+  client_name?: string | null
+  client_email?: string | null
+  size_label: string
+  color_label: string
+  decor_label?: string | null
+  text_content?: string | null
+  font_label?: string | null
+  text_color?: string | null
+  cover_image_url: string
+  status: string
+  notes?: string | null
   created_at: string
 }
 

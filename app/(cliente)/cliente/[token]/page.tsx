@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams } from 'next/navigation'
+import Link from 'next/link'
 import type { Photo } from '@/lib/types'
 import { Lightbox } from '@/components/ui/Lightbox'
 import JSZip from 'jszip'
@@ -34,6 +35,7 @@ interface PublicGallery {
     hero_bg?: string       // 'photo' | 'solid'
     hero_bg_color?: string // colore esadecimale quando hero_bg === 'solid'
     hero_fit?: string      // 'cover' | 'contain'
+    cover_builder?: { enabled?: boolean }
   }
   photos: Photo[]
   profiles?: { name?: string; studio_name?: string }
@@ -2199,6 +2201,22 @@ export default function ClientePortalPage() {
             >
               Apri il carrello →
             </button>
+          </div>
+        )}
+
+        {/* ── BANNER CREA COPERTINA ──────────────────────────────────────── */}
+        {gallery.settings?.cover_builder?.enabled && (
+          <div style={{ margin: `0 clamp(16px, 4vw, 40px) 40px`, background: '#fff', border: `1px solid ${theme.navBorder}`, borderRadius: 14, padding: 'clamp(20px, 3vw, 28px) clamp(20px, 3vw, 32px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+            <div>
+              <p style={{ fontFamily: fontDef.family, fontWeight: 700, fontSize: '18px', color: theme.navText, marginBottom: 4 }}>Crea la copertina del tuo album</p>
+              <p style={{ fontSize: '13px', color: theme.navSub }}>Scegli colore, decoro e carica la tua foto preferita per personalizzare la copertina.</p>
+            </div>
+            <Link
+              href={`/cliente/${token}/copertina`}
+              style={{ background: theme.accent, color: '#fff', border: 'none', borderRadius: 8, padding: '11px 22px', fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0, letterSpacing: '.03em', textDecoration: 'none', display: 'inline-block' }}
+            >
+              Crea copertina →
+            </Link>
           </div>
         )}
 
