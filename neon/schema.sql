@@ -9,6 +9,10 @@ CREATE TABLE IF NOT EXISTS profiles (
   email       text,
   iban        text,
   ical_token  text UNIQUE,
+  -- Librerie "Crea Copertina" riusabili per occasione (battesimo/comunione/
+  -- matrimonio/generico), caricate una volta e condivise da tutte le gallerie
+  -- di quel tipo. Forma: { [sectionKey]: { colors: CoverColor[], decorations: CoverDecor[] } }
+  cover_sections jsonb DEFAULT '{}'::jsonb,
   created_at  timestamptz DEFAULT now()
 );
 

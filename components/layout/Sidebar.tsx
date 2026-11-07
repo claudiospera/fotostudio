@@ -10,6 +10,7 @@ import { useClerk } from '@clerk/nextjs'
 import {
   LayoutGrid, Images, FileText, Upload, ShoppingCart, LogOut, Plus, Users, BarChart2,
   CalendarCheck, ChevronDown, CalendarDays, ClipboardList, ShoppingBag, GalleryVerticalEnd,
+  Palette,
 } from 'lucide-react'
 
 // ─── CRM / Gestionale ────────────────────────────────────────────────────────
@@ -19,6 +20,7 @@ const gestionaleItems = [
   { href: '/clienti',                  label: 'Clienti',             icon: Users       },
   { href: '/preventivi',               label: 'Contratti',           icon: FileText    },
   { href: '/statistiche',              label: 'Statistiche',         icon: BarChart2   },
+  { href: '/copertine',                label: 'Libreria Copertine',  icon: Palette     },
 ]
 
 const lavoroItems = [

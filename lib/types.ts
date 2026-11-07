@@ -52,11 +52,28 @@ export interface CoverDecor {
   position: CoverDecorPosition
 }
 
-export interface CoverBuilderSettings {
-  enabled: boolean
-  size: CoverSize | null  // la misura la decide il fotografo per questa galleria, non il cliente
+export type CoverSectionKey = 'battesimo' | 'comunione' | 'matrimonio' | 'generico'
+
+export const COVER_SECTION_LABELS: Record<CoverSectionKey, string> = {
+  battesimo:  'Battesimo',
+  comunione:  'Comunione',
+  matrimonio: 'Matrimonio',
+  generico:   'Generico',
+}
+
+export interface CoverSectionAssets {
   colors: CoverColor[]
   decorations: CoverDecor[]
+}
+
+// Libreria colori/decori per occasione — salvata su profiles.cover_sections,
+// caricata una volta dal fotografo e condivisa da tutte le gallerie dello stesso tipo.
+export type CoverSections = Record<CoverSectionKey, CoverSectionAssets>
+
+export interface CoverBuilderSettings {
+  enabled: boolean
+  size: CoverSize | null        // la misura la decide il fotografo per questa galleria, non il cliente
+  section: CoverSectionKey      // quale libreria colori/decori usa questa galleria
 }
 
 export interface GallerySettings {
@@ -383,5 +400,6 @@ export interface Profile {
   email?: string
   iban?: string
   plan: 'free' | 'pro' | 'professional'
+  cover_sections?: CoverSections
   created_at: string
 }

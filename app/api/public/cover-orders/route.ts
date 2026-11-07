@@ -63,6 +63,36 @@ function buildEmailHtml(order: CoverOrderPayload & { gallery_name: string }) {
 </html>`
 }
 
+// ── Telegram (stesso canale/credenziali usato per i nuovi ordini shop) ───────
+async function sendTelegram(order: CoverOrderPayload & { gallery_name: string }) {
+  const token  = process.env.TELEGRAM_BOT_TOKEN
+  const chatId = process.env.TELEGRAM_CHAT_ID
+  if (!token || !chatId) return
+
+  const text = [
+    `🖼️ *Nuova richiesta Crea Copertina*`,
+    ``,
+    `📁 Galleria: ${order.gallery_name}`,
+    `👤 ${order.client_name || 'Cliente non specificato'}`,
+    order.client_email ? `📧 ${order.client_email}` : null,
+    ``,
+    `📐 Misura: ${order.size_label}`,
+    `🎨 Colore: ${order.color_label}`,
+    order.decor_label ? `✨ Decoro: ${order.decor_label}` : null,
+    order.text_content ? `✏️ Testo: "${order.text_content}" (${order.font_label ?? ''})` : null,
+  ].filter(Boolean).join('\n')
+
+  try {
+    await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, photo: order.cover_image_url, caption: text, parse_mode: 'Markdown' }),
+    })
+  } catch (err) {
+    console.error('[cover-orders] Telegram error:', err)
+  }
+}
+
 // ── GET: storico richieste per session_id ────────────────────────────────────
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
@@ -129,22 +159,25 @@ export async function POST(req: Request) {
     }
   }
 
-  if (process.env.RESEND_API_KEY) {
-    try {
+  const notifyPayload = { ...body, gallery_name: gallery?.name ?? 'Galleria' }
+
+  await Promise.allSettled([
+    sendTelegram(notifyPayload),
+    (async () => {
+      if (!process.env.RESEND_API_KEY) {
+        console.log('[cover-orders] RESEND_API_KEY non configurato. Richiesta ricevuta:', body)
+        return
+      }
       const { Resend } = await import('resend')
       const resend = new Resend(process.env.RESEND_API_KEY)
       await resend.emails.send({
         from: 'Storie da Raccontare <onboarding@resend.dev>',
         to: PHOTOGRAPHER_EMAIL,
         subject: `Nuova richiesta Crea Copertina - ${gallery?.name ?? 'Galleria'}`,
-        html: buildEmailHtml({ ...body, gallery_name: gallery?.name ?? 'Galleria' }),
+        html: buildEmailHtml(notifyPayload),
       })
-    } catch (emailErr) {
-      console.error('[cover-orders] Email error:', emailErr)
-    }
-  } else {
-    console.log('[cover-orders] RESEND_API_KEY non configurato. Richiesta ricevuta:', body)
-  }
+    })().catch(emailErr => console.error('[cover-orders] Email error:', emailErr)),
+  ])
 
   return NextResponse.json(order, { status: 201 })
 }
