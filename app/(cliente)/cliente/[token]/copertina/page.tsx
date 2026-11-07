@@ -8,7 +8,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import type { CoverSize, CoverColor, CoverDecor } from '@/lib/types'
+import type { CoverSize, CoverColor, CoverDecor, CoverMaterial } from '@/lib/types'
 import { normalizeImageOrientation } from '@/lib/shop/normalize-image'
 
 interface PublicGallerySettings {
@@ -19,7 +19,7 @@ interface PublicGallerySettings {
     size: CoverSize | null
     colors: CoverColor[]
     decorations: CoverDecor[]
-    materials: string[]
+    materials: CoverMaterial[]
   }
 }
 
@@ -101,7 +101,7 @@ function getSessionId(): string {
 const DRAFT_KEY = 'fs-cover-draft-v1'
 
 interface Draft {
-  colorId: string; decorId: string; material: string
+  colorId: string; decorId: string; materialId: string
   uploadedUrl: string; filename?: string; natW: number; natH: number
   zoom: number; offsetX: number; offsetY: number
   text: string; fontId: string; textColor: string; textSize: number
@@ -120,13 +120,13 @@ export default function CopertinaPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const previewRef = useRef<HTMLDivElement>(null)
-  const colorImgRef = useRef<HTMLImageElement | null>(null)
+  const bgImgRef = useRef<HTMLImageElement | null>(null)
   const decorImgRef = useRef<HTMLImageElement | null>(null)
   const photoImgRef = useRef<HTMLImageElement | null>(null)
 
   const [colorId, setColorId] = useState('')
   const [decorId, setDecorId] = useState('')
-  const [material, setMaterial] = useState('')
+  const [materialId, setMaterialId] = useState('')
 
   const [photoUrl, setPhotoUrl]         = useState<string | null>(null)
   const [uploadedUrl, setUploadedUrl]   = useState<string | null>(null)
@@ -163,7 +163,7 @@ export default function CopertinaPage() {
         if (!cb?.enabled || !cb.size) { setNotAvailable(true); return }
         setColorId(cb.colors[0]?.id ?? '')
         setDecorId(cb.decorations[0]?.id ?? '')
-        setMaterial(cb.materials?.[0] ?? '')
+        setMaterialId(cb.materials?.[0]?.id ?? '')
       })
       .catch(() => setNotAvailable(true))
       .finally(() => setLoading(false))
@@ -174,8 +174,14 @@ export default function CopertinaPage() {
   const colors = cb?.colors ?? []
   const decorations = cb?.decorations ?? []
   const materials = cb?.materials ?? []
-  const color = colors.find(c => c.id === colorId)
-  const decor = decorations.find(d => d.id === decorId)
+  const selectedMaterial = materials.find(m => m.id === materialId)
+  // Se il rivestimento non è personalizzabile, niente scelta di colore/decoro:
+  // la copertina usa il campione caricato dal fotografo per quel materiale.
+  const isCustomizable = selectedMaterial ? selectedMaterial.customizable : true
+  const color = isCustomizable ? colors.find(c => c.id === colorId) : undefined
+  const decor = isCustomizable ? decorations.find(d => d.id === decorId) : undefined
+  const backgroundImageUrl = isCustomizable ? color?.imageUrl : selectedMaterial?.sampleImageUrl
+  const materialNeedsSample = !isCustomizable && !selectedMaterial?.sampleImageUrl
 
   const paletteId = gallery?.settings?.theme_palette ?? 'agave'
   const accent = PALETTE_ACCENT[paletteId] ?? PALETTE_ACCENT.agave
@@ -201,14 +207,14 @@ export default function CopertinaPage() {
     document.head.appendChild(link)
   }, [])
 
-  // Precarica immagine colore selezionata
+  // Precarica immagine di sfondo (colore scelto, o campione se il rivestimento non è personalizzabile)
   useEffect(() => {
-    if (!color) { colorImgRef.current = null; return }
+    if (!backgroundImageUrl) { bgImgRef.current = null; return }
     const img = new window.Image()
-    img.onload = () => { colorImgRef.current = img; redraw() }
-    img.src = proxied(color.imageUrl)
+    img.onload = () => { bgImgRef.current = img; redraw() }
+    img.src = proxied(backgroundImageUrl)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [color?.imageUrl])
+  }, [backgroundImageUrl])
 
   // Precarica decoro selezionato
   useEffect(() => {
@@ -228,8 +234,8 @@ export default function CopertinaPage() {
     const { w: W, h: H } = previewDims
     ctx.clearRect(0, 0, W, H)
 
-    const colorImg = colorImgRef.current
-    if (colorImg) drawCover(ctx, colorImg, colorImg.naturalWidth, colorImg.naturalHeight, 0, 0, W, H)
+    const bgImg = bgImgRef.current
+    if (bgImg) drawCover(ctx, bgImg, bgImg.naturalWidth, bgImg.naturalHeight, 0, 0, W, H)
     else { ctx.fillStyle = '#eee'; ctx.fillRect(0, 0, W, H) }
 
     const border = Math.round(Math.min(W, H) * BORDER_FRACTION)
@@ -270,7 +276,7 @@ export default function CopertinaPage() {
       if (!raw) return
       const d: Draft = JSON.parse(raw)
       if (!d.uploadedUrl) return
-      setColorId(d.colorId); setDecorId(d.decorId); setMaterial(d.material)
+      setColorId(d.colorId); setDecorId(d.decorId); setMaterialId(d.materialId)
       setPhotoUrl(d.uploadedUrl); setUploadedUrl(d.uploadedUrl); setPhotoFilename(d.filename)
       setPhotoZoom(d.zoom); setPhotoOffset({ x: d.offsetX, y: d.offsetY })
       setText(d.text); setFontId(d.fontId); setTextColor(d.textColor); setTextSize(d.textSize)
@@ -287,7 +293,7 @@ export default function CopertinaPage() {
     if (!uploadedUrl || uploading) { sessionStorage.removeItem(DRAFT_KEY); return }
     const t = setTimeout(() => {
       const d: Draft = {
-        colorId, decorId, material, uploadedUrl, filename: photoFilename,
+        colorId, decorId, materialId, uploadedUrl, filename: photoFilename,
         natW: photoNatSize?.w ?? 0, natH: photoNatSize?.h ?? 0,
         zoom: photoZoom, offsetX: photoOffset.x, offsetY: photoOffset.y,
         text, fontId, textColor, textSize, textPosX: textPos.x, textPosY: textPos.y,
@@ -296,7 +302,7 @@ export default function CopertinaPage() {
       sessionStorage.setItem(DRAFT_KEY, JSON.stringify(d))
     }, 400)
     return () => clearTimeout(t)
-  }, [colorId, decorId, material, uploadedUrl, uploading, photoFilename, photoNatSize, photoZoom, photoOffset, text, fontId, textColor, textSize, textPos, clientName, clientEmail])
+  }, [colorId, decorId, materialId, uploadedUrl, uploading, photoFilename, photoNatSize, photoZoom, photoOffset, text, fontId, textColor, textSize, textPos, clientName, clientEmail])
 
   // ── drag foto ──────────────────────────────────────────────────────────
   const photoDragRef = useRef<{ sx: number; sy: number; ox: number; oy: number } | null>(null)
@@ -381,8 +387,10 @@ export default function CopertinaPage() {
 
   // ── invio richiesta ────────────────────────────────────────────────────
   async function handleSend() {
-    if (!photoUrl || uploading || isSending || uploadFailed || !size || !color || !gallery) return
-    if (materials.length > 0 && !material) return
+    if (!photoUrl || uploading || isSending || uploadFailed || !size || !gallery) return
+    if (materials.length > 0 && !selectedMaterial) return
+    if (isCustomizable && !color) return
+    if (!isCustomizable && !selectedMaterial?.sampleImageUrl) return
     if (!photoImgRef.current || !photoNatSize) { setSendError(true); return }
 
     setIsSending(true)
@@ -393,9 +401,9 @@ export default function CopertinaPage() {
       const ctx = canvas.getContext('2d')
       if (!ctx) throw new Error('no-canvas-context')
 
-      const colorImg = colorImgRef.current
-      if (colorImg) drawCover(ctx, colorImg, colorImg.naturalWidth, colorImg.naturalHeight, 0, 0, outputDims.w, outputDims.h)
-      else throw new Error('no-color-image')
+      const bgImg = bgImgRef.current
+      if (bgImg) drawCover(ctx, bgImg, bgImg.naturalWidth, bgImg.naturalHeight, 0, 0, outputDims.w, outputDims.h)
+      else throw new Error('no-background-image')
 
       const border = Math.round(Math.min(outputDims.w, outputDims.h) * BORDER_FRACTION)
       const innerX = border, innerY = border, innerW = outputDims.w - border * 2, innerH = outputDims.h - border * 2
@@ -453,8 +461,8 @@ export default function CopertinaPage() {
           client_name: clientName.trim() || null,
           client_email: clientEmail.trim() || null,
           size_label: size.label,
-          material_label: material || null,
-          color_label: color.label,
+          material_label: selectedMaterial?.label ?? null,
+          color_label: color?.label ?? null,
           decor_label: decor?.label ?? null,
           text_content: text.trim() || null,
           font_label: text.trim() ? font.label : null,
@@ -511,7 +519,8 @@ export default function CopertinaPage() {
     )
   }
 
-  const canSend = !!photoUrl && !!size && !!color && (materials.length === 0 || !!material) && !uploading && !isSending && !uploadFailed
+  const materialOk = materials.length === 0 || (!!selectedMaterial && (isCustomizable ? true : !!selectedMaterial.sampleImageUrl))
+  const canSend = !!photoUrl && !!size && materialOk && (!isCustomizable || !!color) && !uploading && !isSending && !uploadFailed
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8f8f6', fontFamily: 'Inter, sans-serif' }}>
@@ -583,7 +592,9 @@ export default function CopertinaPage() {
         <div className="cover-first-mobile" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div>
             <h1 style={{ fontFamily: headingFont, fontWeight: 800, fontSize: 'clamp(20px,2.6vw,28px)', color: '#111', marginBottom: 6 }}>Crea la tua copertina</h1>
-            <p style={{ fontSize: '13px', color: '#777', lineHeight: 1.6 }}>Scegli rivestimento, colore e decoro, poi carica la tua foto preferita — misura {size?.label}.</p>
+            <p style={{ fontSize: '13px', color: '#777', lineHeight: 1.6 }}>
+              {materials.length > 0 ? 'Scegli il rivestimento' : 'Scegli'}{isCustomizable && colors.length > 0 ? ', colore e decoro' : ''}, poi carica la tua foto preferita — misura {size?.label}.
+            </p>
           </div>
 
           {materials.length > 0 && (
@@ -591,17 +602,27 @@ export default function CopertinaPage() {
               <p style={labelStyle}>Rivestimento</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {materials.map(m => (
-                  <button key={m} onClick={() => setMaterial(m)} style={{
-                    padding: '10px 16px', borderRadius: 10, border: `2px solid ${material === m ? accent : '#e0e0e0'}`,
-                    background: material === m ? `${accent}18` : '#fff', fontSize: '13px', fontWeight: material === m ? 700 : 500,
-                    color: material === m ? accent : '#444', cursor: 'pointer',
-                  }}>{m}</button>
+                  <button key={m.id} onClick={() => setMaterialId(m.id)} style={{
+                    padding: '10px 16px', borderRadius: 10, border: `2px solid ${materialId === m.id ? accent : '#e0e0e0'}`,
+                    background: materialId === m.id ? `${accent}18` : '#fff', fontSize: '13px', fontWeight: materialId === m.id ? 700 : 500,
+                    color: materialId === m.id ? accent : '#444', cursor: 'pointer',
+                  }}>{m.label}</button>
                 ))}
               </div>
+              {!isCustomizable && (
+                <p style={{ fontSize: '11px', color: '#888', marginTop: 8, lineHeight: 1.5 }}>
+                  Questo rivestimento ha un aspetto fisso — colore e decoro non sono personalizzabili.
+                </p>
+              )}
+              {materialNeedsSample && (
+                <p style={{ fontSize: '11px', color: '#d97070', marginTop: 8 }}>
+                  Questo rivestimento non è ancora configurato dal fotografo — scegline un altro o riprova più tardi.
+                </p>
+              )}
             </div>
           )}
 
-          {colors.length > 0 && (
+          {isCustomizable && colors.length > 0 && (
             <div>
               <p style={labelStyle}>Colore</p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(84px, 1fr))', gap: 10 }}>
@@ -636,7 +657,7 @@ export default function CopertinaPage() {
             </div>
           )}
 
-          {decorations.length > 0 && (
+          {isCustomizable && decorations.length > 0 && (
             <div>
               <p style={labelStyle}>Decoro</p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))', gap: 10 }}>

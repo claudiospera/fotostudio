@@ -200,7 +200,7 @@ CREATE TABLE IF NOT EXISTS cover_orders (
   client_email    text,
   size_label      text NOT NULL,
   material_label  text,
-  color_label     text NOT NULL,
+  color_label     text,  -- NULL se il rivestimento scelto non è personalizzabile (aspetto da campione)
   decor_label     text,
   text_content    text,
   font_label      text,

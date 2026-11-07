@@ -6,8 +6,13 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import type { CoverColor, CoverDecor, CoverDecorPosition, CoverSectionKey, CoverSections } from '@/lib/types'
+import type { CoverColor, CoverDecor, CoverDecorPosition, CoverMaterial, CoverSectionKey, CoverSections } from '@/lib/types'
 import { COVER_SECTION_KEYS, COVER_SECTION_LABELS } from '@/lib/types'
+
+const DEFAULT_MATERIALS: CoverMaterial[] = [
+  { id: 'tela',       label: 'Tela',       customizable: true },
+  { id: 'similpelle', label: 'Similpelle', customizable: false },
+]
 
 function uid() {
   return Math.random().toString(36).slice(2, 10)
@@ -43,8 +48,9 @@ export default function CopertineLibraryPage() {
   const [loading, setLoading] = useState(true)
   const [sections, setSections] = useState<CoverSections>(EMPTY_SECTIONS)
   const [activeSection, setActiveSection] = useState<CoverSectionKey>('matrimonio')
-  const [materials, setMaterials] = useState<string[]>([])
+  const [materials, setMaterials] = useState<CoverMaterial[]>([])
   const [newMaterial, setNewMaterial] = useState('')
+  const [uploadingSampleId, setUploadingSampleId] = useState<string | null>(null)
 
   const [uploadingColor, setUploadingColor] = useState(false)
   const [uploadingDecor, setUploadingDecor] = useState(false)
@@ -54,13 +60,14 @@ export default function CopertineLibraryPage() {
 
   const colorInputRef = useRef<HTMLInputElement>(null)
   const decorInputRef = useRef<HTMLInputElement>(null)
+  const sampleInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
   useEffect(() => {
     fetch('/api/profile/cover-sections')
       .then(r => r.ok ? r.json() : Promise.reject())
-      .then((data: { cover_sections?: Partial<CoverSections>; cover_materials?: string[] }) => {
+      .then((data: { cover_sections?: Partial<CoverSections>; cover_materials?: CoverMaterial[] }) => {
         setSections({ ...EMPTY_SECTIONS, ...(data.cover_sections ?? {}) })
-        setMaterials(data.cover_materials ?? ['Tela', 'Similpelle'])
+        setMaterials(data.cover_materials ?? DEFAULT_MATERIALS)
       })
       .catch(() => setError('Impossibile caricare la libreria.'))
       .finally(() => setLoading(false))
@@ -68,13 +75,36 @@ export default function CopertineLibraryPage() {
 
   const addMaterial = useCallback(() => {
     const label = newMaterial.trim()
-    if (!label || materials.includes(label)) return
-    setMaterials(prev => [...prev, label])
+    if (!label || materials.some(m => m.label === label)) return
+    setMaterials(prev => [...prev, { id: uid(), label, customizable: true }])
     setNewMaterial('')
   }, [newMaterial, materials])
 
-  const removeMaterial = useCallback((label: string) => {
-    setMaterials(prev => prev.filter(m => m !== label))
+  const removeMaterial = useCallback((id: string) => {
+    setMaterials(prev => prev.filter(m => m.id !== id))
+  }, [])
+
+  const updateMaterialLabel = useCallback((id: string, label: string) => {
+    setMaterials(prev => prev.map(m => m.id === id ? { ...m, label } : m))
+  }, [])
+
+  const toggleMaterialCustomizable = useCallback((id: string) => {
+    setMaterials(prev => prev.map(m => m.id === id ? { ...m, customizable: !m.customizable } : m))
+  }, [])
+
+  const handleSampleUpload = useCallback(async (materialId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setUploadingSampleId(materialId)
+    setError(null)
+    try {
+      const sampleImageUrl = await uploadAsset(file, `rivestimenti/${materialId}`)
+      setMaterials(prev => prev.map(m => m.id === materialId ? { ...m, sampleImageUrl } : m))
+    } catch {
+      setError('Caricamento campione non riuscito. Riprova.')
+    }
+    setUploadingSampleId(null)
   }, [])
 
   const current = sections[activeSection]
@@ -207,17 +237,59 @@ export default function CopertineLibraryPage() {
         {/* ── RIVESTIMENTI (globali, non legati a una sezione) ── */}
         <section style={{ marginBottom: 28 }}>
           <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '14px', fontWeight: 700, color: 'var(--tx)', marginBottom: 10 }}>Rivestimenti</h2>
-          <p style={{ fontSize: '11px', color: 'var(--t3)', marginBottom: 12 }}>I materiali della copertina fisica (es. Tela, Similpelle) — uguali per tutte le occasioni, il cliente ne sceglie uno insieme al colore.</p>
+          <p style={{ fontSize: '11px', color: 'var(--t3)', marginBottom: 12 }}>
+            I materiali della copertina fisica — uguali per tutte le occasioni. Se <strong>personalizzabile</strong>, il cliente sceglie colore e decoro (dalla sezione sotto); se no, carica un&apos;immagine campione: la copertina sarà sempre quella, senza scelta di colore/decoro.
+          </p>
 
           {materials.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
               {materials.map(m => (
-                <span key={m} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 'var(--r2)', padding: '8px 12px', fontSize: '12px', color: 'var(--tx)', fontWeight: 600 }}>
-                  {m}
-                  <button onClick={() => removeMaterial(m)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red)', padding: 0, display: 'flex' }}>
-                    <svg viewBox="0 0 24 24" width={12} height={12} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                  </button>
-                </span>
+                <div key={m.id} style={{ background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 'var(--r2)', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <input value={m.label} onChange={e => updateMaterialLabel(m.id, e.target.value)}
+                      style={{ flex: '0 1 160px', background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 6, padding: '6px 10px', fontSize: '12px', fontWeight: 600, color: 'var(--tx)' }} />
+
+                    <button onClick={() => toggleMaterialCustomizable(m.id)} style={{
+                      display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                    }}>
+                      <span style={{
+                        width: 36, height: 20, borderRadius: 10, position: 'relative', flexShrink: 0,
+                        background: m.customizable ? 'var(--ac)' : 'var(--s3)', transition: 'background .2s',
+                      }}>
+                        <span style={{ width: 14, height: 14, borderRadius: '50%', background: '#fff', position: 'absolute', top: 3, left: m.customizable ? 19 : 3, transition: 'left .2s' }} />
+                      </span>
+                      <span style={{ fontSize: '11px', color: 'var(--t2)', fontWeight: 500 }}>
+                        {m.customizable ? 'Personalizzabile (colore + decoro)' : 'Aspetto fisso (campione)'}
+                      </span>
+                    </button>
+
+                    <button onClick={() => removeMaterial(m.id)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red)', padding: 4, display: 'flex' }}>
+                      <svg viewBox="0 0 24 24" width={13} height={13} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                  </div>
+
+                  {!m.customizable && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <input ref={el => { sampleInputRefs.current[m.id] = el }} type="file" accept="image/*" style={{ display: 'none' }}
+                        onChange={e => handleSampleUpload(m.id, e)} />
+                      {m.sampleImageUrl ? (
+                        <>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={m.sampleImageUrl} alt={`Campione ${m.label}`} style={{ width: 64, height: 64, borderRadius: 8, objectFit: 'cover', border: '1px solid var(--b1)' }} />
+                          <button onClick={() => sampleInputRefs.current[m.id]?.click()} disabled={uploadingSampleId === m.id}
+                            style={{ background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 6, padding: '6px 12px', fontSize: '11px', fontWeight: 600, color: 'var(--t2)', cursor: 'pointer' }}>
+                            {uploadingSampleId === m.id ? 'Caricamento…' : 'Cambia campione'}
+                          </button>
+                        </>
+                      ) : (
+                        <button onClick={() => sampleInputRefs.current[m.id]?.click()} disabled={uploadingSampleId === m.id}
+                          style={{ background: 'var(--s2)', border: '1px dashed var(--b2)', borderRadius: 6, padding: '8px 14px', fontSize: '11px', fontWeight: 600, color: 'var(--red)', cursor: 'pointer' }}>
+                          {uploadingSampleId === m.id ? 'Caricamento…' : '+ Carica campione (obbligatorio)'}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           )}

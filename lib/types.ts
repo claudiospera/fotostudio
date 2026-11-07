@@ -76,6 +76,16 @@ export interface CoverSectionAssets {
   decorations: CoverDecor[]
 }
 
+// Rivestimento/materiale fisico della copertina (es. Tela, Similpelle) — globale,
+// non legato a una sezione/occasione. Se `customizable` è false, il cliente non
+// sceglie colore/decoro: la copertina usa `sampleImageUrl` ("il campione") così com'è.
+export interface CoverMaterial {
+  id: string
+  label: string
+  customizable: boolean
+  sampleImageUrl?: string  // obbligatorio quando customizable === false
+}
+
 // Libreria colori/decori per occasione — salvata su profiles.cover_sections,
 // caricata una volta dal fotografo e condivisa da tutte le gallerie dello stesso tipo.
 export type CoverSections = Record<CoverSectionKey, CoverSectionAssets>
@@ -141,7 +151,7 @@ export interface CoverOrder {
   client_email?: string | null
   size_label: string
   material_label?: string | null
-  color_label: string
+  color_label?: string | null
   decor_label?: string | null
   text_content?: string | null
   font_label?: string | null
@@ -412,6 +422,6 @@ export interface Profile {
   iban?: string
   plan: 'free' | 'pro' | 'professional'
   cover_sections?: CoverSections
-  cover_materials?: string[]  // rivestimenti disponibili per "Crea Copertina" (es. Tela, Similpelle)
+  cover_materials?: CoverMaterial[]  // rivestimenti disponibili per "Crea Copertina" (es. Tela, Similpelle)
   created_at: string
 }

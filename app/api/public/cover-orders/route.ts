@@ -10,7 +10,7 @@ interface CoverOrderPayload {
   client_email?: string | null
   size_label: string
   material_label?: string | null
-  color_label: string
+  color_label?: string | null  // null se il rivestimento non è personalizzabile (aspetto da campione)
   decor_label?: string | null
   text_content?: string | null
   font_label?: string | null
@@ -47,7 +47,7 @@ function buildEmailHtml(order: CoverOrderPayload & { gallery_name: string }) {
       <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-size:13px;color:#374151">
         <tr><td style="padding:6px 0;color:#6b7280">Misura</td><td style="padding:6px 0;text-align:right;font-weight:600">${order.size_label}</td></tr>
         ${order.material_label ? `<tr><td style="padding:6px 0;color:#6b7280">Rivestimento</td><td style="padding:6px 0;text-align:right;font-weight:600">${order.material_label}</td></tr>` : ''}
-        <tr><td style="padding:6px 0;color:#6b7280">Colore</td><td style="padding:6px 0;text-align:right;font-weight:600">${order.color_label}</td></tr>
+        ${order.color_label ? `<tr><td style="padding:6px 0;color:#6b7280">Colore</td><td style="padding:6px 0;text-align:right;font-weight:600">${order.color_label}</td></tr>` : `<tr><td colspan="2" style="padding:6px 0;color:#9ca3af;font-style:italic">Aspetto fisso da campione (nessuna scelta colore/decoro)</td></tr>`}
         ${order.decor_label ? `<tr><td style="padding:6px 0;color:#6b7280">Decoro</td><td style="padding:6px 0;text-align:right;font-weight:600">${order.decor_label}</td></tr>` : ''}
         ${order.text_content ? `<tr><td style="padding:6px 0;color:#6b7280">Testo</td><td style="padding:6px 0;text-align:right;font-weight:600">"${order.text_content}" (${order.font_label ?? ''})</td></tr>` : ''}
       </table>
@@ -80,7 +80,7 @@ async function sendTelegram(order: CoverOrderPayload & { gallery_name: string })
     ``,
     `📐 Misura: ${order.size_label}`,
     order.material_label ? `🧵 Rivestimento: ${order.material_label}` : null,
-    `🎨 Colore: ${order.color_label}`,
+    order.color_label ? `🎨 Colore: ${order.color_label}` : `🎨 Aspetto fisso da campione`,
     order.decor_label ? `✨ Decoro: ${order.decor_label}` : null,
     order.text_content ? `✏️ Testo: "${order.text_content}" (${order.font_label ?? ''})` : null,
   ].filter(Boolean).join('\n')
@@ -123,7 +123,7 @@ export async function POST(req: Request) {
   const { gallery_id, session_id, client_name, client_email, size_label, material_label, color_label,
     decor_label, text_content, font_label, text_color, cover_image_url, notes } = body
 
-  if (!gallery_id || !session_id || !size_label || !color_label || !cover_image_url) {
+  if (!gallery_id || !session_id || !size_label || !cover_image_url) {
     return NextResponse.json({ error: 'Dati richiesta incompleti' }, { status: 400 })
   }
 
@@ -137,7 +137,7 @@ export async function POST(req: Request) {
     )
     VALUES (
       ${gallery_id}, ${session_id}, ${client_name ?? null}, ${client_email ?? null},
-      ${size_label}, ${material_label ?? null}, ${color_label}, ${decor_label ?? null}, ${text_content ?? null},
+      ${size_label}, ${material_label ?? null}, ${color_label ?? null}, ${decor_label ?? null}, ${text_content ?? null},
       ${font_label ?? null}, ${text_color ?? null},
       ${cover_image_url}, ${notes ?? null}, 'nuovo'
     )
