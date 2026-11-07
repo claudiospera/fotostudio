@@ -9,14 +9,19 @@ CREATE TABLE IF NOT EXISTS profiles (
   email       text,
   iban        text,
   ical_token  text UNIQUE,
-  -- Librerie "Crea Copertina" riusabili per occasione (nascita/battesimo/
-  -- comunione/compleanno/anniversario/laurea/matrimonio/generico), caricate
-  -- una volta e condivise da tutte le gallerie di quel tipo.
-  -- Forma: { [sectionKey]: { colors: CoverColor[], decorations: CoverDecor[] } }
-  cover_sections  jsonb DEFAULT '{}'::jsonb,
+  -- Librerie "Crea Copertina", caricate una volta e condivise da TUTTE le
+  -- gallerie (non più per occasione — vanno bene per qualsiasi cerimonia).
+  -- Colori/materiali reali disponibili (foto del fotografo). Forma: CoverColor[]
+  cover_colors jsonb DEFAULT '[]'::jsonb,
+  -- Categorie di decori definite liberamente dal fotografo (es. "Animali",
+  -- "Piante e fiori", "Altro"). Forma: { id, label, decorations: CoverDecor[] }[]
+  cover_decor_categories jsonb DEFAULT '[]'::jsonb,
   -- Rivestimenti/materiali disponibili per "Crea Copertina" (es. Tela, Similpelle)
   -- — globali, non legati a una sezione/occasione specifica.
   cover_materials jsonb DEFAULT '["Tela", "Similpelle"]'::jsonb,
+  -- Residuo della vecchia libreria per occasione (pre 2026-11), non più letta
+  -- dall'app — i dati sono stati migrati su cover_colors.
+  cover_sections  jsonb DEFAULT '{}'::jsonb,
   created_at  timestamptz DEFAULT now()
 );
 

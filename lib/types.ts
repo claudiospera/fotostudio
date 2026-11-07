@@ -71,27 +71,12 @@ export interface CoverDecor {
   position: CoverDecorPosition
 }
 
-export type CoverSectionKey =
-  | 'nascita' | 'battesimo' | 'comunione' | 'compleanno'
-  | 'anniversario' | 'laurea' | 'matrimonio' | 'generico'
-
-export const COVER_SECTION_KEYS: CoverSectionKey[] = [
-  'nascita', 'battesimo', 'comunione', 'compleanno', 'anniversario', 'laurea', 'matrimonio', 'generico',
-]
-
-export const COVER_SECTION_LABELS: Record<CoverSectionKey, string> = {
-  nascita:      'Nascita',
-  battesimo:    'Battesimo',
-  comunione:    'Comunione',
-  compleanno:   'Compleanno',
-  anniversario: 'Anniversario',
-  laurea:       'Laurea',
-  matrimonio:   'Matrimonio',
-  generico:     'Generico',
-}
-
-export interface CoverSectionAssets {
-  colors: CoverColor[]
+// Categoria di decori definita liberamente dal fotografo (es. "Animali",
+// "Piante e fiori", "Altro") — sostituisce le vecchie sezioni per occasione:
+// i decori non dipendono più dal tipo di cerimonia della galleria.
+export interface CoverDecorCategory {
+  id: string
+  label: string
   decorations: CoverDecor[]
 }
 
@@ -106,14 +91,9 @@ export interface CoverMaterial {
   samples?: CoverColor[]  // almeno un campione obbligatorio quando customizable === false
 }
 
-// Libreria colori/decori per occasione — salvata su profiles.cover_sections,
-// caricata una volta dal fotografo e condivisa da tutte le gallerie dello stesso tipo.
-export type CoverSections = Record<CoverSectionKey, CoverSectionAssets>
-
 export interface CoverBuilderSettings {
   enabled: boolean
   size: CoverSize | null        // la misura la decide il fotografo per questa galleria, non il cliente
-  section: CoverSectionKey      // quale libreria colori/decori usa questa galleria
 }
 
 export interface GallerySettings {
@@ -441,7 +421,8 @@ export interface Profile {
   email?: string
   iban?: string
   plan: 'free' | 'pro' | 'professional'
-  cover_sections?: CoverSections
+  cover_colors?: CoverColor[]                       // colori/materiali globali, condivisi da tutte le gallerie
+  cover_decor_categories?: CoverDecorCategory[]      // categorie di decori (Animali, Piante e fiori, Altro...)
   cover_materials?: CoverMaterial[]  // rivestimenti disponibili per "Crea Copertina" (es. Tela, Similpelle)
   created_at: string
 }

@@ -8,7 +8,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import type { CoverSize, CoverColor, CoverDecor, CoverMaterial } from '@/lib/types'
+import type { CoverSize, CoverColor, CoverDecorCategory, CoverMaterial } from '@/lib/types'
 import { coverOrientation } from '@/lib/types'
 import { normalizeImageOrientation } from '@/lib/shop/normalize-image'
 
@@ -19,7 +19,7 @@ interface PublicGallerySettings {
     enabled: boolean
     size: CoverSize | null
     colors: CoverColor[]
-    decorations: CoverDecor[]
+    decorCategories: CoverDecorCategory[]
     materials: CoverMaterial[]
   }
 }
@@ -102,7 +102,7 @@ function getSessionId(): string {
 const DRAFT_KEY = 'fs-cover-draft-v1'
 
 interface Draft {
-  colorId: string; decorId: string; materialId: string; sampleId: string
+  colorId: string; decorCategoryId: string; decorId: string; materialId: string; sampleId: string
   uploadedUrl: string; filename?: string; natW: number; natH: number
   zoom: number; offsetX: number; offsetY: number
   text: string; fontId: string; textColor: string; textSize: number
@@ -126,6 +126,7 @@ export default function CopertinaPage() {
   const photoImgRef = useRef<HTMLImageElement | null>(null)
 
   const [colorId, setColorId] = useState('')
+  const [decorCategoryId, setDecorCategoryId] = useState('')
   const [decorId, setDecorId] = useState('')
   const [materialId, setMaterialId] = useState('')
   const [sampleId, setSampleId] = useState('')
@@ -164,7 +165,9 @@ export default function CopertinaPage() {
         const cb = g.settings?.cover_builder
         if (!cb?.enabled || !cb.size) { setNotAvailable(true); return }
         setColorId(cb.colors[0]?.id ?? '')
-        setDecorId(cb.decorations[0]?.id ?? '')
+        const firstCategory = cb.decorCategories?.[0]
+        setDecorCategoryId(firstCategory?.id ?? '')
+        setDecorId(firstCategory?.decorations?.[0]?.id ?? '')
         const firstMaterial = cb.materials?.[0]
         setMaterialId(firstMaterial?.id ?? '')
         setSampleId(firstMaterial && !firstMaterial.customizable ? (firstMaterial.samples?.[0]?.id ?? '') : '')
@@ -176,7 +179,8 @@ export default function CopertinaPage() {
   const cb = gallery?.settings?.cover_builder
   const size = cb?.size ?? null
   const colors = cb?.colors ?? []
-  const decorations = cb?.decorations ?? []
+  const decorCategories = cb?.decorCategories ?? []
+  const activeDecorCategory = decorCategories.find(c => c.id === decorCategoryId)
   const materials = cb?.materials ?? []
   const selectedMaterial = materials.find(m => m.id === materialId)
   // Se il rivestimento non è personalizzabile, niente scelta di colore/decoro:
@@ -184,7 +188,7 @@ export default function CopertinaPage() {
   const isCustomizable = selectedMaterial ? selectedMaterial.customizable : true
   const samples = selectedMaterial?.samples ?? []
   const color = isCustomizable ? colors.find(c => c.id === colorId) : samples.find(s => s.id === sampleId)
-  const decor = isCustomizable ? decorations.find(d => d.id === decorId) : undefined
+  const decor = isCustomizable ? activeDecorCategory?.decorations.find(d => d.id === decorId) : undefined
   // Se il campione scelto ha un mockup dell'album vero per l'orientamento di questa
   // misura (orizzontale/verticale/quadrato), lo usiamo al posto della foto del campione.
   const orientation = size ? coverOrientation(size) : null
@@ -285,7 +289,7 @@ export default function CopertinaPage() {
       if (!raw) return
       const d: Draft = JSON.parse(raw)
       if (!d.uploadedUrl) return
-      setColorId(d.colorId); setDecorId(d.decorId); setMaterialId(d.materialId); setSampleId(d.sampleId ?? '')
+      setColorId(d.colorId); setDecorCategoryId(d.decorCategoryId ?? ''); setDecorId(d.decorId); setMaterialId(d.materialId); setSampleId(d.sampleId ?? '')
       setPhotoUrl(d.uploadedUrl); setUploadedUrl(d.uploadedUrl); setPhotoFilename(d.filename)
       setPhotoZoom(d.zoom); setPhotoOffset({ x: d.offsetX, y: d.offsetY })
       setText(d.text); setFontId(d.fontId); setTextColor(d.textColor); setTextSize(d.textSize)
@@ -302,7 +306,7 @@ export default function CopertinaPage() {
     if (!uploadedUrl || uploading) { sessionStorage.removeItem(DRAFT_KEY); return }
     const t = setTimeout(() => {
       const d: Draft = {
-        colorId, decorId, materialId, sampleId, uploadedUrl, filename: photoFilename,
+        colorId, decorCategoryId, decorId, materialId, sampleId, uploadedUrl, filename: photoFilename,
         natW: photoNatSize?.w ?? 0, natH: photoNatSize?.h ?? 0,
         zoom: photoZoom, offsetX: photoOffset.x, offsetY: photoOffset.y,
         text, fontId, textColor, textSize, textPosX: textPos.x, textPosY: textPos.y,
@@ -311,7 +315,7 @@ export default function CopertinaPage() {
       sessionStorage.setItem(DRAFT_KEY, JSON.stringify(d))
     }, 400)
     return () => clearTimeout(t)
-  }, [colorId, decorId, materialId, sampleId, uploadedUrl, uploading, photoFilename, photoNatSize, photoZoom, photoOffset, text, fontId, textColor, textSize, textPos, clientName, clientEmail])
+  }, [colorId, decorCategoryId, decorId, materialId, sampleId, uploadedUrl, uploading, photoFilename, photoNatSize, photoZoom, photoOffset, text, fontId, textColor, textSize, textPos, clientName, clientEmail])
 
   // ── drag foto ──────────────────────────────────────────────────────────
   const photoDragRef = useRef<{ sx: number; sy: number; ox: number; oy: number } | null>(null)
@@ -700,11 +704,20 @@ export default function CopertinaPage() {
             </div>
           )}
 
-          {isCustomizable && decorations.length > 0 && (
+          {isCustomizable && decorCategories.length > 0 && (
             <div>
               <p style={labelStyle}>Decoro</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+                {decorCategories.map(cat => (
+                  <button key={cat.id} onClick={() => { setDecorCategoryId(cat.id); setDecorId(cat.decorations[0]?.id ?? '') }} style={{
+                    padding: '7px 14px', borderRadius: 999, border: `1.5px solid ${decorCategoryId === cat.id ? accent : '#e0e0e0'}`,
+                    background: decorCategoryId === cat.id ? `${accent}18` : '#fff', fontSize: '12px', fontWeight: decorCategoryId === cat.id ? 700 : 500,
+                    color: decorCategoryId === cat.id ? accent : '#666', cursor: 'pointer',
+                  }}>{cat.label}</button>
+                ))}
+              </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))', gap: 10 }}>
-                {decorations.map(d => (
+                {(activeDecorCategory?.decorations ?? []).map(d => (
                   <button key={d.id} onClick={() => setDecorId(d.id)} style={{
                     padding: 0, borderRadius: 14, border: `2px solid ${decorId === d.id ? accent : '#e8e8e8'}`,
                     background: decorId === d.id ? `${accent}0d` : '#fff', cursor: 'pointer', overflow: 'hidden',

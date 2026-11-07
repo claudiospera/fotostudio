@@ -1,25 +1,13 @@
 'use client'
 
 // app/(dashboard)/gallerie/[id]/copertina/page.tsx
-// Configurazione "Crea Copertina" per singola galleria: misura e sezione
-// (libreria colori/decori condivisa, gestita in /copertine).
+// Configurazione "Crea Copertina" per singola galleria: solo misura — colori,
+// decori e rivestimenti sono nella libreria globale (gestita in /copertine).
 
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import type { Gallery, CoverSectionKey } from '@/lib/types'
-import { COVER_SECTION_KEYS, COVER_SECTION_LABELS } from '@/lib/types'
-
-function defaultSectionForType(type?: string): CoverSectionKey {
-  const t = (type ?? '').toLowerCase()
-  if (t.includes('matrimonio') || t.includes('promessa')) return 'matrimonio'
-  if (t.includes('battesimo')) return 'battesimo'
-  if (t.includes('comunione')) return 'comunione'
-  if (t.includes('newborn')) return 'nascita'
-  if (t.includes('1 anno') || t.includes('18 anni')) return 'compleanno'
-  if (t.includes('anniversario')) return 'anniversario'
-  return 'generico'
-}
+import type { Gallery } from '@/lib/types'
 
 export default function CopertinaConfigPage() {
   const { id } = useParams<{ id: string }>()
@@ -29,7 +17,6 @@ export default function CopertinaConfigPage() {
   const [loading, setLoading] = useState(true)
 
   const [enabled, setEnabled] = useState(false)
-  const [section, setSection] = useState<CoverSectionKey>('generico')
 
   // La misura la decide il fotografo per questa galleria — non è una scelta del cliente.
   const [sizeLabel, setSizeLabel] = useState('')
@@ -47,7 +34,6 @@ export default function CopertinaConfigPage() {
         setGallery(g)
         const cb = g.settings?.cover_builder
         setEnabled(cb?.enabled ?? false)
-        setSection(cb?.section ?? defaultSectionForType(g.type))
         setSizeLabel(cb?.size?.label ?? '')
         setSizeW(cb?.size ? String(cb.size.widthCm) : '')
         setSizeH(cb?.size ? String(cb.size.heightCm) : '')
@@ -55,8 +41,6 @@ export default function CopertinaConfigPage() {
       .catch(() => router.push('/gallerie'))
       .finally(() => setLoading(false))
   }, [id, router])
-
-  const suggestedSection = useMemo(() => defaultSectionForType(gallery?.type), [gallery?.type])
 
   const save = useCallback(async () => {
     if (!gallery) return
@@ -71,7 +55,7 @@ export default function CopertinaConfigPage() {
     const size = sizeLabel.trim() && w && h ? { id: 'size', label: sizeLabel.trim(), widthCm: w, heightCm: h } : null
     const newSettings = {
       ...(gallery.settings ?? {}),
-      cover_builder: { enabled, size, section },
+      cover_builder: { enabled, size },
     }
     const res = await fetch(`/api/galleries/${id}`, {
       method: 'PATCH',
@@ -87,7 +71,7 @@ export default function CopertinaConfigPage() {
       setError('Salvataggio non riuscito. Riprova.')
     }
     setSaving(false)
-  }, [gallery, id, enabled, sizeLabel, sizeW, sizeH, section])
+  }, [gallery, id, enabled, sizeLabel, sizeW, sizeH])
 
   if (loading || !gallery) {
     return (
@@ -172,30 +156,13 @@ export default function CopertinaConfigPage() {
           </div>
         </section>
 
-        {/* ── SEZIONE (colori/decori) ── */}
+        {/* ── COLORI, DECORI E RIVESTIMENTI (libreria globale) ── */}
         <section style={{ marginBottom: 28 }}>
-          <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '14px', fontWeight: 700, color: 'var(--tx)', marginBottom: 10 }}>Colori e decori</h2>
+          <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '14px', fontWeight: 700, color: 'var(--tx)', marginBottom: 10 }}>Colori, decori e rivestimenti</h2>
           <p style={{ fontSize: '11px', color: 'var(--t3)', marginBottom: 12 }}>
-            Questa galleria usa la libreria colori/decori di una sezione. Le immagini si caricano una volta sola per occasione nella{' '}
+            Sono gli stessi per tutte le gallerie, qualunque sia la cerimonia — si caricano una volta sola nella{' '}
             <Link href="/copertine" style={{ color: 'var(--ac)' }}>Libreria Copertine</Link>, non qui.
-            {suggestedSection && section !== suggestedSection && (
-              <> In base al tipo di galleria (&ldquo;{gallery.type}&rdquo;) suggeriamo &ldquo;{COVER_SECTION_LABELS[suggestedSection]}&rdquo;.</>
-            )}
           </p>
-
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {COVER_SECTION_KEYS.map(key => (
-              <button key={key} onClick={() => setSection(key)} style={{
-                padding: '10px 16px', borderRadius: 'var(--r2)',
-                border: `2px solid ${section === key ? 'var(--ac)' : 'var(--b1)'}`,
-                background: section === key ? 'var(--acd)' : 'var(--s2)',
-                color: section === key ? 'var(--ac)' : 'var(--tx)',
-                fontSize: '12px', fontWeight: section === key ? 700 : 500, cursor: 'pointer',
-              }}>
-                {COVER_SECTION_LABELS[key]}
-              </button>
-            ))}
-          </div>
         </section>
 
       </div>

@@ -1,13 +1,13 @@
 'use client'
 
 // app/(dashboard)/copertine/page.tsx
-// Libreria globale "Crea Copertina": colori e decori per occasione (battesimo,
-// comunione, matrimonio, generico), riusati da tutte le gallerie dello stesso tipo.
+// Libreria globale "Crea Copertina": colori, categorie di decori (es. Animali,
+// Piante e fiori, Altro) e rivestimenti — riusati da TUTTE le gallerie, senza
+// distinzione di occasione/cerimonia.
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import type { CoverColor, CoverDecor, CoverDecorPosition, CoverMaterial, CoverMockupSet, CoverSectionKey, CoverSections } from '@/lib/types'
-import { COVER_SECTION_KEYS, COVER_SECTION_LABELS } from '@/lib/types'
+import type { CoverColor, CoverDecor, CoverDecorCategory, CoverDecorPosition, CoverMaterial, CoverMockupSet } from '@/lib/types'
 
 const DEFAULT_MATERIALS: CoverMaterial[] = [
   { id: 'tela',       label: 'Tela',       customizable: true },
@@ -31,11 +31,6 @@ const POSITION_LABELS: Record<CoverDecorPosition, string> = {
   'bottom-right': 'Basso destra',
 }
 
-const EMPTY_SECTIONS: CoverSections = COVER_SECTION_KEYS.reduce((acc, key) => {
-  acc[key] = { colors: [], decorations: [] }
-  return acc
-}, {} as CoverSections)
-
 async function uploadAsset(file: File, folder: string): Promise<string> {
   const res = await fetch('/api/photos/presign', {
     method: 'POST',
@@ -52,35 +47,38 @@ async function uploadAsset(file: File, folder: string): Promise<string> {
 export default function CopertineLibraryPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
-  const [sections, setSections] = useState<CoverSections>(EMPTY_SECTIONS)
-  const [activeSection, setActiveSection] = useState<CoverSectionKey>('matrimonio')
+  const [colors, setColors] = useState<CoverColor[]>([])
+  const [decorCategories, setDecorCategories] = useState<CoverDecorCategory[]>([])
+  const [newCategory, setNewCategory] = useState('')
   const [materials, setMaterials] = useState<CoverMaterial[]>([])
   const [newMaterial, setNewMaterial] = useState('')
   const [uploadingSampleFor, setUploadingSampleFor] = useState<string | null>(null)
   const [uploadingMockupKey, setUploadingMockupKey] = useState<string | null>(null)
 
   const [uploadingColor, setUploadingColor] = useState(false)
-  const [uploadingDecor, setUploadingDecor] = useState(false)
+  const [uploadingDecorFor, setUploadingDecorFor] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [saved,  setSaved]  = useState(false)
   const [error,  setError]  = useState<string | null>(null)
 
   const colorInputRef = useRef<HTMLInputElement>(null)
-  const decorInputRef = useRef<HTMLInputElement>(null)
+  const decorInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
   const sampleInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
   const mockupInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
   useEffect(() => {
     fetch('/api/profile/cover-sections')
       .then(r => r.ok ? r.json() : Promise.reject())
-      .then((data: { cover_sections?: Partial<CoverSections>; cover_materials?: CoverMaterial[] }) => {
-        setSections({ ...EMPTY_SECTIONS, ...(data.cover_sections ?? {}) })
+      .then((data: { cover_colors?: CoverColor[]; cover_decor_categories?: CoverDecorCategory[]; cover_materials?: CoverMaterial[] }) => {
+        setColors(data.cover_colors ?? [])
+        setDecorCategories(data.cover_decor_categories ?? [])
         setMaterials(data.cover_materials ?? DEFAULT_MATERIALS)
       })
       .catch(() => setError('Impossibile caricare la libreria.'))
       .finally(() => setLoading(false))
   }, [])
 
+  // ── rivestimenti ──────────────────────────────────────────────────────────
   const addMaterial = useCallback(() => {
     const label = newMaterial.trim()
     if (!label || materials.some(m => m.label === label)) return
@@ -148,35 +146,55 @@ export default function CopertineLibraryPage() {
     setUploadingMockupKey(null)
   }, [])
 
-  const current = sections[activeSection]
-
+  // ── colori (globali) ────────────────────────────────────────────────────
   const handleColorUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? [])
     e.target.value = ''
     if (files.length === 0) return
     setUploadingColor(true)
     setError(null)
-    const results = await Promise.allSettled(files.map(file => uploadAsset(file, `${activeSection}/colori`)))
+    const results = await Promise.allSettled(files.map(file => uploadAsset(file, 'colori')))
     const newColors: CoverColor[] = []
     let failed = 0
     results.forEach((r, i) => {
       if (r.status === 'fulfilled') newColors.push({ id: uid(), label: files[i].name.replace(/\.[^.]+$/, ''), imageUrl: r.value })
       else failed++
     })
-    if (newColors.length > 0) {
-      setSections(prev => ({ ...prev, [activeSection]: { ...prev[activeSection], colors: [...prev[activeSection].colors, ...newColors] } }))
-    }
+    if (newColors.length > 0) setColors(prev => [...prev, ...newColors])
     if (failed > 0) setError(`${failed} colore${failed > 1 ? 'i' : ''} non caricat${failed > 1 ? 'i' : 'o'}. Riprova.`)
     setUploadingColor(false)
-  }, [activeSection])
+  }, [])
 
-  const handleDecorUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const updateColor = useCallback((cid: string, label: string) => {
+    setColors(prev => prev.map(c => c.id === cid ? { ...c, label } : c))
+  }, [])
+  const removeColor = useCallback((cid: string) => {
+    setColors(prev => prev.filter(c => c.id !== cid))
+  }, [])
+
+  // ── categorie di decori ─────────────────────────────────────────────────
+  const addCategory = useCallback(() => {
+    const label = newCategory.trim()
+    if (!label || decorCategories.some(c => c.label === label)) return
+    setDecorCategories(prev => [...prev, { id: uid(), label, decorations: [] }])
+    setNewCategory('')
+  }, [newCategory, decorCategories])
+
+  const removeCategory = useCallback((id: string) => {
+    setDecorCategories(prev => prev.filter(c => c.id !== id))
+  }, [])
+
+  const updateCategoryLabel = useCallback((id: string, label: string) => {
+    setDecorCategories(prev => prev.map(c => c.id === id ? { ...c, label } : c))
+  }, [])
+
+  const handleDecorUpload = useCallback(async (categoryId: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? [])
     e.target.value = ''
     if (files.length === 0) return
-    setUploadingDecor(true)
+    setUploadingDecorFor(categoryId)
     setError(null)
-    const results = await Promise.allSettled(files.map(file => uploadAsset(file, `${activeSection}/decori`)))
+    const results = await Promise.allSettled(files.map(file => uploadAsset(file, `decori/${categoryId}`)))
     const newDecors: CoverDecor[] = []
     let failed = 0
     results.forEach((r, i) => {
@@ -184,28 +202,27 @@ export default function CopertineLibraryPage() {
       else failed++
     })
     if (newDecors.length > 0) {
-      setSections(prev => ({ ...prev, [activeSection]: { ...prev[activeSection], decorations: [...prev[activeSection].decorations, ...newDecors] } }))
+      setDecorCategories(prev => prev.map(c => c.id === categoryId ? { ...c, decorations: [...c.decorations, ...newDecors] } : c))
     }
     if (failed > 0) setError(`${failed} decor${failed > 1 ? 'i' : 'o'} non caricat${failed > 1 ? 'i' : 'o'}. Riprova.`)
-    setUploadingDecor(false)
-  }, [activeSection])
+    setUploadingDecorFor(null)
+  }, [])
 
-  const updateColor = useCallback((cid: string, label: string) => {
-    setSections(prev => ({ ...prev, [activeSection]: { ...prev[activeSection], colors: prev[activeSection].colors.map(c => c.id === cid ? { ...c, label } : c) } }))
-  }, [activeSection])
-  const removeColor = useCallback((cid: string) => {
-    setSections(prev => ({ ...prev, [activeSection]: { ...prev[activeSection], colors: prev[activeSection].colors.filter(c => c.id !== cid) } }))
-  }, [activeSection])
-
-  const updateDecorLabel = useCallback((did: string, label: string) => {
-    setSections(prev => ({ ...prev, [activeSection]: { ...prev[activeSection], decorations: prev[activeSection].decorations.map(d => d.id === did ? { ...d, label } : d) } }))
-  }, [activeSection])
-  const updateDecorPosition = useCallback((did: string, position: CoverDecorPosition) => {
-    setSections(prev => ({ ...prev, [activeSection]: { ...prev[activeSection], decorations: prev[activeSection].decorations.map(d => d.id === did ? { ...d, position } : d) } }))
-  }, [activeSection])
-  const removeDecor = useCallback((did: string) => {
-    setSections(prev => ({ ...prev, [activeSection]: { ...prev[activeSection], decorations: prev[activeSection].decorations.filter(d => d.id !== did) } }))
-  }, [activeSection])
+  const updateDecorLabel = useCallback((categoryId: string, did: string, label: string) => {
+    setDecorCategories(prev => prev.map(c => c.id === categoryId
+      ? { ...c, decorations: c.decorations.map(d => d.id === did ? { ...d, label } : d) }
+      : c))
+  }, [])
+  const updateDecorPosition = useCallback((categoryId: string, did: string, position: CoverDecorPosition) => {
+    setDecorCategories(prev => prev.map(c => c.id === categoryId
+      ? { ...c, decorations: c.decorations.map(d => d.id === did ? { ...d, position } : d) }
+      : c))
+  }, [])
+  const removeDecor = useCallback((categoryId: string, did: string) => {
+    setDecorCategories(prev => prev.map(c => c.id === categoryId
+      ? { ...c, decorations: c.decorations.filter(d => d.id !== did) }
+      : c))
+  }, [])
 
   const save = useCallback(async () => {
     setSaving(true)
@@ -213,7 +230,7 @@ export default function CopertineLibraryPage() {
     const res = await fetch('/api/profile/cover-sections', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cover_sections: sections, cover_materials: materials }),
+      body: JSON.stringify({ cover_colors: colors, cover_decor_categories: decorCategories, cover_materials: materials }),
     })
     if (res.ok) {
       setSaved(true)
@@ -222,7 +239,7 @@ export default function CopertineLibraryPage() {
       setError('Salvataggio non riuscito. Riprova.')
     }
     setSaving(false)
-  }, [sections, materials])
+  }, [colors, decorCategories, materials])
 
   if (loading) {
     return (
@@ -252,7 +269,7 @@ export default function CopertineLibraryPage() {
             <div style={{ fontFamily: 'Syne, sans-serif', fontSize: '20px', fontWeight: 800, color: 'var(--tx)', marginBottom: 4 }}>
               Libreria Copertine
             </div>
-            <p style={{ fontSize: '12px', color: 'var(--t3)' }}>Colori e decori per occasione — riusati da tutte le gallerie dello stesso tipo</p>
+            <p style={{ fontSize: '12px', color: 'var(--t3)' }}>Rivestimenti, colori e decori — uguali per tutte le gallerie, qualunque sia la cerimonia</p>
           </div>
           <button
             onClick={save}
@@ -275,11 +292,11 @@ export default function CopertineLibraryPage() {
           </div>
         )}
 
-        {/* ── RIVESTIMENTI (globali, non legati a una sezione) ── */}
+        {/* ── RIVESTIMENTI ── */}
         <section style={{ marginBottom: 28 }}>
           <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '14px', fontWeight: 700, color: 'var(--tx)', marginBottom: 10 }}>Rivestimenti</h2>
           <p style={{ fontSize: '11px', color: 'var(--t3)', marginBottom: 12 }}>
-            I materiali della copertina fisica — uguali per tutte le occasioni. Se <strong>personalizzabile</strong>, il cliente sceglie colore e decoro (dalla sezione sotto); se no, carica uno o più <strong>campioni</strong> (es. colori diversi dello stesso materiale) tra cui il cliente sceglierà — senza scelta separata di colore/decoro. Per ogni campione puoi anche caricare 3 foto dell&apos;album vero già rilegato (orizzontale/verticale/quadrato): se presenti, verranno mostrate al cliente al posto del campione, nella versione giusta in base alla misura della galleria.
+            I materiali della copertina fisica — uguali per tutte le occasioni. Se <strong>personalizzabile</strong>, il cliente sceglie colore e decoro (dalle sezioni sotto); se no, carica uno o più <strong>campioni</strong> (es. colori diversi dello stesso materiale) tra cui il cliente sceglierà — senza scelta separata di colore/decoro. Per ogni campione puoi anche caricare 3 foto dell&apos;album vero già rilegato (orizzontale/verticale/quadrato): se presenti, verranno mostrate al cliente al posto del campione, nella versione giusta in base alla misura della galleria.
           </p>
 
           {materials.length > 0 && (
@@ -387,40 +404,15 @@ export default function CopertineLibraryPage() {
           </div>
         </section>
 
-        {/* ── SEZIONI (tab) ── */}
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--b1)', marginBottom: 24, overflowX: 'auto' }}>
-          {COVER_SECTION_KEYS.map(key => (
-            <button
-              key={key}
-              onClick={() => setActiveSection(key)}
-              style={{
-                padding: '10px 18px', fontSize: '13px', fontWeight: activeSection === key ? 700 : 400,
-                color: activeSection === key ? 'var(--ac)' : 'var(--t3)',
-                border: 'none', borderBottom: `2px solid ${activeSection === key ? 'var(--ac)' : 'transparent'}`,
-                background: 'transparent', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all .15s',
-              }}
-            >
-              {COVER_SECTION_LABELS[key]}
-              {(sections[key].colors.length > 0 || sections[key].decorations.length > 0) && (
-                <span style={{ marginLeft: 6, fontSize: '10px', color: 'var(--t3)' }}>
-                  ({sections[key].colors.length + sections[key].decorations.length})
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* ── COLORI ── */}
+        {/* ── COLORI (globali) ── */}
         <section style={{ marginBottom: 28 }}>
-          <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '14px', fontWeight: 700, color: 'var(--tx)', marginBottom: 10 }}>
-            Colori — {COVER_SECTION_LABELS[activeSection]}
-          </h2>
-          <p style={{ fontSize: '11px', color: 'var(--t3)', marginBottom: 12 }}>Carica una foto per ogni colore/materiale reale disponibile per questa occasione.</p>
+          <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '14px', fontWeight: 700, color: 'var(--tx)', marginBottom: 10 }}>Colori</h2>
+          <p style={{ fontSize: '11px', color: 'var(--t3)', marginBottom: 12 }}>Carica una foto per ogni colore/materiale reale disponibile — vanno bene per qualsiasi cerimonia, non serve ricaricarli per occasione.</p>
 
           <input ref={colorInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleColorUpload} />
-          {current.colors.length > 0 && (
+          {colors.length > 0 && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10, marginBottom: 12 }}>
-              {current.colors.map(c => (
+              {colors.map(c => (
                 <div key={c.id} style={{ background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 'var(--r2)', overflow: 'hidden' }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={c.imageUrl} alt={c.label} style={{ width: '100%', height: 90, objectFit: 'cover', display: 'block' }} />
@@ -439,39 +431,66 @@ export default function CopertineLibraryPage() {
           </button>
         </section>
 
-        {/* ── DECORI ── */}
+        {/* ── DECORI (per categoria) ── */}
         <section style={{ marginBottom: 28 }}>
-          <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '14px', fontWeight: 700, color: 'var(--tx)', marginBottom: 10 }}>
-            Decori — {COVER_SECTION_LABELS[activeSection]}
-          </h2>
-          <p style={{ fontSize: '11px', color: 'var(--t3)', marginBottom: 12 }}>Animaletti, fiori o altri motivi tra cui il cliente sceglierà. Scegli tu la posizione fissa di ciascuno.</p>
+          <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: '14px', fontWeight: 700, color: 'var(--tx)', marginBottom: 10 }}>Decori</h2>
+          <p style={{ fontSize: '11px', color: 'var(--t3)', marginBottom: 12 }}>
+            Organizza i decori in categorie a tuo piacere (es. Animali, Piante e fiori, Altro) — sono le stesse per tutte le gallerie. Scegli tu la posizione fissa di ciascun decoro.
+          </p>
 
-          <input ref={decorInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleDecorUpload} />
-          {current.decorations.length > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 10, marginBottom: 12 }}>
-              {current.decorations.map(d => (
-                <div key={d.id} style={{ background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 'var(--r2)', overflow: 'hidden' }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={d.imageUrl} alt={d.label} style={{ width: '100%', height: 90, objectFit: 'contain', background: 'var(--s2)', display: 'block' }} />
-                  <div style={{ padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <input value={d.label} onChange={e => updateDecorLabel(d.id, e.target.value)}
-                      style={{ background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 6, padding: '5px 8px', fontSize: '11px', color: 'var(--tx)', width: '100%' }} />
-                    <select value={d.position} onChange={e => updateDecorPosition(d.id, e.target.value as CoverDecorPosition)}
-                      style={{ background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 6, padding: '5px 8px', fontSize: '11px', color: 'var(--tx)', width: '100%' }}>
-                      {(Object.keys(POSITION_LABELS) as CoverDecorPosition[]).map(p => (
-                        <option key={p} value={p}>{POSITION_LABELS[p]}</option>
-                      ))}
-                    </select>
-                    <button onClick={() => removeDecor(d.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red)', fontSize: '10px', padding: 0, textAlign: 'left' }}>Rimuovi</button>
+          {decorCategories.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 14 }}>
+              {decorCategories.map(cat => (
+                <div key={cat.id} style={{ background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 'var(--r2)', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <input value={cat.label} onChange={e => updateCategoryLabel(cat.id, e.target.value)}
+                      style={{ flex: '0 1 200px', background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 6, padding: '6px 10px', fontSize: '12px', fontWeight: 600, color: 'var(--tx)' }} />
+                    <button onClick={() => removeCategory(cat.id)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red)', padding: 4, display: 'flex' }}>
+                      <svg viewBox="0 0 24 24" width={13} height={13} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
                   </div>
+
+                  <input ref={el => { decorInputRefs.current[cat.id] = el }} type="file" accept="image/*" multiple style={{ display: 'none' }}
+                    onChange={e => handleDecorUpload(cat.id, e)} />
+
+                  {cat.decorations.length > 0 && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 10 }}>
+                      {cat.decorations.map(d => (
+                        <div key={d.id} style={{ background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 8, overflow: 'hidden' }}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={d.imageUrl} alt={d.label} style={{ width: '100%', height: 90, objectFit: 'contain', background: 'var(--s1)', display: 'block' }} />
+                          <div style={{ padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            <input value={d.label} onChange={e => updateDecorLabel(cat.id, d.id, e.target.value)}
+                              style={{ background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 6, padding: '5px 8px', fontSize: '11px', color: 'var(--tx)', width: '100%' }} />
+                            <select value={d.position} onChange={e => updateDecorPosition(cat.id, d.id, e.target.value as CoverDecorPosition)}
+                              style={{ background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 6, padding: '5px 8px', fontSize: '11px', color: 'var(--tx)', width: '100%' }}>
+                              {(Object.keys(POSITION_LABELS) as CoverDecorPosition[]).map(p => (
+                                <option key={p} value={p}>{POSITION_LABELS[p]}</option>
+                              ))}
+                            </select>
+                            <button onClick={() => removeDecor(cat.id, d.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red)', fontSize: '10px', padding: 0, textAlign: 'left' }}>Rimuovi</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <button onClick={() => decorInputRefs.current[cat.id]?.click()} disabled={uploadingDecorFor === cat.id}
+                    style={{ alignSelf: 'flex-start', background: 'var(--s2)', border: '1px dashed var(--b2)', borderRadius: 6, padding: '8px 14px', fontSize: '11px', fontWeight: 600, color: 'var(--t2)', cursor: 'pointer' }}>
+                    {uploadingDecorFor === cat.id ? 'Caricamento…' : '+ Carica decoro'}
+                  </button>
                 </div>
               ))}
             </div>
           )}
-          <button onClick={() => decorInputRef.current?.click()} disabled={uploadingDecor}
-            style={{ background: 'var(--s2)', border: '1px dashed var(--b2)', borderRadius: 'var(--r2)', padding: '10px 16px', fontSize: '12px', fontWeight: 600, color: 'var(--t2)', cursor: uploadingDecor ? 'not-allowed' : 'pointer' }}>
-            {uploadingDecor ? 'Caricamento…' : '+ Carica decoro'}
-          </button>
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input value={newCategory} onChange={e => setNewCategory(e.target.value)} onKeyDown={e => e.key === 'Enter' && addCategory()}
+              placeholder="Es. Animali" style={{ flex: '0 1 220px', background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 'var(--r2)', padding: '8px 12px', fontSize: '12px', color: 'var(--tx)' }} />
+            <button onClick={addCategory} style={{ background: 'var(--s2)', border: '1px solid var(--b1)', borderRadius: 'var(--r2)', padding: '8px 16px', fontSize: '12px', fontWeight: 600, color: 'var(--tx)', cursor: 'pointer' }}>
+              Aggiungi categoria
+            </button>
+          </div>
         </section>
 
       </div>
