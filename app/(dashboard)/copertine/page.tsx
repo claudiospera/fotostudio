@@ -241,6 +241,20 @@ export default function CopertineLibraryPage() {
     setSaving(false)
   }, [colors, decorCategories, materials])
 
+  // ── salvataggio automatico ───────────────────────────────────────────────
+  // Evita di perdere il lavoro (es. durante un caricamento massiccio di
+  // campioni) se il browser si ricarica prima che il fotografo prema "Salva".
+  const didLoadRef = useRef(false)
+  useEffect(() => {
+    if (!loading) didLoadRef.current = true
+  }, [loading])
+
+  useEffect(() => {
+    if (!didLoadRef.current) return
+    const t = setTimeout(() => { save() }, 2500)
+    return () => clearTimeout(t)
+  }, [colors, decorCategories, materials, save])
+
   if (loading) {
     return (
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--t3)', fontSize: '13px' }}>
@@ -270,6 +284,7 @@ export default function CopertineLibraryPage() {
               Libreria Copertine
             </div>
             <p style={{ fontSize: '12px', color: 'var(--t3)' }}>Rivestimenti, colori e decori — uguali per tutte le gallerie, qualunque sia la cerimonia</p>
+            <p style={{ fontSize: '11px', color: 'var(--t3)', marginTop: 2 }}>Salvataggio automatico attivo — non perdi il lavoro anche se non premi &ldquo;Salva&rdquo;</p>
           </div>
           <button
             onClick={save}
